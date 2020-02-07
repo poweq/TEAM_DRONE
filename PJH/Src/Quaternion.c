@@ -10,7 +10,8 @@
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 float deltat = 0.0f;        // integration interval for both filter schemes
-float pitch, yaw, roll;
+float Euler_angle[3];
+//float pitch, yaw, roll;
 
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
@@ -113,10 +114,10 @@ void Quternion2Euler(float *q)
     a32 =   2.0f * (q[0] * q[2] - q[3] * q[1]);
     a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
     
-    roll  = atan2f(a31, a33);
-    pitch = asinf(a32);
-    yaw   = atan2f(a12, a22);
-    roll  *= 180.0f / PI;
-    pitch *= 180.0f / PI;
-    yaw   *= 180.0f / PI; 
+    Euler_angle[0] = atan2f(a31, a33);
+    Euler_angle[1] = asinf(a32);
+    Euler_angle[2] = atan2f(a12, a22);
+    Euler_angle[0] *= 180.0f / PI;
+    Euler_angle[1] *= 180.0f / PI;
+    Euler_angle[2] *= 180.0f / PI; 
 }

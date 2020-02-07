@@ -28,6 +28,7 @@
 #include <math.h>
 #include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
+#include "pid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,13 +76,17 @@ uint8_t uart2_tx_data2[255];
 uint8_t uart2_tx_data3[255];
 
 
-TM_MPU9250_t MPU9250;
+TM_MPU9250_t    MPU9250;
+__PID           pid;
+float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
+float pid_val[3] = {12, 15, 4}; //P I D
 float Magbias[3] = {0,0,0};
 
 //------------------------Using Quaternion----------------------------
 uint32_t delt_t = 0; // used to control //display output rate
 uint32_t count = 0, sumCount = 0; // used to control //display output rate
-extern float pitch, yaw, roll;
+//extern float pitch, yaw, roll;
+extern float Euler_angle[3]; //roll pitch yaw
 extern float deltat;// = 0.0f;        // integration interval for both filter schemes
 uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
 uint32_t Now = 0;        // used to calculate integration interval
@@ -110,7 +115,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
-
+  pid_init(&pid, pid_val[0], pid_val[1], pid_val[2]);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -143,7 +148,7 @@ int main(void)
     TM_MPU9250_ReadMag(&MPU9250);   
     
     
-    MPU9250.Gx -= 2.8; //callibration values
+    MPU9250.Gx -= 2.5; //callibration values
     MPU9250.Gy -= -0.75;
     MPU9250.Gz -= 0.06;
 
@@ -163,11 +168,13 @@ int main(void)
       deltat /= 1000.0f;
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, MPU9250.Mz);
       Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
+      __pid_update(&pid, setting_angle, Euler_angle, deltat);
       
-      pitch -= 2.0f; // bias.
-      yaw   -= 8.2f; // Declination at Seoul korea on 2020-02-04
+      Euler_angle[1] -= 2.5f; // pich bias.
+      Euler_angle[2] -= 8.2f; // Declination at Seoul korea on 2020-02-04(yaw bias)
             
-      if(yaw < 0) yaw   += 360.0f; // Ensure yaw stays between 0 and 360
+      
+      if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f; // Ensure yaw stays between 0 and 360
          
     }
     //TM_MPU9250_DataReady(&MPU9250);
@@ -175,18 +182,20 @@ int main(void)
     sprintf((char*)uart2_tx_data,"Ax = %.2f \t Ay = %.2f \t Az = %.2f \r\nGx = %.2f \t Gy = %.2f \t Gz = %.2f\r\nMx = %.2f \t My = %.2f \t Mz = %.2f\r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Ax, MPU9250.Ay, MPU9250.Az);
-    sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Gx, MPU9250.Gy, MPU9250.Gz);
+    //sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Gx, MPU9250.Gy, MPU9250.Gz);
     //sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Mx, MPU9250.My, MPU9250.Mz);
 
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data3," mbx = %.2f \t mby = %.2f \t mbz = %.2f\r\n",Magbias[0], Magbias[1], Magbias[2]);
-    sprintf((char*)uart2_tx_data3,"%.2f \t %.2f \t %.2f\r\n", roll, pitch, yaw);
+    sprintf((char*)uart2_tx_data3,"%.2f \t %.2f \t %.2f\r\n", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
 
     //sprintf((char*)uart2_tx_data3," HAL_GetTick() = %d\r\n",Now);
     
+    sprintf((char*)uart2_tx_data2,"%.2f \t %.2f \t %.2f \t %.2f \t %.2f \t %.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    
     //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
-    HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+    HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
      
     //HAL_Delay(100);
     
