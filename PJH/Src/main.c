@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "tm_stm32_mpu9250.h"
+#include "Quaternion.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,9 +37,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define Kp      (2.0f * 0.02f) // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
-#define Ki      (2.0f * 0.0f)
-#define PI      (3.141592)
+#define PI      (3.141592f)
+#define dt      (10.0f)         // Least dt milliseconds (>1/dt mHz)Update term (milliseconds)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -81,16 +81,15 @@ float Magbias[3] = {0,0,0};
 //------------------------Using Quaternion----------------------------
 uint32_t delt_t = 0; // used to control //display output rate
 uint32_t count = 0, sumCount = 0; // used to control //display output rate
-float pitch, yaw, roll;
-float a12, a22, a31, a32, a33;            // rotation matrix coefficients for Euler angles and gravity components
-float deltat = 0.0f, sum = 0.0f;        // integration interval for both filter schemes
+extern float pitch, yaw, roll;
+extern float deltat;// = 0.0f;        // integration interval for both filter schemes
 uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
 uint32_t Now = 0;        // used to calculate integration interval
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values 
 float lin_ax, lin_ay, lin_az;             // linear acceleration (acceleration with gravity component subtracted)
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
-float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
+extern float q[4];// = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
+extern float eInt[3];// = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 //--------------------------------------------------------------------
 /* USER CODE END 0 */
 
@@ -143,44 +142,34 @@ int main(void)
     TM_MPU9250_ReadGyro(&MPU9250);
     TM_MPU9250_ReadMag(&MPU9250);   
     
+    
+    MPU9250.Gx -= 2.8; //callibration values
+    MPU9250.Gy -= -0.75;
+    MPU9250.Gz -= 0.06;
+
     MPU9250.Mx -= 65.; //callibration values
     MPU9250.My -= 65.;
     MPU9250.Mz -= 0.;
+    
+    //roll  = atan2(MPU9250.Ay, MPU9250.Az) * PI/180.;
+    //pitch = atan(-MPU9250.Ax / sqrt(MPU9250.Ay * MPU9250.Ay + MPU9250.Az * MPU9250.Az)) * PI/180.;
 
     Now = HAL_GetTick();
-    deltat = ((Now - lastUpdate)/1000.0f); // set integration time by time elapsed since last filter update (milliseconds)
+    //deltat = ((Now - lastUpdate)/1000.0f); // set integration time by time elapsed since last filter update (milliseconds)
+    deltat += (Now - lastUpdate); // set integration time by time elapsed since last filter update (milliseconds)
     lastUpdate = Now;
-
-    //sum += deltat; // sum for averaging filter update rate
-    //sumCount++;
-  
-    MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, MPU9250.Mz);
-
-    
-    //delt_t = HAL_GetTick(); - count;
-    
-    a12 =   2.0f * (q[1] * q[2] + q[0] * q[3]);
-    a22 =   q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
-    //a22 =   1-2*(q[1]*q[1]+q[2]*q[2]);
-    a31 =   2.0f * (q[0] * q[1] + q[2] * q[3]);
-    a32 =   2.0f * (q[0] * q[2] - q[3] * q[1]);
-    a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
-    //a33 =   1-2*(q[2]*q[2]+q[3]*q[3]);
-    roll  = atan2f(a31, a33);
-    pitch = asinf(a32);
-    yaw   = atan2f(a12, a22);
-    roll  *= 180.0f / PI;
-    pitch *= 180.0f / PI;
-    yaw   *= 180.0f / PI; 
-    yaw   -= 8.2f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04 ->  SEOUL
- 
-
-    if(yaw < 0) yaw   += 360.0f; // Ensure yaw stays between 0 and 360
-    lin_ax = ax + a31;
-    lin_ay = ay + a32;
-    lin_az = az - a33;
-    
-    
+    if (deltat >= dt) //Update term.
+    {
+      deltat /= 1000.0f;
+      MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, MPU9250.Mz);
+      Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
+      
+      pitch -= 2.0f; // bias.
+      yaw   -= 8.2f; // Declination at Seoul korea on 2020-02-04
+            
+      if(yaw < 0) yaw   += 360.0f; // Ensure yaw stays between 0 and 360
+         
+    }
     //TM_MPU9250_DataReady(&MPU9250);
     
     sprintf((char*)uart2_tx_data,"Ax = %.2f \t Ay = %.2f \t Az = %.2f \r\nGx = %.2f \t Gy = %.2f \t Gz = %.2f\r\nMx = %.2f \t My = %.2f \t Mz = %.2f\r\n",  \
@@ -191,19 +180,16 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data3," mbx = %.2f \t mby = %.2f \t mbz = %.2f\r\n",Magbias[0], Magbias[1], Magbias[2]);
-    
+    sprintf((char*)uart2_tx_data3,"%.2f \t %.2f \t %.2f\r\n", roll, pitch, yaw);
+
     //sprintf((char*)uart2_tx_data3," HAL_GetTick() = %d\r\n",Now);
     
-    HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
-    //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+    HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
      
-    HAL_Delay(200);
-   
+    //HAL_Delay(100);
     
-    //count = HAL_GetTick();
-    //sumCount = 0;
-    //sum = 0;    
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

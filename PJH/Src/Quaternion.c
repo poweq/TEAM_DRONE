@@ -3,6 +3,15 @@
 
 #include "Quaternion.h"
 
+#define Kp      (2.0f * 0.28f) // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+#define Ki      (2.0f * 0.0005f)
+#define PI      (3.141592f)
+
+float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
+float deltat = 0.0f;        // integration interval for both filter schemes
+float pitch, yaw, roll;
+
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
     float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
@@ -92,5 +101,22 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
     q[1] = q2 * norm;
     q[2] = q3 * norm;
     q[3] = q4 * norm;
+}
 
+void Quternion2Euler(float *q)
+{
+    float a12, a22, a31, a32, a33;            // rotation matrix coefficients for Euler angles and gravity components
+
+    a12 =   2.0f * (q[1] * q[2] + q[0] * q[3]);
+    a22 =   q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
+    a31 =   2.0f * (q[0] * q[1] + q[2] * q[3]);
+    a32 =   2.0f * (q[0] * q[2] - q[3] * q[1]);
+    a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
+    
+    roll  = atan2f(a31, a33);
+    pitch = asinf(a32);
+    yaw   = atan2f(a12, a22);
+    roll  *= 180.0f / PI;
+    pitch *= 180.0f / PI;
+    yaw   *= 180.0f / PI; 
 }
