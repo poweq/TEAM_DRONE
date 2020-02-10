@@ -7,11 +7,10 @@
 #define Ki      (2.0f * 0.0005f)
 #define PI      (3.141592f)
 
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
-float deltat = 0.0f;        // integration interval for both filter schemes
-float Euler_angle[3];
-//float pitch, yaw, roll;
+extern float q[4];
+extern float eInt[3];// vector to hold integral error for Mahony method
+extern float deltat;// integration interval for both filter schemes
+extern float Euler_angle[3];
 
 #if 0
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
