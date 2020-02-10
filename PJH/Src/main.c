@@ -79,7 +79,7 @@ uint8_t uart2_tx_data3[255];
 TM_MPU9250_t    MPU9250;
 __PID           pid;
 float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
-float pid_val[3] = {12, 15, 4}; //P I D
+float pid_val[3] = {0.8, 0.0, 0.01}; //P I D gain controll
 float Magbias[3] = {0,0,0};
 
 //------------------------Using Quaternion----------------------------
@@ -191,7 +191,7 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data3," HAL_GetTick() = %d\r\n",Now);
     
-    sprintf((char*)uart2_tx_data2,"%.2f \t %.2f \t %.2f \t %.2f \t %.2f \t %.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
     
     //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
     HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);

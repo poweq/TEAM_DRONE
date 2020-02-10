@@ -3,7 +3,7 @@
 
 #include "Quaternion.h"
 
-#define Kp      (2.0f * 0.28f) // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+#define Kp      (2.0f * 0.8f) // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
 #define Ki      (2.0f * 0.0005f)
 #define PI      (3.141592f)
 
@@ -13,6 +13,7 @@ float deltat = 0.0f;        // integration interval for both filter schemes
 float Euler_angle[3];
 //float pitch, yaw, roll;
 
+#if 0
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
     float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
@@ -103,6 +104,105 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
     q[2] = q3 * norm;
     q[3] = q4 * norm;
 }
+#else
+void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
+{
+    float qw = q[0], qx = q[1], qy = q[2], qz = q[3];
+    float norm;
+    float tx, ty, tz, tw;
+    float hx, hy, hz, by;
+    float f0, f1, f2, f3, f4, f5;
+    float ex, ey, ez;
+    float qDotW, qDotX, qDotY, qDotZ;
+
+    // Auxiliary variables to avoid repeated arithmetic
+    float qxqx = qx * qx;
+    float qxqz = qx * qz;
+    float qyqy = qy * qy;
+    float qyqz = qy * qz;
+    float qzqz = qz * qz;
+    float qwqw = qw * qw;
+    float qwqy = qw * qy;
+    float qwqx = qw * qx;
+    float qxqy = qx * qy;
+    float qwqz = qw * qz;
+
+    // Normalise accelerometer measurement
+    norm = sqrtf(ax * ax + ay * ay + az * az);
+    if (norm == 0.0f) return; // handle NaN
+    ax /= norm;
+    ay /= norm;
+    az /= norm;
+
+    // Normalise magnetometer measurement
+    norm = sqrtf(mx * mx + my * my + mz * mz);
+    if (norm == 0.0f) return; // handle NaN
+    mx /= norm;
+    my /= norm;
+    mz /= norm;
+
+    // Reference direction of Earth's magnetic feild
+    tw = -mx*-qx - my*-qy - mz*-qz;
+    tx =  mx* qw + my*-qz - mz*-qy;
+    ty = -mx*-qz + my* qw + mz*-qx;
+    tz =  mx*-qy - my*-qx + mz* qw;
+
+    hx = qw*tx + qx*tw + qy*tz - qz*ty;
+    hy = qw*ty - qx*tz + qy*tw + qz*tx;
+    hz = qw*tz + qx*ty - qy*tx + qz*tw;
+    by = sqrtf(hx*hx + hy*hy);
+
+    // Gradient decent algorithm corrective step
+    f0 = 2.0f *       (qxqz - qwqy);
+    f1 = 2.0f *       (qwqx + qyqz);
+    f2 = qwqw - qxqx - qyqy + qzqz;
+
+    f3 = 2.0f * by * (0.5f - qyqy - qzqz) + 2.0f * hz *        (qxqz - qwqy);
+    f4 = 2.0f * by *        (qxqy - qwqz) + 2.0f * hz *        (qwqx + qyqz);
+    f5 = 2.0f * by *        (qwqy + qxqz) + 2.0f * hz * (0.5f - qxqx - qyqy);
+
+    // Error is sum of cross product between estimated direction and measured direction of fields
+    ex = (ay * f2 - az * f1) + (my * f5 - mz * f4);
+    ey = (az * f0 - ax * f2) + (mz * f3 - mx * f5);
+    ez = (ax * f1 - ay * f0) + (mx * f4 - my * f3);
+
+    if(Ki > 0.0f){
+      eInt[0] += ex * deltat;
+      eInt[1] += ey * deltat;   
+      eInt[2] += ez * deltat;  
+    }else{
+      eInt[0] = 0;
+      eInt[1] = 0;
+      eInt[2] = 0;
+    }
+
+      // Apply feedback terms
+    gx += Kp * ex + Ki * eInt[0];
+    gy += Kp * ey + Ki * eInt[1];
+    gz += Kp * ez + Ki * eInt[2];  
+
+
+      // Compute rate of change of quaternion
+    qDotW = 0.5f * -qx*gx - qy*gy - qz*gz;
+    qDotX = 0.5f *  qw*gx + qy*gz - qz*gy;
+    qDotY = 0.5f *  qw*gy - qx*gz + qz*gx;
+    qDotZ = 0.5f *  qw*gz + qx*gy - qy*gx;
+
+    // Integrate to yield quaternion
+    qw += qDotW * deltat;
+    qx += qDotX * deltat;
+    qy += qDotY * deltat;
+    qz += qDotZ * deltat;
+
+    // Normalise quaternion
+    norm = sqrtf(qw*qw + qx*qx +qy*qy + qz*qz);
+    q[0] = qw / norm;
+    q[1] = qx / norm;
+    q[2] = qy / norm;
+    q[3] = qz / norm; 
+}
+
+#endif
 
 void Quternion2Euler(float *q)
 {
