@@ -58,9 +58,9 @@ void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float
 {
   pid_update(pid, setting_angle[0], Euler_angle[0], angular_velocity[0], 0);
   pid_update(pid, setting_angle[1], Euler_angle[1], angular_velocity[1], 1);
-  //pid_update(pid, setting_angle[2], Euler_angle[2], angular_velocity[2], 2);
+  pid_update(pid, setting_angle[2], Euler_angle[2], angular_velocity[2], 2);
 }
-#if 1 //double loop PID 
+#if 0 //double loop PID 
 void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis)
 {  
   //set 목표각도

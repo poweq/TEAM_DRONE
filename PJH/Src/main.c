@@ -75,13 +75,13 @@ static void MX_USART1_UART_Init(void);
 uint8_t data;
 uint8_t uart2_tx_data[255];
 uint8_t uart2_tx_data2[255];
-uint8_t uart2_tx_data3[3];
+uint8_t uart2_tx_data3[255];
 
 TM_MPU9250_t    MPU9250;
 __PID           pid;
 float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
-float pid_val[3][3] = {{0.8, 0.0, 0.01},{1.0, 0.0, 0.01},{0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
-float inpid_val[3][3] = {{0.4, 0.0, 0.01},{0.5, 0.0, 0.01},{0.4, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
+float pid_val[3][3] = {{0.8, 0.0, 0.01}, {1.0, 0.0, 0.01}, {0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
+float inpid_val[3][3] = {{0.4, 0.0, 0.01}, {0.5, 0.0, 0.01}, {0.4, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
 float Magbias[3] = {0,0,0}; //Magnetic data bias
 
 //------------------------Using Quaternion----------------------------
@@ -90,6 +90,8 @@ float Euler_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw
 float deltat = 0.0f;// integration interval for both filter schemes
 uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
 uint32_t Now = 0;        // used to calculate integration interval
+uint32_t wait = 0;//getting initiate setting_angle waiting time(3secs) 
+uint8_t wait_flag = 0;
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values 
 float angular_velocity[3]; //For double loop PID.
@@ -116,7 +118,6 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
-  //pid_init(&pid, pid_val[0], pid_val[1], pid_val[2]);
   pid_init(&pid, pid_val, inpid_val);
 
   /* USER CODE END Init */
@@ -132,8 +133,8 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_TIM3_Init();
-  MX_USART2_UART_Init();
   MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   //magcal(Magbias);
   TM_MPU9250_ReadMagASA(&MPU9250);
@@ -159,9 +160,20 @@ int main(void)
     MPU9250.Mz -= 0.;    
 
     Now = HAL_GetTick();
-    //deltat = ((Now - lastUpdate)/1000.0f); // set integration time by time elapsed since last filter update (milliseconds)
     deltat += (Now - lastUpdate); // set integration time by time elapsed since last filter update (milliseconds)
     lastUpdate = Now;
+    
+    if (wait_flag == 0)
+    {
+      wait = HAL_GetTick();
+      if (wait >= 3500)
+      {
+        setting_angle[0] = Euler_angle[0]; //roll
+        setting_angle[1] = Euler_angle[1]; //pitch
+        setting_angle[2] = Euler_angle[2]; //yaw
+        wait_flag = 1;
+      }
+    }    
     
     angular_velocity[0] = MPU9250.Gx;
     angular_velocity[1] = MPU9250.Gy;
@@ -197,7 +209,7 @@ int main(void)
     //HAL_UART_Transmit(&huart1,uart2_tx_data3 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);  
     
-    sprintf((char *)uart2_tx_data3,"%10.2f,%10.2f,%10.2f",Euler_angle[0],Euler_angle[1],Euler_angle[2]);
+    sprintf((char *)uart2_tx_data3,"%.2f,%.2f,%.2f",Euler_angle[0],Euler_angle[1],Euler_angle[2]);
     HAL_UART_Transmit(&huart1,uart2_tx_data3,sizeof(uart2_tx_data3),10);
     
     /* USER CODE END WHILE */
