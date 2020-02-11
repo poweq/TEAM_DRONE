@@ -3,8 +3,8 @@
 
 #include "Quaternion.h"
 
-#define Kp      (2.0f * 0.8f) // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
-#define Ki      (2.0f * 0.0005f)
+#define Kp      (2.0f * 1.0f) // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+#define Ki      (2.0f * 0.005f)
 #define PI      (3.141592f)
 
 extern float q[4];
@@ -214,6 +214,7 @@ void Quternion2Euler(float *q)
     a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
     
     Euler_angle[0] = atan2f(a31, a33);
+    //Euler_angle[0] = atanf(a31 / a33);
     Euler_angle[1] = asinf(a32);
     Euler_angle[2] = atan2f(a12, a22);
     Euler_angle[0] *= 180.0f / PI;

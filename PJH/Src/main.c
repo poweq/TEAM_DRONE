@@ -52,6 +52,7 @@ I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -64,6 +65,7 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -73,12 +75,13 @@ static void MX_USART2_UART_Init(void);
 uint8_t data;
 uint8_t uart2_tx_data[255];
 uint8_t uart2_tx_data2[255];
-uint8_t uart2_tx_data3[255];
+uint8_t uart2_tx_data3[3];
 
 TM_MPU9250_t    MPU9250;
 __PID           pid;
 float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
-float pid_val[3] = {0.8, 0.0, 0.01}; //P I D gain controll
+float pid_val[3][3] = {{0.8, 0.0, 0.01},{1.0, 0.0, 0.01},{0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
+float inpid_val[3][3] = {{0.4, 0.0, 0.01},{0.5, 0.0, 0.01},{0.4, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
 float Magbias[3] = {0,0,0}; //Magnetic data bias
 
 //------------------------Using Quaternion----------------------------
@@ -89,6 +92,7 @@ uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration inter
 uint32_t Now = 0;        // used to calculate integration interval
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values 
+float angular_velocity[3]; //For double loop PID.
 float lin_ax, lin_ay, lin_az;             // linear acceleration (acceleration with gravity component subtracted)
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
@@ -112,7 +116,9 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
-  pid_init(&pid, pid_val[0], pid_val[1], pid_val[2]);
+  //pid_init(&pid, pid_val[0], pid_val[1], pid_val[2]);
+  pid_init(&pid, pid_val, inpid_val);
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -127,6 +133,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   MX_USART2_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   //magcal(Magbias);
   TM_MPU9250_ReadMagASA(&MPU9250);
@@ -138,12 +145,10 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {     
-    
+  {         
     TM_MPU9250_ReadAcce(&MPU9250);
     TM_MPU9250_ReadGyro(&MPU9250);
-    TM_MPU9250_ReadMag(&MPU9250);   
-    
+    TM_MPU9250_ReadMag(&MPU9250);       
     
     MPU9250.Gx -= 2.5; //callibration values
     MPU9250.Gy -= -0.75;
@@ -151,25 +156,26 @@ int main(void)
 
     MPU9250.Mx -= 65.; //callibration values
     MPU9250.My -= 65.;
-    MPU9250.Mz -= 0.;
-    
-    //roll  = atan2(MPU9250.Ay, MPU9250.Az) * PI/180.;
-    //pitch = atan(-MPU9250.Ax / sqrt(MPU9250.Ay * MPU9250.Ay + MPU9250.Az * MPU9250.Az)) * PI/180.;
+    MPU9250.Mz -= 0.;    
 
     Now = HAL_GetTick();
     //deltat = ((Now - lastUpdate)/1000.0f); // set integration time by time elapsed since last filter update (milliseconds)
     deltat += (Now - lastUpdate); // set integration time by time elapsed since last filter update (milliseconds)
     lastUpdate = Now;
-    if (deltat >= dt) //Update term.
+    
+    angular_velocity[0] = MPU9250.Gx;
+    angular_velocity[1] = MPU9250.Gy;
+    angular_velocity[2] = MPU9250.Gz;
+    
+    if (deltat >= dt) //Update term.(100Hz)
     {
       deltat /= 1000.0f;
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, MPU9250.Mz);
       Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
-      __pid_update(&pid, setting_angle, Euler_angle, deltat);
+      __pid_update(&pid, setting_angle, Euler_angle, angular_velocity);
       
       Euler_angle[1] -= 2.5f; // pich bias.
-      Euler_angle[2] -= 8.2f; // Declination at Seoul korea on 2020-02-04(yaw bias)
-            
+      Euler_angle[2] -= 8.2f; // Declination at Seoul korea on 2020-02-04(yaw bias)            
       
       if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f; // Ensure yaw stays between 0 and 360
       
@@ -177,23 +183,22 @@ int main(void)
     }
     //TM_MPU9250_DataReady(&MPU9250);
         
-    sprintf((char*)uart2_tx_data,"Ax = %.2f \t Ay = %.2f \t Az = %.2f \r\nGx = %.2f \t Gy = %.2f \t Gz = %.2f\r\nMx = %.2f \t My = %.2f \t Mz = %.2f\r\n",  \
+    //sprintf((char*)uart2_tx_data,"Ax = %10.4f Ay = %10.4f Az = %10.4f \r\n Gx = %10.4f Gy = %10.4f Gz = %10.4f\r\n Mx = %10.4f My = %10.4f Mz = %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-    //sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Ax, MPU9250.Ay, MPU9250.Az);
-    //sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Gx, MPU9250.Gy, MPU9250.Gz);
-    //sprintf((char*)uart2_tx_data2,"%.2f\t%.2f\t%.2f\r\n", MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-
+    
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
-    //sprintf((char*)uart2_tx_data3," mbx = %.2f \t mby = %.2f \t mbz = %.2f\r\n",Magbias[0], Magbias[1], Magbias[2]);
-    sprintf((char*)uart2_tx_data3,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
-
-    //sprintf((char*)uart2_tx_data3," HAL_GetTick() = %d\r\n",Now);
+    //sprintf((char*)uart2_tx_data3,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
     sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2]);
     
     //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
     HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    //HAL_UART_Transmit(&huart1,uart2_tx_data3 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);  
+    
+    sprintf((char *)uart2_tx_data3,"%10.2f,%10.2f,%10.2f",Euler_angle[0],Euler_angle[1],Euler_angle[2]);
+    HAL_UART_Transmit(&huart1,uart2_tx_data3,sizeof(uart2_tx_data3),10);
     
     /* USER CODE END WHILE */
 
@@ -337,6 +342,39 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
