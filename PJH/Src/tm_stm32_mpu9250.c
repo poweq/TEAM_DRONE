@@ -181,7 +181,7 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     
     /* Check who I am */
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, WHO_AM_I_MPU9250, &data);
-    if (data != 0x73) {
+    if (data != 0x71) {
         return TM_MPU9250_Result_DeviceNotConnected;
     }
     

@@ -39,7 +39,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define PI      (3.141592f)
-#define dt      (10.0f)         // Least dt milliseconds (>1/dt mHz)Update term (milliseconds)
+#define dt      (1.0f)         // Least dt milliseconds (>1/dt mHz)Update term (milliseconds)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,8 +80,8 @@ uint8_t uart2_tx_data3[255];
 TM_MPU9250_t    MPU9250;
 __PID           pid;
 float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
-float pid_val[3][3] = {{0.8, 0.0, 0.01}, {1.0, 0.0, 0.01}, {0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
-float inpid_val[3][3] = {{0.4, 0.0, 0.01}, {0.5, 0.0, 0.01}, {0.4, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequence)
+float pid_val[3][3] = {{0.8, 0.0, 0.01}, {1.0, 0.0, 0.01}, {0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
+float inpid_val[3][3] = {{0.4, 0.0, 0.01}, {0.5, 0.0, 0.01}, {0.4, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
 float Magbias[3] = {0,0,0}; //Magnetic data bias
 
 //------------------------Using Quaternion----------------------------
@@ -166,7 +166,7 @@ int main(void)
     if (wait_flag == 0)
     {
       wait = HAL_GetTick();
-      if (wait >= 3500)
+      if (wait >= 2500)
       {
         setting_angle[0] = Euler_angle[0]; //roll
         setting_angle[1] = Euler_angle[1]; //pitch
@@ -179,7 +179,7 @@ int main(void)
     angular_velocity[1] = MPU9250.Gy;
     angular_velocity[2] = MPU9250.Gz;
     
-    if (deltat >= dt) //Update term.(100Hz)
+    if (deltat >= dt) //Update term.(1000Hz)
     {
       deltat /= 1000.0f;
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, MPU9250.Mz);
