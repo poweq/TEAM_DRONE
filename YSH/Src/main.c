@@ -23,10 +23,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include "tm_stm32_mpu9250.h"
-#include "tm_stm32_delay.h"
 
+#include "MY_NRF24.h"
+#include <stdlib.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,17 +36,24 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+    
+#define Roll_Modify    '1'
+#define Pitch_Modify    '2'
+#define Yaw_Modify      '3'
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+void INPUT_KEYBOARD();
+void Modify_R_PID();
+void Modify_P_PID();
+void Modify_Y_PID();
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
-
-TIM_HandleTypeDef htim1;
+SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart2;
 
@@ -57,8 +64,7 @@ UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_I2C1_Init(void);
-static void MX_TIM1_Init(void);
+static void MX_SPI1_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -66,10 +72,25 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t timer=0;
+/****NRF VAL******/
 uint8_t buffer[255];
+uint8_t data ;// UART IT 데이터
+uint64_t TxpipeAddrs = 0x11223344AA;
+char myTxData[32] = "Hello World!";
+char AckPayload[32];
 
-TM_MPU9250_t MPU9250;
+/**UART IT VAL**/
+uint8_t C_buff[7];// 소숫점 저장용 변수
+static uint8_t save_flag=0; 
+static uint8_t C_count=0;
+static char input_flag=0;
+
+int fputc(int ch ,FILE *f)
+{
+ HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
+ return ch;
+}
+ 
 /* USER CODE END 0 */
 
 /**
@@ -89,7 +110,26 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+   float P_buffer[3];
+   float R_buffer[3];
+   float Y_buffer[3];
+   char c_buff[3]={'P','I','D'};
+   char i;
+   char mode;
+  // uint8_t interface_status=0x00;
+  
+   P_buffer[0]=12.345;
+   P_buffer[1]=23.345;
+   P_buffer[2]=42.345;
+  
+   R_buffer[0]=.345;
+   R_buffer[1]=23.345;
+   R_buffer[2]=42.345;
+   
+   Y_buffer[0]=12.345;
+   Y_buffer[1]=3.345;
+   Y_buffer[2]=.345;
+   
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -101,33 +141,76 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C1_Init();
-  MX_TIM1_Init();
+  MX_SPI1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim1);
-  sprintf((char*)buffer,"start");
-  HAL_UART_Transmit(&huart2,buffer, sizeof(buffer),10);
-  
-  TM_MPU9250_Init(&MPU9250,TM_MPU9250_Device_0);
+ HAL_UART_Receive_IT(&huart2,&data,1);
+ printf("start\r\n");
+
+        printf("\r\n-----PITCH PID------\r\n");
+ /**************ROLL****************/     
+       for(i=0;i<3;i++)
+       printf("R-%c : %6.3f ",c_buff[i],R_buffer[i]);
+       printf("\n\r");
+/**************PITCH****************/     
+       for(i=0;i<3;i++)
+       printf("P-%c : %6.3f ",c_buff[i],P_buffer[i]);
+       printf("\n\r");
+/**************YAW****************/ 
+       for(i=0;i<3;i++)
+       printf("Y-%c : %6.3f ",c_buff[i],Y_buffer[i]);
+       printf("\n\r");
+       
+       printf("1. Roll_Modify \n\r\
+2. Pitch_Modify \n\r\
+3. Yaw_Modify \n\r");
+       
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {
+  { 
     /* USER CODE END WHILE */
-  
     /* USER CODE BEGIN 3 */
-    TM_MPU9250_ReadMag(&MPU9250);
-    TM_MPU9250_ReadAcce(&MPU9250);
-    
-    sprintf((char*)buffer,"%d\n\r", MPU9250.Ax_Raw);
-    HAL_UART_Transmit(&huart2,buffer, sizeof(buffer),10);
-    
-    
+        // HAL_UART_Transmit(&huart2,buffer, sizeof(buffer),10);
+   
+      mode = data;
+ 
+       switch(mode){
+         
+       case Roll_Modify://Roll
+         data = 0;
+         mode = 0;
+         Modify_R_PID();
+                printf("\r\n1. Roll_Modify \n\r\
+2. Pitch_Modify \n\r\
+3. Yaw_Modify \n\r");
+         break;
+         
+       case Pitch_Modify://Pitch
+          printf("P-PID\r\n");
+          data = 0;
+          mode = 0;
+                printf("\r\n1. Roll_Modify \n\r\
+2. Pitch_Modify \n\r\
+3. Yaw_Modify \n\r");
+         break;
+         
+       case Yaw_Modify://YAWW
+          printf("Y-PID\r\n");
+          data = 0;
+          mode = 0;
+                          printf("\r\n1. Roll_Modify \n\r\
+2. Pitch_Modify \n\r\
+3. Yaw_Modify \n\r");
+         break;
+       default://이외의 입력;
+         break;
+        }
   }
+    
   /* USER CODE END 3 */
 }
 
@@ -149,12 +232,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 72;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -163,94 +241,52 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
 /**
-  * @brief I2C1 Initialization Function
+  * @brief SPI1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C1_Init(void)
+static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN I2C1_Init 0 */
+  /* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END I2C1_Init 0 */
+  /* USER CODE END SPI1_Init 0 */
 
-  /* USER CODE BEGIN I2C1_Init 1 */
+  /* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C1_Init 2 */
+  /* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM1_Init(void)
-{
-
-  /* USER CODE BEGIN TIM1_Init 0 */
-
-  /* USER CODE END TIM1_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM1_Init 1 */
-
-  /* USER CODE END TIM1_Init 1 */
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 0;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM1_Init 2 */
-
-  /* USER CODE END TIM1_Init 2 */
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -302,39 +338,110 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, CSN_Pin|CE_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : LED_Pin */
-  GPIO_InitStruct.Pin = LED_Pin;
+  /*Configure GPIO pins : CSN_Pin CE_Pin */
+  GPIO_InitStruct.Pin = CSN_Pin|CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_SYSTICK_Callback()//1ms 마다 동작
+void Modify_R_PID()
 {
-  timer++;
-  if( (timer%1000)==0){
-    HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+  printf("\r\n******************* R-PID ********************** X == ESC\r\n ");
+  printf("Input R-P : ");
+  data = '\0';//입력 버퍼 비우기
+  input_flag=1;// 인터럽트  검출
+  while(!(data=='x'))
+  {
+   // INPUT_KEYBOARD();
   }
+  
+  
 }
 
-void  HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){//250ms 마다 동작
-  if ( htim->Instance == htim1.Instance)
+void INPUT_KEYBOARD()
+{
+  static char i;//for문 제어용 변수
+
+
+/*****엔터 입력****/
+    if(data==0x0D)// 엔터 입력 받으면 저장
     {
-     // timer++;
-      if( (timer%4)==0)
+      input_flag=0;
+      C_buff[6]='\0';
+      printf("\r\n save : %s\r\n",C_buff);
+      
+      for( i=0;i<C_count;i++)//문자열 저장
       {
-      //HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
-      sprintf((char*)buffer,"%d\r\n",timer);
-      timer++;
-      HAL_UART_Transmit(&huart2,buffer, sizeof(buffer),10);
-      }
-  }
+        printf("[%d]%c ",i,C_buff[i]);
+        C_buff[i]='\0';//
+      }    
+      C_count=0;//문자 카운터 초기화
+     // data='x';//키보드 입력 탈출용
+    }
+    
+    /*******백스페이스 입력*******/
+    else if(data==0x7f)//백스페이스
+    {
+      data ='\0';
+      --C_count;
+      if(C_count==255)
+        C_count=0;
+      
+      C_buff[C_count]='\0';
+     // printf("\r\n[%d)%s",C_count,C_buff);
+    }
+    
+    /****숫자 입력****/
+    else if(data <= '9' && data >= '0' ||data == '.' )
+    {
+       printf("[%d] %c \r\n",C_count,C_buff[C_count]);
+     if(C_count<6)// 6글자 이하만 입력 받음
+        {
+        C_buff[C_count]=data;
+         printf("\r\n ok");
+        ++C_count;
+        }
+        data ='\0';
+    }
+
+
+    else if(data=='x')
+    {
+      printf("\r\nbye\r\n");
+      return ;
+    }
+    else
+    {
+    //    data = '\0';//입력 버퍼 비우기
+    }
+    
+    if(C_count<6)// 6글자 이하만 입력 받음
+        {
+        C_buff[C_count]=data;
+        ++C_count;
+        }
+        data ='\0';
+  
 }
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{ 
+  if(huart->Instance == huart2.Instance)
+  {
+    HAL_UART_Transmit(&huart2,&data, sizeof(data),10);
+    INPUT_KEYBOARD();
+     
+
+  }
+   HAL_UART_Receive_IT(&huart2,&data,1);
+}
+
 /* USER CODE END 4 */
 
 /**
