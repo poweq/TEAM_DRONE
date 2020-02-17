@@ -1,4 +1,9 @@
+
+
 #include "pid.h"
+
+#define PID_IMAX             (40)
+#define PID_IMIN              (-40)
 
 extern float deltat;
 
@@ -8,17 +13,17 @@ void pid_init(struct PID * pid, float pid_val[][3], float inpid_val[][3])
         pid->err[1]		= 0.0;	
 	pid->err[2]		= 0.0;	
 
-        pid->Angularerr[0]      = 0.0;
-        pid->Angularerr[1]      = 0.0;
-        pid->Angularerr[2]      = 0.0;
+        pid->Angularerr[0]     = 0.0;
+        pid->Angularerr[1]     = 0.0;
+        pid->Angularerr[2]     = 0.0;
 
-	pid->integral[0]	= 0.0;
-        pid->integral[1]	= 0.0;
-	pid->integral[2]	= 0.0;
+	pid->integral[0]	        = 0.0;
+        pid->integral[1]	        = 0.0;
+	pid->integral[2]	        = 0.0;
 
-	pid->err_last[0]	= 0.0;
-        pid->err_last[1]	= 0.0;
-	pid->err_last[2]	= 0.0;
+	pid->err_last[0]	        = 0.0;
+        pid->err_last[1]	        = 0.0;
+	pid->err_last[2]	        = 0.0;
         
         pid->inner_last[0]	= 0.0;
         pid->inner_last[1]	= 0.0;
@@ -29,15 +34,15 @@ void pid_init(struct PID * pid, float pid_val[][3], float inpid_val[][3])
 	pid->output[2]		= 0.0;
 	
 	pid->Kp[0]		= pid_val[0][0];//outer Roll PID
-	pid->Ki[0]		= pid_val[0][1];
+	pid->Ki[0]		        = pid_val[0][1];
 	pid->Kd[0]		= pid_val[0][2];
         
         pid->Kp[1]		= pid_val[1][0];//outer Pitch PID
-	pid->Ki[1]		= pid_val[1][1];
+	pid->Ki[1]		        = pid_val[1][1];
 	pid->Kd[1]		= pid_val[1][2];
         
         pid->Kp[2]		= pid_val[2][0];//outer Yaw PID
-	pid->Ki[2]		= pid_val[2][1];
+	pid->Ki[2]		        = pid_val[2][1];
 	pid->Kd[2]		= pid_val[2][2];
         
         pid->iKp[0]		= inpid_val[0][0];//inner Roll PID
@@ -52,7 +57,20 @@ void pid_init(struct PID * pid, float pid_val[][3], float inpid_val[][3])
 	pid->iKi[2]		= inpid_val[2][1];
 	pid->iKd[2]		= inpid_val[2][2];
 }
-
+void pid_gain_update(struct PID * pid, float pid_val[][3], float inpid_val[][3])
+{
+        pid->Kp[0]		= pid_val[0][0];//outer Roll PID
+	pid->Ki[0]		        = pid_val[0][1];
+	pid->Kd[0]		= pid_val[0][2];
+        
+        pid->Kp[1]		= pid_val[1][0];//outer Pitch PID
+	pid->Ki[1]		        = pid_val[1][1];
+	pid->Kd[1]		= pid_val[1][2];
+        
+        pid->Kp[2]		= pid_val[2][0];//outer Yaw PID
+	pid->Ki[2]		        = pid_val[2][1];
+	pid->Kd[2]		= pid_val[2][2];
+}
 
 void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float * angular_velocity)
 {
@@ -65,15 +83,20 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
 {  
   //set 목표각도
   //actual 현재각도
-  //angular_velocity 현재 각속도 (dt를 어찌해야할 지 모르겠다. 현재로선 modify된 raw 값을 그대로 가져옴)
+  //angular_velocity 현재 각속도
   float Kp_term, Ki_term, Kd_term;
   float D_err = 0.0f;
+  angular_velocity = angular_velocity * deltat;
   switch (axis)
   {
   case 0: //roll
     {
         //Outter Loop PID (standard PID)
         pid->err[0] = set - actual; //오차 = 목표치 - 현재값	
+      // if (pid->err[0] >  PID_IMAX)
+      //   pid->err[0] = PID_IMAX;
+      // if (pid->err[0] < PID_IMIN)
+      //   pid->err[0] = PID_IMIN;
         Kp_term = pid->Kp[0] * pid->err[0]; //p항 = Kp * 오차
         
         pid->integral[0] += pid->err[0] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -98,6 +121,10 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
     {
         //Outter Loop PID (standard PID)
         pid->err[1] = set - actual; //오차 = 목표치 - 현재값	
+       //if (pid->err[1] >  PID_IMAX)
+       //  pid->err[1] = PID_IMAX;
+       //if (pid->err[1] < PID_IMIN)
+       //  pid->err[1] = PID_IMIN;
         Kp_term = pid->Kp[1] * pid->err[1]; //p항 = Kp * 오차
         
         pid->integral[1] += pid->err[1] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -122,6 +149,10 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
     {
        //Outter Loop PID (standard PID)
         pid->err[2] = set - actual; //오차 = 목표치 - 현재값	
+       // if (pid->err[2] >  PID_IMAX)
+       //   pid->err[2] = PID_IMAX;
+       // if (pid->err[2] < PID_IMIN)
+       //   pid->err[2] = PID_IMIN;
         Kp_term = pid->Kp[2] * pid->err[2]; //p항 = Kp * 오차
         
         pid->integral[2] += pid->err[2] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -156,6 +187,10 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
   case 0: //roll
     {
         pid->err[0] = set - actual; //오차 = 목표치 - 현재값	
+        if (pid->err[0] >  PID_IMAX)
+          pid->err[0] = PID_IMAX;
+        if (pid->err[0] < PID_IMIN)
+          pid->err[0] = PID_IMIN;
         Kp_term = pid->Kp[0] * pid->err[0]; //p항 = Kp * 오차
         
         pid->integral[0] += pid->err[0] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -171,6 +206,10 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
   case 1: //pitch
     {
         pid->err[1] = set - actual; //오차 = 목표치 - 현재값	
+        if (pid->err[1] >  PID_IMAX)
+          pid->err[1] = PID_IMAX;
+        if (pid->err[1] < PID_IMIN)
+          pid->err[1] = PID_IMIN;
         Kp_term = pid->Kp[1] * pid->err[1]; //p항 = Kp * 오차
         
         pid->integral[1] += pid->err[1] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -186,6 +225,16 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
   case 2:  //yaw
     {
         pid->err[2] = set - actual; //오차 = 목표치 - 현재값	
+        
+        if (pid->err[2] < -180)                 //correct angle jump ( ex: 180 -> -180)
+          pid->err[2] = pid->err[2] + 360;
+        else if (pid->err[2] > 180)
+          pid->err[2] = pid->err[2] - 360;
+        
+        if (pid->err[2] >  PID_IMAX)
+          pid->err[2] = PID_IMAX;
+        if (pid->err[2] < PID_IMIN)
+          pid->err[2] = PID_IMIN;
         Kp_term = pid->Kp[2] * pid->err[2]; //p항 = Kp * 오차
         
         pid->integral[2] += pid->err[2] * deltat;//오차적분 = 오차적분 + 오차 * dt

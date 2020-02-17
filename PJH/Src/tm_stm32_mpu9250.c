@@ -181,7 +181,7 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     
     /* Check who I am */
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, WHO_AM_I_MPU9250, &data);
-    if (data != 0x71) {
+    if (data != 0x73) {
         return TM_MPU9250_Result_DeviceNotConnected;
     }
     
@@ -344,7 +344,7 @@ void magcal(float * Magbias)
   int16_t mag_max[3] = {-32767, -32767, -32767}, mag_min[3] = {32767, 32767, 32767};
   TM_MPU9250_t mag_temp;
    
-   sample_count = 200;
+   sample_count = 2000;
    for(ii = 0; ii < sample_count; ii++) {
     TM_MPU9250_ReadMag(&mag_temp);
       if(mag_temp.Mx_Raw > mag_max[0]) mag_max[0] = mag_temp.Mx_Raw;
