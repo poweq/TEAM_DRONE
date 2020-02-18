@@ -10,22 +10,22 @@ _Fuzzy_stru Kp_small, Kp_medismall, Kp_medium, Kp_medilarge, Kp_large;
 _Fuzzy_stru Ki_small, Ki_medismall, Ki_medium, Ki_medilarge, Ki_large;
 _Fuzzy_stru Kd_small, Kd_medismall, Kd_medium, Kd_medilarge, Kd_large;
 
+const float Kp_s = 1.2f, Kp_m = 2.5f, Kp_b = 3.8f, Kp_vb = 6.0f;
+const float Ki_s = 0.003f, Ki_m = 0.005f, Ki_b = 0.007f, Ki_vb = 0.009f;
+const float Kd_s = 0.003f, Kd_m = 0.005f, Kd_b = 0.007f, Kd_vb = 0.009f;
 
-const float Kp_s = 0.2f, Kp_m = 0.5f, Kp_b = 0.8f, Kp_vb = 1.0f;
-const float Ki_s = 0.003f, Ki_m = 0.007f, Ki_b = 0.01f, Ki_vb = 0.012f;
-const float Kd_s = 0.003f, Kd_m = 0.007f, Kd_b = 0.01f, Kd_vb = 0.012f;
+float Rule_Base[5][5][3] = {{{101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}, {103.0f, 12.0f, 1.0f}, {104.0f, 14.0f, 1.0f}, {102.0f, 14.0f, 3.0f}},
+                            {{101.0f, 14.0f, 4.0f}, {102.0f, 13.0f, 4.0f}, {104.0f, 11.0f, 2.0f}, {103.0f, 13.0f, 2.0f}, {102.0f, 14.0f, 4.0f}},
+                            {{101.0f, 13.0f, 4.0f}, {102.0f, 12.0f, 3.0f}, {104.0f, 11.0f, 2.0f}, {102.0f, 12.0f, 3.0f}, {101.0f, 13.0f, 4.0f}},
+                            {{102.0f, 14.0f, 4.0f}, {103.0f, 13.0f, 2.0f}, {104.0f, 11.0f, 2.0f}, {102.0f, 13.0f, 4.0f}, {101.0f, 14.0f, 4.0f}},
+                            {{102.0f, 14.0f, 3.0f}, {104.0f, 14.0f, 1.0f}, {103.0f, 12.0f, 1.0f}, {101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}}};
 
-float Rule_Base[5][5][3] = {{{101, 14, 4}, {101, 14, 4}, {103, 12, 1}, {104, 14, 1}, {102, 14, 3}}, 
-                            {{101, 14, 4}, {102, 13, 4}, {104, 11, 2}, {103, 13, 2}, {102, 14, 4}}, 
-                            {{101, 13, 4}, {102, 12, 3}, {104, 11, 2}, {102, 12, 3}, {101, 13, 4}},
-                            {{102, 14, 4}, {103, 13, 2}, {104, 11, 2}, {102, 13, 4}, {101, 14, 4}}, 
-                            {{102, 14, 3}, {104, 14, 1}, {103, 12, 1}, {101, 14, 4}, {101, 14, 4}}};
 
 void fuzzy_init() {
     int i, j, k;
     float arbi;
-    NB = 0; NS = 0; ZE = 0; PS = 0; PB = 0;
-    DNB = 0; DNS = 0; DZE = 0; DPS = 0; DPB = 0; 
+    NB = 0.0f; NS = 0.0f; ZE = 0.0f; PS = 0.0f; PB = 0.0f;
+    DNB = 0.0f; DNS = 0.0f; DZE = 0.0f; DPS = 0.0f; DPB = 0.0f; 
 
     for (i= 0; i<5; i++)
     {
@@ -34,26 +34,26 @@ void fuzzy_init() {
         for(k=0;k<3;k++)
         {
           arbi = Rule_Base[i][j][k];
-          if (arbi>100)
+          if (arbi>100.0f)
           {
-            if (arbi == 101) Rule_Base[i][j][k] = Kp_vb;
-            else if (arbi == 102) Rule_Base[i][j][k] = Kp_b;
-            else if (arbi == 103) Rule_Base[i][j][k] = Kp_m;
-            else if (arbi == 104) Rule_Base[i][j][k] = Kp_s;
+            if (arbi == 101.0f) Rule_Base[i][j][k] = Kp_vb;
+            else if (arbi == 102.0f) Rule_Base[i][j][k] = Kp_b;
+            else if (arbi == 103.0f) Rule_Base[i][j][k] = Kp_m;
+            else if (arbi == 104.0f) Rule_Base[i][j][k] = Kp_s;
           }
-          else if (arbi > 10 && arbi < 100)
+          else if (arbi > 10.0f && arbi < 100.0f)
           {
-            if (arbi ==11) Rule_Base[i][j][k] = Ki_vb;
-            else if (arbi == 12) Rule_Base[i][j][k] = Ki_b;
-            else if (arbi == 13) Rule_Base[i][j][k] = Ki_m;
-            else if (arbi == 14) Rule_Base[i][j][k] = Ki_s;
+            if (arbi ==11.0f) Rule_Base[i][j][k] = Ki_vb;
+            else if (arbi == 12.0f) Rule_Base[i][j][k] = Ki_b;
+            else if (arbi == 13.0f) Rule_Base[i][j][k] = Ki_m;
+            else if (arbi == 14.0f) Rule_Base[i][j][k] = Ki_s;
           }
           else 
           {
-            if (arbi ==1) Rule_Base[i][j][k] = Kd_vb;
-            else if (arbi == 2) Rule_Base[i][j][k] = Kd_b;
-            else if (arbi == 3) Rule_Base[i][j][k] = Kd_m;
-            else if (arbi == 4) Rule_Base[i][j][k] = Kd_s;
+            if (arbi ==1.0f) Rule_Base[i][j][k] = Kd_vb;
+            else if (arbi == 2.0f) Rule_Base[i][j][k] = Kd_b;
+            else if (arbi == 3.0f) Rule_Base[i][j][k] = Kd_m;
+            else if (arbi == 4.0f) Rule_Base[i][j][k] = Kd_s;
           }
         }
       }
@@ -61,7 +61,7 @@ void fuzzy_init() {
     for (i = 0; i < 5; i++) {
         for (j = 0; j < 5; j++) 
         {
-          Fuzzy_Matrix[i][j].Fuzzy_Val = 0.;
+          Fuzzy_Matrix[i][j].Fuzzy_Val = 0.0f;
           Fuzzy_Matrix[i][j].index = i + j + 1;
           Fuzzy_Matrix[i][j].Selected_PID[0]=Rule_Base[i][j][0];
           Fuzzy_Matrix[i][j].Selected_PID[1]=Rule_Base[i][j][1];
@@ -74,9 +74,10 @@ void fuzzy_init() {
 void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
 {
   float error = setting_angle - Euler_angle;
-  float d_err = error - *prev_err;
-  
-    if (error <= -40.0)
+  //float d_err = error - *prev_err;
+  float d_err = 5.0f;
+
+    if (error <= -40.0f)
     {
         NB = 1.0f;
         NS = 0.0f;
@@ -84,7 +85,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = 0.0f;
         PB = 0.0f;
     }
-    else if (error > -40.0 && error <= -15.0)
+    else if (error > -40.0f && error <= -15.0f)
     {
         NB = (1.0f / ((-15.0f) - (-40.0f))) * ((-error) + (-15.0f));
         NS = (1.0f / ((-15.0f) - (-40.0f))) * (error - (-40.0f));
@@ -92,7 +93,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = 0.0f;
         PB = 0.0f;
     }
-    else if (error > -15.0 && error <= 0.0)
+    else if (error > -15.0f && error <= 0.0f)
     {
         NB = 0.0f;
         NS = (1.0f / (0.0f - (-15.0f))) * ((-error) + (0.0f));
@@ -100,7 +101,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = 0.0f;
         PB = 0.0f;
     }
-    else if (error > 0.0 && error <= 15.0)
+    else if (error > 0.0f && error <= 15.0f)
     {
         NB = 0.0f;
         NS = 0.0f;
@@ -108,7 +109,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = (1.0f / (15.0f - 0.0f)) * (error - (0.0f));
         PB = 0.0f;
     }
-    else if (error > 15.0 && error <= 40.0)
+    else if (error > 15.0f && error <= 40.0f)
     {
         NB = 0.0f;
         NS = 0.0f;
@@ -125,7 +126,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PB = 1.0f;
     }
 
-    if (d_err <= -30.0)
+    if (d_err <= -30.0f)
     {
         DNB = 1.0f;
         DNS = 0.0f;
@@ -133,7 +134,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         DPS = 0.0f;
         DPB = 0.0f;
     }
-    else if (d_err > -30.0 && d_err <= -15.0)
+    else if (d_err > -30.0f && d_err <= -15.0f)
     {
         DNB = (1.0f / ((-15.0f) - (-30.0f))) * ((-d_err) + (-15.0f));
         DNS = (1.0f / ((-15.0f) - (-30.0f))) * (d_err - (-30.0f));
@@ -141,7 +142,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         DPS = 0.0f;
         DPB = 0.0f;
     }
-    else if (d_err > -15.0 && d_err <= 0.0)
+    else if (d_err > -15.0f && d_err <= 0.0f)
     {
         DNB = 0.0f;
         DNS = (1.0f / (0.0f - (-15.0f))) * ((-d_err) + (0.0f));
@@ -149,7 +150,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         DPS = 0.0f;
         DPB = 0.0f;
     }
-    else if (d_err > 0.0 && d_err <= 15.0)
+    else if (d_err > 0.0f && d_err <= 15.0f)
     {
         DNB = 0.0f;
         DNS = 0.0f;
@@ -157,7 +158,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         DPS = (1.0f / (15.0f - 0.0f)) * (d_err - (0.0f));
         DPB = 0.0f;
     }
-    else if (d_err > 15.0 && d_err <= 30.0)
+    else if (d_err > 15.0f && d_err <= 30.0f)
     {
         DNB = 0.0f;
         DNS = 0.0f;
@@ -213,11 +214,11 @@ void Create_Fuzzy_Matrix()
 //This part h=gives us the physical values for the coefficients
 void Defuzzification(float *Kp, float *Ki, float *Kd) {
   _Fuzzy_stru Kp_small_flagarr[4] = {Fuzzy_Matrix[0][0], Fuzzy_Matrix[0][1], Fuzzy_Matrix[1][0], Fuzzy_Matrix[1][1]};
-  _Fuzzy_stru Kp_medismall_flagarr[6] = {Fuzzy_Matrix[0][2], Fuzzy_Matrix[0][3], Fuzzy_Matrix[1][2], Fuzzy_Matrix[2][1], Fuzzy_Matrix[2][0], Fuzzy_Matrix[3][0]};
-  _Fuzzy_stru Kp_medium_flagarr[5] = {Fuzzy_Matrix[0][4], Fuzzy_Matrix[1][3], Fuzzy_Matrix[2][2], Fuzzy_Matrix[3][1], Fuzzy_Matrix[4][0]};
-  _Fuzzy_stru Kp_medilarge_flagarr[6] = {Fuzzy_Matrix[1][4], Fuzzy_Matrix[2][4], Fuzzy_Matrix[2][3], Fuzzy_Matrix[3][2], Fuzzy_Matrix[4][2], Fuzzy_Matrix[4][1]};
-  _Fuzzy_stru Kp_large_flagarr[4] = {Fuzzy_Matrix[4][4], Fuzzy_Matrix[4][3], Fuzzy_Matrix[3][3], Fuzzy_Matrix[3][4]};
-
+  _Fuzzy_stru Kp_medismall_flagarr[6] = {Fuzzy_Matrix[0][2], Fuzzy_Matrix[0][3], Fuzzy_Matrix[1][2], Fuzzy_Matrix[2][0], Fuzzy_Matrix[2][1], Fuzzy_Matrix[3][0]};
+  _Fuzzy_stru Kp_medium_flagarr[5] = {Fuzzy_Matrix[2][2], Fuzzy_Matrix[1][3], Fuzzy_Matrix[3][1], Fuzzy_Matrix[0][4], Fuzzy_Matrix[4][0]};
+  _Fuzzy_stru Kp_medilarge_flagarr[6] = {Fuzzy_Matrix[4][2], Fuzzy_Matrix[4][1], Fuzzy_Matrix[3][2], Fuzzy_Matrix[2][4], Fuzzy_Matrix[2][3], Fuzzy_Matrix[1][4]};
+  _Fuzzy_stru Kp_large_flagarr[4] = {Fuzzy_Matrix[4][4], Fuzzy_Matrix[4][3], Fuzzy_Matrix[3][4], Fuzzy_Matrix[3][3]};
+     
   Find_Maxarr(Kp_small_flagarr, 4, 1); //Find_Maxarr(array name, number of array element, K_value sequence).
   Find_Maxarr(Kp_medismall_flagarr, 6, 2);
   Find_Maxarr(Kp_medium_flagarr, 5, 3);
@@ -249,7 +250,7 @@ void Find_Maxarr(_Fuzzy_stru flagarr[], int flag, int flag2)
   arbi_K = flagarr[0];
   for (int i=0;i<flag-1;i++)
   {
-    if (max_flag < flagarr[i+1].Fuzzy_Val)
+    if (flagarr[max_flag].Fuzzy_Val < flagarr[i+1].Fuzzy_Val)
     {
       max_flag = i+1;      
     }    

@@ -106,7 +106,6 @@ uint8_t Mcal_flag = 0; //User Magnetic bias flag.
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values 
 float angular_velocity[3]; //For double loop PID.
-float lin_ax, lin_ay, lin_az;             // linear acceleration (acceleration with gravity component subtracted)
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 //--------------------------------------------------------------------
@@ -192,13 +191,21 @@ int main(void)
     TM_MPU9250_ReadGyro(&MPU9250);
     TM_MPU9250_ReadMag(&MPU9250);
     
-    MPU9250.Gx -= 2.75; //callibration values
-    MPU9250.Gy -= -0.9;
-    MPU9250.Gz -= 0.06;
+    //MPU9250.Gx -= 2.75; //callibration values
+    //MPU9250.Gy -= -0.9;
+    //MPU9250.Gz -= 0.06;
+    
+    //MPU9250.Gx -= -1.1; //callibration values
+    //MPU9250.Gy -= 0.3;
+    //MPU9250.Gz -= 0.2;
 
-    MPU9250.Mx -= 67.5; //callibration values
-    MPU9250.My -= 49.;
-    MPU9250.Mz -= -24.5;    
+    //MPU9250.Mx -= 67.5; //callibration values
+    //MPU9250.My -= 49.;
+    //MPU9250.Mz -= -24.5;    
+    
+    MPU9250.Mx -= 25.; //callibration values
+    MPU9250.My -= 13.5;
+    MPU9250.Mz -= -32.;    
     
     if (Mcal_flag == 2)
     {
@@ -236,7 +243,8 @@ int main(void)
     if (deltat >= dt) //Update term.(1000Hz)
     {
       deltat /= 1000.0f;
-      MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, MPU9250.Mz);
+      MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
+      //MadgwickAHRSupdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
       Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
       
       Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);//roll
@@ -253,8 +261,7 @@ int main(void)
       
       pid_gain_update(&pid, pid_val, inpid_val);//From Fuzzy the PID gain value is changed.
       __pid_update(&pid, setting_angle, Euler_angle, angular_velocity);
-      
-      
+            
       //Euler_angle[1] -= 2.5f; // pich bias.
       //Euler_angle[2] -= 8.2f; // Declination at Seoul korea on 2020-02-04(yaw bias)            
       //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f; // Ensure yaw stays between 0 and 360
@@ -263,19 +270,19 @@ int main(void)
     }
     //TM_MPU9250_DataReady(&MPU9250);
         
-    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f \r\n %10.4f %10.4f %10.4f \r\n %10.4f %10.4f %10.4f \r\n",  \
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f \r\n", MPU9250.Mx, MPU9250.My ,MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
-    //sprintf((char*)uart2_tx_data3,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
-    sprintf((char*)uart2_tx_data,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
-    sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
+    //sprintf((char*)uart2_tx_data,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
+    //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
 
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
-    //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2]);
+    sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);
     
-    HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
     HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);     
     
