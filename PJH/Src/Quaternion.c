@@ -635,6 +635,18 @@ void MadgwickAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, flo
 
 #endif
 
+// Fast inverse square-root
+// See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
+float invSqrt(float x) {
+	float halfx = 0.5f * x;
+	float y = x;
+	long i = *(long*)&y;
+	i = 0x5f3759df - (i>>1);
+	y = *(float*)&i;
+	y = y * (1.5f - (halfx * y * y));
+	return y;
+}
+
 void Quternion2Euler(float *q)
 {
     float a12, a22, a31, a32, a33;            // rotation matrix coefficients for Euler angles and gravity components
@@ -645,24 +657,12 @@ void Quternion2Euler(float *q)
     a32 =   2.0f * (q[0] * q[2] - q[3] * q[1]);
     a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
     
-    Euler_angle[0] = atan2f(a31, a33);
     //Euler_angle[0] = atanf(a31 / a33);
+    Euler_angle[0] = atan2f(a31, a33);
     Euler_angle[1] = asinf(a32);
     Euler_angle[2] = atan2f(a12, a22);
+    
     Euler_angle[0] *= 180.0f / PI;
     Euler_angle[1] *= 180.0f / PI;
     Euler_angle[2] *= 180.0f / PI; 
-}
-
-// Fast inverse square-root
-// See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
-
-float invSqrt(float x) {
-	float halfx = 0.5f * x;
-	float y = x;
-	long i = *(long*)&y;
-	i = 0x5f3759df - (i>>1);
-	y = *(float*)&i;
-	y = y * (1.5f - (halfx * y * y));
-	return y;
 }

@@ -1,5 +1,16 @@
 #include "fuzzy.h"
 
+#define NB_err          -35.0f
+#define NS_err          -15.0f
+#define ZE_err          0.0f
+#define PS_err          15.0f
+#define PB_err          35.0f
+#define DNB_derr        -20.0f
+#define DNS_derr        -10.0f
+#define DZE_derr        0.0f
+#define DPS_derr        10.0f
+#define DPB_derr        20.0f
+
 _Fuzzy_stru Fuzzy_Matrix[5][5];
 
 float NB, NS, ZE, PS, PB;
@@ -74,10 +85,10 @@ void fuzzy_init() {
 void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
 {
   float error = setting_angle - Euler_angle;
-  //float d_err = error - *prev_err;
-  float d_err = 5.0f;
+  float d_err = error - *prev_err;
+  //float d_err = 5.0f;
 
-    if (error <= -40.0f)
+    if (error <= NB_err)
     {
         NB = 1.0f;
         NS = 0.0f;
@@ -85,37 +96,37 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = 0.0f;
         PB = 0.0f;
     }
-    else if (error > -40.0f && error <= -15.0f)
+    else if (error > NB_err && error <= NS_err)
     {
-        NB = (1.0f / ((-15.0f) - (-40.0f))) * ((-error) + (-15.0f));
-        NS = (1.0f / ((-15.0f) - (-40.0f))) * (error - (-40.0f));
+        NB = (1.0f / ((NS_err) - (NB_err))) * ((-error) + (NS_err));
+        NS = (1.0f / ((NS_err) - (NB_err))) * (error - (NB_err));
         ZE = 0.0f;
         PS = 0.0f;
         PB = 0.0f;
     }
-    else if (error > -15.0f && error <= 0.0f)
+    else if (error > NS_err && error <= ZE_err)
     {
         NB = 0.0f;
-        NS = (1.0f / (0.0f - (-15.0f))) * ((-error) + (0.0f));
-        ZE = (1.0f / (0.0f - (-15.0f))) * (error - (-15.0f));
+        NS = (1.0f / (ZE_err - (NS_err))) * ((-error) + (ZE_err));
+        ZE = (1.0f / (ZE_err - (NS_err))) * (error - (NS_err));
         PS = 0.0f;
         PB = 0.0f;
     }
-    else if (error > 0.0f && error <= 15.0f)
+    else if (error > ZE_err && error <= PS_err)
     {
         NB = 0.0f;
         NS = 0.0f;
-        ZE = (1.0f / (15.0f - 0.0f)) * ((-error) + (15.0f));
-        PS = (1.0f / (15.0f - 0.0f)) * (error - (0.0f));
+        ZE = (1.0f / (PS_err - ZE_err)) * ((-error) + (PS_err));
+        PS = (1.0f / (PS_err - ZE_err)) * (error - (ZE_err));
         PB = 0.0f;
     }
-    else if (error > 15.0f && error <= 40.0f)
+    else if (error > PS_err && error <= PB_err)
     {
         NB = 0.0f;
         NS = 0.0f;
         ZE = 0.0f;
-        PS = (1.0f / (40.0f - (15.0f))) * ((-error) + (40.0f));
-        PB = (1.0f / ((40.0f) - (15.0f))) * (error - (15.0f));
+        PS = (1.0f / (PB_err - (PS_err))) * ((-error) + (PB_err));
+        PB = (1.0f / ((PB_err) - (PS_err))) * (error - (PS_err));
     }
     else
     {
@@ -125,8 +136,8 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = 0.0f;
         PB = 1.0f;
     }
-
-    if (d_err <= -30.0f)
+//---------d_err-----------------------------------------------
+    if (d_err <= DNB_derr)
     {
         DNB = 1.0f;
         DNS = 0.0f;
@@ -134,37 +145,37 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         DPS = 0.0f;
         DPB = 0.0f;
     }
-    else if (d_err > -30.0f && d_err <= -15.0f)
+    else if (d_err > DNB_derr && d_err <= DNS_derr)
     {
-        DNB = (1.0f / ((-15.0f) - (-30.0f))) * ((-d_err) + (-15.0f));
-        DNS = (1.0f / ((-15.0f) - (-30.0f))) * (d_err - (-30.0f));
+        DNB = (1.0f / ((DNS_derr) - (DNB_derr))) * ((-d_err) + (DNS_derr));
+        DNS = (1.0f / ((DNS_derr) - (DNB_derr))) * (d_err - (DNB_derr));
         DZE = 0.0f;
         DPS = 0.0f;
         DPB = 0.0f;
     }
-    else if (d_err > -15.0f && d_err <= 0.0f)
+    else if (d_err > DNS_derr && d_err <= DZE_derr)
     {
         DNB = 0.0f;
-        DNS = (1.0f / (0.0f - (-15.0f))) * ((-d_err) + (0.0f));
-        DZE = (1.0f / (0.0f - (-15.0f))) * (d_err - (-15.0f));
+        DNS = (1.0f / (DZE_derr - (DNS_derr))) * ((-d_err) + (DZE_derr));
+        DZE = (1.0f / (DZE_derr - (DNS_derr))) * (d_err - (DNS_derr));
         DPS = 0.0f;
         DPB = 0.0f;
     }
-    else if (d_err > 0.0f && d_err <= 15.0f)
+    else if (d_err > DZE_derr && d_err <= DPS_derr)
     {
         DNB = 0.0f;
         DNS = 0.0f;
-        DZE = (1.0f / (15.0f - 0.0f)) * ((-d_err) + (15.0f));
-        DPS = (1.0f / (15.0f - 0.0f)) * (d_err - (0.0f));
+        DZE = (1.0f / (DPS_derr - DZE_derr)) * ((-d_err) + (DPS_derr));
+        DPS = (1.0f / (DPS_derr - DZE_derr)) * (d_err - (DZE_derr));
         DPB = 0.0f;
     }
-    else if (d_err > 15.0f && d_err <= 30.0f)
+    else if (d_err > DPS_derr && d_err <= DPB_derr)
     {
         DNB = 0.0f;
         DNS = 0.0f;
         DZE = 0.0f;
-        DPS = (1.0f / (30.0f - (15.0f))) * ((-d_err) + (30.0f));
-        DPB = (1.0f / ((30.0f) - (15.0f))) * (d_err - (15.0f));
+        DPS = (1.0f / (DPB_derr - (DPS_derr))) * ((-d_err) + (DPB_derr));
+        DPB = (1.0f / ((DPB_derr) - (DPS_derr))) * (d_err - (DPS_derr));
     }
     else
     {
@@ -173,7 +184,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         DZE = 0.0f;
         DPS = 0.0f;
         DPB = 1.0f;
-    }
+    }    
     *prev_err = error;
 }
 

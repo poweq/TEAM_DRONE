@@ -41,7 +41,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define PI                      (3.141592f)
-#define dt                      (1.0f)         // Least dt milliseconds (>1/dt mHz)Update term (milliseconds)
+#define dt                      (2.0f)         // Least dt milliseconds (>1/dt mHz)Update term (milliseconds)
 #define init_angle_average      (30)
 /* USER CODE END PD */
 
@@ -86,7 +86,7 @@ TM_MPU9250_t    MPU9250;
 __PID           pid;
 float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
 float init_setting_angle[3] = {0, 0, 0};
-float pid_val[3][3] = {{1.0, 0.01, 0.01}, {1.0, 0.01, 0.01}, {0.8, 0.01, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
+float pid_val[3][3] = {{1.0, 0.01, 0.01}, {1.0, 0.01, 0.01}, {1.0, 0.01, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
 float inpid_val[3][3] = {{0.8, 0.0, 0.01}, {0.5, 0.0, 0.01}, {0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
 float Magbias[3] = {0,0,0}; //Magnetic data bias
 
@@ -191,21 +191,21 @@ int main(void)
     TM_MPU9250_ReadGyro(&MPU9250);
     TM_MPU9250_ReadMag(&MPU9250);
     
-    //MPU9250.Gx -= 2.75; //callibration values
-    //MPU9250.Gy -= -0.9;
-    //MPU9250.Gz -= 0.06;
+    MPU9250.Gx -= 2.75; //callibration values
+    MPU9250.Gy -= -0.9;
+    MPU9250.Gz -= 0.06;
     
-    //MPU9250.Gx -= -1.1; //callibration values
-    //MPU9250.Gy -= 0.3;
-    //MPU9250.Gz -= 0.2;
+    MPU9250.Gx -= -1.1; //callibration values
+    MPU9250.Gy -= 0.3;
+    MPU9250.Gz -= 0.2;
 
-    //MPU9250.Mx -= 67.5; //callibration values
-    //MPU9250.My -= 49.;
-    //MPU9250.Mz -= -24.5;    
+    MPU9250.Mx -= 67.5; //callibration values
+    MPU9250.My -= 49.;
+    MPU9250.Mz -= -24.5;    
     
-    MPU9250.Mx -= 25.; //callibration values
-    MPU9250.My -= 13.5;
-    MPU9250.Mz -= -32.;    
+    //MPU9250.Mx -= 25.; //callibration values
+    //MPU9250.My -= 13.5;
+    //MPU9250.Mz -= -32.;    
     
     if (Mcal_flag == 2)
     {
@@ -257,9 +257,9 @@ int main(void)
       
       Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);//yaw
       Create_Fuzzy_Matrix();
-      Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);//Fuzzy yaw end.      
-      
+      Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);//Fuzzy yaw end.     
       pid_gain_update(&pid, pid_val, inpid_val);//From Fuzzy the PID gain value is changed.
+      
       __pid_update(&pid, setting_angle, Euler_angle, angular_velocity);
             
       //Euler_angle[1] -= 2.5f; // pich bias.
@@ -276,14 +276,14 @@ int main(void)
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
-    //sprintf((char*)uart2_tx_data,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
+    sprintf((char*)uart2_tx_data,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
     //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
 
     sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
     //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);
     
-    //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
-    HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);     
     
     
