@@ -3,17 +3,29 @@
 
 #include "stm32f4xx_hal.h"
 
+//¸ðÅÍ°¡ È¸ÀüÇÏ´Â ÆÞ½ºÆø : 8600 ~ 15500
+#define MIN_PULSE 8000
+#define MAX_PULSE 15500
+
 #define MOTOR_V1 TIM2->CCR1
 #define MOTOR_V2 TIM2->CCR2
 #define MOTOR_V3 TIM3->CCR1
 #define MOTOR_V4 TIM3->CCR2
 
-void ESC_Calibration(int Min_Pulse, int Max_Pulse);
-void Motor_Init(int Min_Pulse);
-void Motor_Test(int Min_Pulse, int Max_Pulse);
-void Motor_Test_2(int Min_Pulse, int Max_Pulse);
-void Motor_Start(void);
+#define MoterGain_roll       20.0f
+#define MoterGain_pitch      20.0f
+#define MoterGain_yaw        15.0f
 
+#define MOTER_SAFTY             (2500)
+
+void ESC_Calibration(void);
+void Motor_Init(void);
+void Motor_Test(void);
+void Motor_Test_2(void);
+void Motor_Start(void);
+void Motor_Stop(int count);
+
+extern uint32_t before_while;
 
 
 

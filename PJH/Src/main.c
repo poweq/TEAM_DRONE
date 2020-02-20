@@ -40,9 +40,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define PI                      (3.141592f)
-#define dt                      (2.0f)         // Least dt milliseconds (>1/dt mHz)Update term (milliseconds)
-#define init_angle_average      (30)
+#define PI                      (3.141592f)             //the ratio of the circumference of a circle to its diameter.
+#define dt                      (2.0f)                  //Least dt milliseconds (>1/dt mHz)Update term (milliseconds).
+#define init_angle_average      (40)                    //Initiate_Setting_angle.
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,38 +80,50 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+//========================GLOBAL VARIABLES=========================
+//========================USER VARIABLES===========================
 uint8_t data;
-uint8_t uart2_tx_data[255];
+uint8_t uart1_tx_to_MFC[255];                           //Trandmit variable.
+uint8_t uart2_tx_data[255];                           
 uint8_t uart2_tx_data2[255];
 uint8_t uart2_tx_data3[255];
 
-TM_MPU9250_t    MPU9250;
-__PID           pid;
-float setting_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw 
-float init_setting_angle[3] = {0, 0, 0};
-float pid_val[3][3] = {{1.0, 0.01, 0.01}, {1.0, 0.01, 0.01}, {1.0, 0.01, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
-float inpid_val[3][3] = {{0.8, 0.0, 0.01}, {0.5, 0.0, 0.01}, {0.8, 0.0, 0.01}}; //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences)
-float Magbias[3] = {0,0,0}; //Magnetic data bias
+//=======================INIT Variables=============================
+TM_MPU9250_t    MPU9250;                                //MPU9250 Sensor structure.
+__PID           pid;                                    //PID Controll structure.
 
-float prev_err[3];
+//=======================MPU9250 variables==========================
+float ax, ay, az, gx, gy, gz, mx, my, mz;               // variables to hold latest sensor data values.
 
-//------------------------Using Quaternion----------------------------
-uint32_t count = 0, sumCount = 0; // used to control //display output rate
-float Euler_angle[3] = {0.0, 0.0, 0.0}; //roll pitch yaw
-float delta_angle[3] = {0.0, 0.0, 0.0};
-float deltat = 0.0f;// integration interval for both filter schemes
-uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
-uint32_t Now = 0;        // used to calculate integration interval
-uint32_t before_while = 0;
-uint32_t wait = 0;//getting initiate setting_angle waiting time(3secs) 
-uint8_t wait_flag = 0; //
-uint8_t Mcal_flag = 0; //User Magnetic bias flag.
+//=======================Changing Variable from external controll========
+float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
+float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
+//float pid_val[3][3] = {{2.3f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+float pid_val[3][3] = {{1.5f, 0.6f, 0.15f}, {1.0f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+float inpid_val[3][3] = {{0.8f, 0.0f, 0.01f}, {0.5f, 0.0f, 0.01f}, {0.8f, 0.0f, 0.01f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+float angular_velocity[3];                              //For double loop PID.
+float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
 
-float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values 
-float angular_velocity[3]; //For double loop PID.
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
-float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
-//--------------------------------------------------------------------
+//====================Fuzzy Variables====================================
+float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
+
+//====================Quaternion VARIABLES===============================
+uint32_t count = 0;                                     //Used to control.
+float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
+float delta_angle[3] = {0.0f, 0.0f, 0.0f};              //d_roll d_pitch d_yaw.
+float deltat = 0.0f;                                    //integration interval for filter schemes.
+float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
+float eInt[3] = {0.0f, 0.0f, 0.0f};                     // vector to hold integral error for Mahony method.
+
+//=====================Flag and Time flag=================================
+uint32_t lastUpdate = 0;                                //Used to calculate integration interval.
+uint32_t Now = 0;                                       //Used to calculate integration interval.
+uint32_t before_while = 0;                              //Time of Before entering while loop.
+uint32_t wait = 0;                                      //getting initiate setting_angle waiting time(3secs) 
+uint8_t wait_flag = 0;                                  //Time waiting flag.
+uint8_t Mcal_flag = 0;                                  //User Magnetic bias flag.
+
+//========================================================================
 /* USER CODE END 0 */
 
 /**
@@ -128,7 +140,7 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
+  
   /* USER CODE BEGIN Init */
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   pid_init(&pid, pid_val, inpid_val);
@@ -152,8 +164,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  TM_MPU9250_ReadMagASA(&MPU9250);
-
+  TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
+  //=========Automatic calculation of Magnetic filed bias=======
   if (Mcal_flag == 1)
   { 
     magcal(Magbias);
@@ -161,71 +173,66 @@ int main(void)
     Magbias[1] = Magbias[1] * MPU9250.MMult * MPU9250.ASAY;
     Magbias[2] = Magbias[2] * MPU9250.MMult * MPU9250.ASAZ;
     Mcal_flag ++;
-  }  
+  }    
+  //======Automatic calculation of Magnetic filed bias END======
+  //================PWM START===================================
+  if (1)
+  {
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  }
   
-  //----------------------------------------------------------------
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  int Controller_1 = 32;                //Moter Throttle.
+  int Controller_2 = 0;                 //Moter Throttle. 
   
-  int Min_Pulse = 8500;
-  int Max_Pulse = 15500;
-//  int Throttle = 0;
-  int Controller_1 = 30;
-  int Controller_2 = 0;
-  
-  //  ESC_Calibration(Min_Pulse, Max_Pulse);
-  
-  Motor_Init(Min_Pulse);  //5sec
-  
-  Motor_Start();
+//  ESC_Calibration();  
+  Motor_Init();  
+//  Motor_Start();
 
-  before_while = HAL_GetTick();
-  lastUpdate = before_while;
+  before_while = HAL_GetTick(); //Get time of before while loop.
+  lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {         
-    int aa = HAL_GetTick();
+    int aa = HAL_GetTick();     //Get time for 
 
-    TM_MPU9250_ReadAcce(&MPU9250);
-    TM_MPU9250_ReadGyro(&MPU9250);
-    TM_MPU9250_ReadMag(&MPU9250);
+    TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
+    TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
+    TM_MPU9250_ReadMag(&MPU9250);       //get Magnetic data.
     
-    MPU9250.Gx -= 2.75; //callibration values
-    MPU9250.Gy -= -0.9;
-    MPU9250.Gz -= 0.06;
+    MPU9250.Gx -= 2.55f;                //callibration values.
+    MPU9250.Gy -= 0.15f;
+    MPU9250.Gz -= 0.24f;
     
-    MPU9250.Gx -= -1.1; //callibration values
-    MPU9250.Gy -= 0.3;
-    MPU9250.Gz -= 0.2;
-
-    MPU9250.Mx -= 67.5; //callibration values
-    MPU9250.My -= 49.;
-    MPU9250.Mz -= -24.5;    
+    MPU9250.Mx -= 67.5f;                //callibration values.
+    MPU9250.My -= 49.0f;
+    MPU9250.Mz -= -24.5f;    
     
-    //MPU9250.Mx -= 25.; //callibration values
+    //MPU9250.Mx -= 25.;                  //callibration values.(SH's)
     //MPU9250.My -= 13.5;
     //MPU9250.Mz -= -32.;    
-    
+  //=========Subtract Automatic Magnetic filed bias============
     if (Mcal_flag == 2)
     {
-       MPU9250.Mx -= Magbias[0]; //User callibration values
+       MPU9250.Mx -= Magbias[0];        //Automatic User callibration values.
        MPU9250.My -= Magbias[1];
        MPU9250.Mz -= Magbias[2];    
     }
+  //=========Subtract Automatic Magnetic filed bias END========
 
-    Now = HAL_GetTick();
-    deltat += (Now - lastUpdate); // set integration time by time elapsed since last filter update (milliseconds)
-    lastUpdate = Now;
-    
+    Now = HAL_GetTick();                //Get current time.
+    deltat += (Now - lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
+    lastUpdate = Now;                   //Update lastupdate time to current time.
+  //---------------must do functionization!!!----------    
     if (wait_flag < init_angle_average)
     {
       wait = HAL_GetTick() - before_while;
-      if (wait >= 1500)
+      if (wait >= 3500)
       {            
         init_setting_angle[0] += Euler_angle[0]; //roll
         init_setting_angle[1] += Euler_angle[1]; //pitch
@@ -239,6 +246,7 @@ int main(void)
       setting_angle[1] = init_setting_angle[1] / init_angle_average; //init pitch
       setting_angle[2] = init_setting_angle[2] / init_angle_average; //init yaw
     }
+  //---------------must do functionization!!!----------    
     
     angular_velocity[0] = MPU9250.Gx;
     angular_velocity[1] = MPU9250.Gy;
@@ -250,21 +258,23 @@ int main(void)
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
       //MadgwickAHRSupdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
       Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
+      ////=========================Fuzzy part============================
       
-      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);//roll
-      Create_Fuzzy_Matrix();
-      Defuzzification(&pid_val[0][0],&pid_val[0][1],&pid_val[0][2]);//Fuzzy roll end.
-      
-      Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);//pitch
-      Create_Fuzzy_Matrix();
-      Defuzzification(&pid_val[1][0],&pid_val[1][1],&pid_val[1][2]);//Fuzzy pitch end.
-      
-      Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);//yaw
-      Create_Fuzzy_Matrix();
-      Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);//Fuzzy yaw end.     
-      pid_gain_update(&pid, pid_val, inpid_val);//From Fuzzy the PID gain value is changed.
-      
-      __pid_update(&pid, setting_angle, Euler_angle, angular_velocity);
+      //Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);//roll
+      //Create_Fuzzy_Matrix();
+      //Defuzzification(&pid_val[0][0],&pid_val[0][1],&pid_val[0][2]);//Fuzzy roll end.
+      //
+      //Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);//pitch
+      //Create_Fuzzy_Matrix();
+      //Defuzzification(&pid_val[1][0],&pid_val[1][1],&pid_val[1][2]);//Fuzzy pitch end.
+      //
+      //Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);//yaw
+      //Create_Fuzzy_Matrix();
+      //Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);//Fuzzy yaw end.     
+      //pid_gain_update(&pid, pid_val, inpid_val);//From Fuzzy the PID gain value is changed.
+      ////=========================Fuzzy part END============================
+
+      __pid_update(&pid, setting_angle, Euler_angle, angular_velocity);         //PID value update.
             
       //Euler_angle[1] -= 2.5f; // pich bias.
       //Euler_angle[2] -= 8.2f; // Declination at Seoul korea on 2020-02-04(yaw bias)            
@@ -272,73 +282,140 @@ int main(void)
       
       deltat = 0.0f;//reset deltat.
     }
-    //TM_MPU9250_DataReady(&MPU9250);
-        
+    //TM_MPU9250_DataReady(&MPU9250);   //?????
+//=====================Data print transmit UART part===============        
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f \r\n", MPU9250.Mx, MPU9250.My ,MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
-    sprintf((char*)uart2_tx_data,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
+    //sprintf((char*)uart2_tx_data,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
     //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
 
-    sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+
     //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);
     
-    HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);     
+//==============Data transmit part==============================================        
+    sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
+    HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC), 10);
     
-    
-    if(wait >= 1500)
+    if (0)
     {
-      
-      if( Controller_1 > 0 && Controller_2 < 2 && Controller_2 > -2)    //Controller_1은 신호를 주고 있고, Controller_2의 조이스틱이 가운데 위치할 때 (고도만 제어할때)
-      {
-      //  PID_Velocity_Calculate(float PID_Roll, float PID_Pitch, float PID_Yaw);   //이런식으로 하는 방법도 있을듯
-  //      MOTOR_V1 = Min_Pulse + Controller_1 * 70 + PID;
-        MOTOR_V1 = Min_Pulse  + (Controller_1 * 70) + (int)(15 * pid.output[0]) - (int)(15 * pid.output[1]);
-                  // = Min_Pulse  + (Controller_1 * 70) + (50 * PID_Roll) + (50 * PID_Pitch);
-        if(MOTOR_V1 >= 15500)
-          MOTOR_V1 = Max_Pulse - 500;
-      
-  //      MOTOR_V2 = Min_Pulse + Controller_1 * 70 + PID;
-        MOTOR_V2 = Min_Pulse  + (Controller_1 * 70) - (int)(15 * pid.output[0]) - (int)(15 * pid.output[1]);
-                  // = Min_Pulse  + (Controller_1 * 70) - (50 * PID_Roll) + (50 * PID_Pitch);
-        if(MOTOR_V2 >= 15500)
-          MOTOR_V2 = Max_Pulse - 500;
-      
-  //      MOTOR_V3 = Min_Pulse + Controller_1 * 70 + PID;
-        MOTOR_V3 = Min_Pulse  + (Controller_1 * 70) + (int)(15 * pid.output[0]) + (int)(15 * pid.output[1]);
-                  // = Min_Pulse  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
-        if(MOTOR_V3 >= 15500)
-          MOTOR_V3 = Max_Pulse - 500;
-      
-  //      MOTOR_V4 = Min_Pulse + Controller_1 * 70 + PID;
-        MOTOR_V4 = Min_Pulse  + (Controller_1 * 70) - (int)(15 * pid.output[0]) + (int)(15 * pid.output[1]);
-                  // = Min_Pulse  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
-        if(MOTOR_V4 >= 15500)
-          MOTOR_V4 = Max_Pulse - 500;
-      
-    
-        /*
-        if(MOTOR_V1 = Min_Pulse  + (Controller_1 * 70) + (25 * pid.output[0]) - (25 * pid.output[1]) >= 15500)
-          MOTOR_V1 = Max_Pulse - 500;
-        if(MOTOR_V2 = Min_Pulse  + (Controller_1 * 70) - (25 * pid.output[0]) - (25 * pid.output[1]) >= 15500)
-          MOTOR_V2 = Max_Pulse - 500;
-        if(MOTOR_V3 = Min_Pulse  + (Controller_1 * 70) + (25 * pid.output[0]) + (25 * pid.output[1]) >= 15500)
-          MOTOR_V3 = Max_Pulse - 500;
-        if(MOTOR_V4 = Min_Pulse  + (Controller_1 * 70) - (25 * pid.output[0]) + (25 * pid.output[1]) >= 15500)
-          MOTOR_V4 = Max_Pulse - 500;
-        */
-      }
+      sprintf((char*)uart2_tx_data3,"PP%.3fPI%.3fPD%.3fPRP%.3fRI%.3fRD%.3fRYP%.3fYI%.3fYD%.3fY\r\n", pid_val[1][0], pid_val[1][1], pid_val[1][2], pid_val[0][0], pid_val[0][1], pid_val[0][2], pid_val[2][0], pid_val[2][1], pid_val[2][2]);
+      HAL_UART_Transmit(&huart1,uart2_tx_data3 ,sizeof(uart2_tx_data), 10);
     }
+ //======================BLDC Moter Part===============================================  
+   
+    if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
+    {
+       Motor_Start();
+    }
+ 
+     if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 14000)
+     //if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 12000)
+     {
+         if (Controller_1 > 0 && Controller_2 < 2 && Controller_2 > -2)    //Controller_1은 신호를 주고 있고, Controller_2의 조이스틱이 가운데 위치할 때 (고도만 제어할때)
+         {
+           
+            
+            if(pid.output[0] >= 0.0f)
+            {
+              sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+              HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+            
+              MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
+              if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
+              else if (MOTOR_V1 <= MIN_PULSE + 700)
+                MOTOR_V1 = MIN_PULSE + 700;
+      
+              MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll * 0.85f)  * pid.output[0]) - (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
+              if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V2 <= MIN_PULSE + 700)
+                MOTOR_V2 = MIN_PULSE + 700;
+      
+              MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
+            //    = MIN_PULSE  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
+              if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V3 <= MIN_PULSE + 700)
+                MOTOR_V3 = MIN_PULSE + 700;
+      
+              MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll * 0.85f) * pid.output[0]) + (int)((MoterGain_pitch * 0.85f) * pid.output[1]); 
+               // = MIN_PULSE  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
+              if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V4 <= MIN_PULSE + 700)
+                MOTOR_V4 = MIN_PULSE + 700;
+            }
+              
+            else if(pid.output[0] < 0.0f)
+            {
+              sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+              HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+              
+              MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll * 0.85f) * pid.output[0]) - (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
+              if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V1 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V1 <= MIN_PULSE + 700)
+                MOTOR_V1 = MIN_PULSE + 700;
+         
+              MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
+              if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V2 <= MIN_PULSE + 700)
+                MOTOR_V2 = MIN_PULSE + 700;
+         
+              MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll * 0.85f) * pid.output[0]) + (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
+            //    = MIN_PULSE  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
+              if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V3 <= MIN_PULSE + 700)
+                MOTOR_V3 = MIN_PULSE + 700;
+         
+              MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
+               // = MIN_PULSE  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
+              if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+                MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+              else if (MOTOR_V4 <= MIN_PULSE + 700)
+                MOTOR_V4 = MIN_PULSE + 700;
+            }
+            
+      
+             /*
+             if(MOTOR_V1 = MIN_PULSE  + (Controller_1 * 70) + (25 * pid.output[0]) - (25 * pid.output[1]) >= 15500)
+               MOTOR_V1 = MAX_PULSE - 500;
+             if(MOTOR_V2 = MIN_PULSE  + (Controller_1 * 70) - (25 * pid.output[0]) - (25 * pid.output[1]) >= 15500)
+               MOTOR_V2 = MAX_PULSE - 500;
+             if(MOTOR_V3 = MIN_PULSE  + (Controller_1 * 70) + (25 * pid.output[0]) + (25 * pid.output[1]) >= 15500)
+               MOTOR_V3 = MAX_PULSE - 500;
+             if(MOTOR_V4 = MIN_PULSE  + (Controller_1 * 70) - (25 * pid.output[0]) + (25 * pid.output[1]) >= 15500)
+               MOTOR_V4 = MAX_PULSE - 500;
+             */
+         }
+      }
+      
+    Motor_Stop(14000);
+    
+    //sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+    
 
+//======================BLDC Moter Part END===============================================  
+
+//-------------------TIme Check--------------------
     //int bb = HAL_GetTick();
     //sprintf((char*)uart2_tx_data,"%d  %d\r\n",  aa, bb);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
-    
+//-------------------TIme Check END--------------------
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
