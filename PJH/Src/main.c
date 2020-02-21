@@ -24,7 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <math.h>
 #include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
@@ -82,11 +82,15 @@ static void MX_SPI1_Init(void);
 /* USER CODE BEGIN 0 */
 //========================GLOBAL VARIABLES=========================
 //========================USER VARIABLES===========================
-uint8_t data;
 uint8_t uart1_tx_to_MFC[255];                           //Trandmit variable.
+uint8_t uart1_tx_to_MFC2[100];                           //Trandmit variable.
 uint8_t uart2_tx_data[255];                           
 uint8_t uart2_tx_data2[255];
 uint8_t uart2_tx_data3[255];
+//======================UART variables============================
+uint8_t pid_buffer[100];
+int num=0;
+uint8_t data;
 
 //=======================INIT Variables=============================
 TM_MPU9250_t    MPU9250;                                //MPU9250 Sensor structure.
@@ -98,9 +102,9 @@ float ax, ay, az, gx, gy, gz, mx, my, mz;               // variables to hold lat
 //=======================Changing Variable from external controll========
 float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
 float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-//float pid_val[3][3] = {{2.3f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-float pid_val[3][3] = {{1.5f, 0.6f, 0.15f}, {1.0f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-float inpid_val[3][3] = {{0.8f, 0.0f, 0.01f}, {0.5f, 0.0f, 0.01f}, {0.8f, 0.0f, 0.01f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//float pid_val[3][3] = {{1.f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}, {1.0f, 0.00f, 0.00f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+float pid_val[3][3] = {{1.0f, 0.005f, 0.0f}, {0.0f, 0.00f, 0.00f}, {0.0f, 0.00f, 0.00f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+float inpid_val[3][3] = {{1.5f, 0.00f, 0.135f}, {0.5f, 0.0f, 0.01f}, {0.8f, 0.0f, 0.01f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
 float angular_velocity[3];                              //For double loop PID.
 float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
 
@@ -122,7 +126,6 @@ uint32_t before_while = 0;                              //Time of Before enterin
 uint32_t wait = 0;                                      //getting initiate setting_angle waiting time(3secs) 
 uint8_t wait_flag = 0;                                  //Time waiting flag.
 uint8_t Mcal_flag = 0;                                  //User Magnetic bias flag.
-
 //========================================================================
 /* USER CODE END 0 */
 
@@ -184,12 +187,18 @@ int main(void)
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
   }
   
-  int Controller_1 = 32;                //Moter Throttle.
+  int Controller_1 = 25;                //Moter Throttle.
   int Controller_2 = 0;                 //Moter Throttle. 
   
 //  ESC_Calibration();  
   Motor_Init();  
 //  Motor_Start();
+  
+//*********************************************
+  __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE); 
+  memset(pid_buffer,'\0',sizeof(pid_buffer));
+//********************************************
+  
 
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
@@ -200,22 +209,24 @@ int main(void)
   while (1)
   {         
     int aa = HAL_GetTick();     //Get time for 
+    
+    HAL_UART_Receive_IT(&huart1, &data, 1);
 
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
     TM_MPU9250_ReadMag(&MPU9250);       //get Magnetic data.
     
-    MPU9250.Gx -= 2.55f;                //callibration values.
-    MPU9250.Gy -= 0.15f;
-    MPU9250.Gz -= 0.24f;
+    //MPU9250.Gx -= 2.55f;                //callibration values.
+    //MPU9250.Gy -= 0.15f;
+    //MPU9250.Gz -= 0.24f;
     
-    MPU9250.Mx -= 67.5f;                //callibration values.
-    MPU9250.My -= 49.0f;
-    MPU9250.Mz -= -24.5f;    
+    //MPU9250.Mx -= 67.5f;                //callibration values.
+    //MPU9250.My -= 49.0f;
+    //MPU9250.Mz -= -24.5f;    
     
-    //MPU9250.Mx -= 25.;                  //callibration values.(SH's)
-    //MPU9250.My -= 13.5;
-    //MPU9250.Mz -= -32.;    
+    MPU9250.Mx -= 25.;                  //callibration values.(SH's)
+    MPU9250.My -= 13.5;
+    MPU9250.Mz -= -32.;    
   //=========Subtract Automatic Magnetic filed bias============
     if (Mcal_flag == 2)
     {
@@ -234,55 +245,55 @@ int main(void)
       wait = HAL_GetTick() - before_while;
       if (wait >= 3500)
       {            
-        init_setting_angle[0] += Euler_angle[0]; //roll
-        init_setting_angle[1] += Euler_angle[1]; //pitch
-        init_setting_angle[2] += Euler_angle[2]; //yaw
+        init_setting_angle[0] += Euler_angle[0];         //roll
+        init_setting_angle[1] += Euler_angle[1];         //pitch
+        init_setting_angle[2] += Euler_angle[2];         //yaw
         wait_flag ++;
       }
     }    
     if (wait_flag == init_angle_average)
     {
-      setting_angle[0] = init_setting_angle[0] / init_angle_average; //init roll
-      setting_angle[1] = init_setting_angle[1] / init_angle_average; //init pitch
-      setting_angle[2] = init_setting_angle[2] / init_angle_average; //init yaw
+      setting_angle[0] = init_setting_angle[0] / init_angle_average;    //init roll
+      setting_angle[1] = init_setting_angle[1] / init_angle_average;    //init pitch
+      setting_angle[2] = init_setting_angle[2] / init_angle_average;    //init yaw
     }
-  //---------------must do functionization!!!----------    
+  //---------------must do functionization!!!-------------------
     
-    angular_velocity[0] = MPU9250.Gx;
-    angular_velocity[1] = MPU9250.Gy;
-    angular_velocity[2] = MPU9250.Gz;
+    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;           
+    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
+    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;
     
-    if (deltat >= dt) //Update term.(1000Hz)
+    if (deltat >= dt)                           //Update term.(500Hz.dt=2)
     {
-      deltat /= 1000.0f;
+      deltat /= 1000.0f;                        //Make millisecond to second.
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
       //MadgwickAHRSupdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
       Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
-      ////=========================Fuzzy part============================
-      
-      //Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);//roll
-      //Create_Fuzzy_Matrix();
-      //Defuzzification(&pid_val[0][0],&pid_val[0][1],&pid_val[0][2]);//Fuzzy roll end.
-      //
-      //Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);//pitch
-      //Create_Fuzzy_Matrix();
-      //Defuzzification(&pid_val[1][0],&pid_val[1][1],&pid_val[1][2]);//Fuzzy pitch end.
-      //
-      //Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);//yaw
-      //Create_Fuzzy_Matrix();
-      //Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);//Fuzzy yaw end.     
-      //pid_gain_update(&pid, pid_val, inpid_val);//From Fuzzy the PID gain value is changed.
-      ////=========================Fuzzy part END============================
+      //=========================Fuzzy part============================
+//      
+//      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);                  //roll
+//      Create_Fuzzy_Matrix();
+//      Defuzzification(&pid_val[0][0],&pid_val[0][1],&pid_val[0][2]);                  //Fuzzy roll end.
+//      
+//      Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);                  //pitch
+//      Create_Fuzzy_Matrix();
+//      Defuzzification(&pid_val[1][0],&pid_val[1][1],&pid_val[1][2]);                  //Fuzzy pitch end.
+//      
+//      Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);                  //yaw
+//      Create_Fuzzy_Matrix();
+//      Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);                  //Fuzzy yaw end.     
+//      pid_gain_update(&pid, pid_val, inpid_val);                                      //From Fuzzy the PID gain value is changed.
+      //=========================Fuzzy part END============================
 
       __pid_update(&pid, setting_angle, Euler_angle, angular_velocity);         //PID value update.
             
-      //Euler_angle[1] -= 2.5f; // pich bias.
-      //Euler_angle[2] -= 8.2f; // Declination at Seoul korea on 2020-02-04(yaw bias)            
-      //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f; // Ensure yaw stays between 0 and 360
+      //Euler_angle[1] -= 2.5f;                                  // pich bias.
+      //Euler_angle[2] -= 8.2f;                                  // Declination at Seoul korea on 2020-02-04(yaw bias)            
+      //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f;       // Ensure yaw stays between 0 and 360
       
       deltat = 0.0f;//reset deltat.
     }
-    //TM_MPU9250_DataReady(&MPU9250);   //?????
+    //TM_MPU9250_DataReady(&MPU9250);                            //?????
 //=====================Data print transmit UART part===============        
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
@@ -297,19 +308,34 @@ int main(void)
     sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
 
     //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);
-    
+    //sprintf((char*)uart2_tx_data,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
+
     //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 10);
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);     
 //==============Data transmit part==============================================        
     sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
     HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC), 10);
-    
-    if (0)
+        
+     if(num>=100)
     {
-      sprintf((char*)uart2_tx_data3,"PP%.3fPI%.3fPD%.3fPRP%.3fRI%.3fRD%.3fRYP%.3fYI%.3fYD%.3fY\r\n", pid_val[1][0], pid_val[1][1], pid_val[1][2], pid_val[0][0], pid_val[0][1], pid_val[0][2], pid_val[2][0], pid_val[2][1], pid_val[2][2]);
-      HAL_UART_Transmit(&huart1,uart2_tx_data3 ,sizeof(uart2_tx_data), 10);
-    }
+      //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //출력테스트용.
+  //**************************************************************
+      char * ptr = strtok((char*)pid_buffer, "");
+      Parsing_PID_val(pid_buffer, pid_val);
+      //pid_buffer 파싱
+      //PID 값 넣어주고  
+      sprintf((char*)uart1_tx_to_MFC2,"PP%6.3fPI%6.3fPD%6.3fPRP%6.3fRI%6.3fRD%6.3fRYP%6.3fYI%6.3fYD%6.3fY\r\n", pid_val[1][0], pid_val[1][1], pid_val[1][2], pid_val[0][0], pid_val[0][1], pid_val[0][2], pid_val[2][0], pid_val[2][1], pid_val[2][2]);
+      HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
+      HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
+  //**************************************************************
+      
+      //echo
+      //HAL_UART_Transmit(&huart1,pid_buffer,sizeof(pid_buffer), 10); 
+      
+      memset(pid_buffer,'\0',sizeof(pid_buffer));
+      num = 0;
+    }      
  //======================BLDC Moter Part===============================================  
    
     if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
@@ -317,76 +343,139 @@ int main(void)
        Motor_Start();
     }
  
-     if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 14000)
+     if (HAL_GetTick() - before_while >= 6000)// && HAL_GetTick() - before_while <= 14000)
      //if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 12000)
      {
          if (Controller_1 > 0 && Controller_2 < 2 && Controller_2 > -2)    //Controller_1은 신호를 주고 있고, Controller_2의 조이스틱이 가운데 위치할 때 (고도만 제어할때)
          {
            
-            
-            if(pid.output[0] >= 0.0f)
-            {
-              sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
-              HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
-            
-              MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
-              if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
-              else if (MOTOR_V1 <= MIN_PULSE + 700)
-                MOTOR_V1 = MIN_PULSE + 700;
-      
-              MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll * 0.85f)  * pid.output[0]) - (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
-              if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V2 <= MIN_PULSE + 700)
-                MOTOR_V2 = MIN_PULSE + 700;
-      
-              MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
-            //    = MIN_PULSE  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
-              if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V3 <= MIN_PULSE + 700)
-                MOTOR_V3 = MIN_PULSE + 700;
-      
-              MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll * 0.85f) * pid.output[0]) + (int)((MoterGain_pitch * 0.85f) * pid.output[1]); 
-               // = MIN_PULSE  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
-              if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V4 <= MIN_PULSE + 700)
-                MOTOR_V4 = MIN_PULSE + 700;
-            }
-              
-            else if(pid.output[0] < 0.0f)
-            {
-              sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
-              HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
-              
-              MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll * 0.85f) * pid.output[0]) - (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
-              if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V1 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V1 <= MIN_PULSE + 700)
-                MOTOR_V1 = MIN_PULSE + 700;
+           if (Euler_angle[0] > 0.0f)
+           {
+               MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]);
+               MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll) * pid.output[0]);
+               MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]);
+               MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll) * pid.output[0]); 
+
+               if (Euler_angle[1] >0.0f)
+               {
+                 MOTOR_V1 += (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V2 += (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V3 -= (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V4 -= (int)(MoterGain_pitch * pid.output[1]);
+               }
+               else if (Euler_angle[1] <= 0.0f)
+               {
+                 MOTOR_V1 -= (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V2 -= (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V3 += (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V4 += (int)(MoterGain_pitch * pid.output[1]);
+               }
+           }
+               
+           if (Euler_angle[0] <= 0.0f)
+           {
+               MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);
+               MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]);
+               MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);
+               MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]); 
+
+               if (Euler_angle[1] >0.0f)
+               {
+                 MOTOR_V1 += (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V2 += (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V3 -= (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V4 -= (int)(MoterGain_pitch * pid.output[1]);
+               }
+               else if (Euler_angle[1] <= 0.0f)
+               {
+                 MOTOR_V1 -= (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V2 -= (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V3 += (int)(MoterGain_pitch * pid.output[1]);
+                 MOTOR_V4 += (int)(MoterGain_pitch * pid.output[1]);
+               }
+           }
+           
+             if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+               MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
+             else if (MOTOR_V1 <= MIN_PULSE + 700)
+               MOTOR_V1 = MIN_PULSE + 700;
+     
+             if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+               MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+             else if (MOTOR_V2 <= MIN_PULSE + 700)
+               MOTOR_V2 = MIN_PULSE + 700;
+             
+             if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+               MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+             else if (MOTOR_V3 <= MIN_PULSE + 700)
+               MOTOR_V3 = MIN_PULSE + 700;
+             
+             if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+               MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+             else if (MOTOR_V4 <= MIN_PULSE + 700)
+               MOTOR_V4 = MIN_PULSE + 700;
+           }
+           sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+           //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
          
-              MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
-              if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V2 <= MIN_PULSE + 700)
-                MOTOR_V2 = MIN_PULSE + 700;
-         
-              MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll * 0.85f) * pid.output[0]) + (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
-            //    = MIN_PULSE  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
-              if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V3 <= MIN_PULSE + 700)
-                MOTOR_V3 = MIN_PULSE + 700;
-         
-              MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
-               // = MIN_PULSE  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
-              if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
-                MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
-              else if (MOTOR_V4 <= MIN_PULSE + 700)
-                MOTOR_V4 = MIN_PULSE + 700;
-            }
+//           MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
+//           if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+//             MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
+//           else if (MOTOR_V1 <= MIN_PULSE + 700)
+//             MOTOR_V1 = MIN_PULSE + 700;
+//     
+//           MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll)  * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]);
+//           if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+//             MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+//           else if (MOTOR_V2 <= MIN_PULSE + 700)
+//             MOTOR_V2 = MIN_PULSE + 700;
+//     
+//           MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
+//         //    = MIN_PULSE  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
+//           if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+//             MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+//           else if (MOTOR_V3 <= MIN_PULSE + 700)
+//             MOTOR_V3 = MIN_PULSE + 700;
+//     
+//           MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]); 
+//            // = MIN_PULSE  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
+//           if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+//             MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+//           else if (MOTOR_V4 <= MIN_PULSE + 700)
+//             MOTOR_V4 = MIN_PULSE + 700;
+          //}
+//              
+//            else if(pid.output[0] < 0.0f)
+//            {
+//              //sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+//              //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+//              
+//              MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll * 0.85f) * pid.output[0]) - (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
+//              if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+//                MOTOR_V1 = MAX_PULSE - MOTER_SAFTY;
+//              else if (MOTOR_V1 <= MIN_PULSE + 700)
+//                MOTOR_V1 = MIN_PULSE + 700;
+//         
+//              MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
+//              if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+//                MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+//              else if (MOTOR_V2 <= MIN_PULSE + 700)
+//                MOTOR_V2 = MIN_PULSE + 700;
+//         
+//              MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_roll * 0.85f) * pid.output[0]) + (int)((MoterGain_pitch * 0.85f) * pid.output[1]);
+//            //    = MIN_PULSE  + (Controller_1 * 70) + (50 * PID_Roll) - (50 * PID_Pitch);
+//              if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+//                MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+//              else if (MOTOR_V3 <= MIN_PULSE + 700)
+//                MOTOR_V3 = MIN_PULSE + 700;
+//         
+//              MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
+//               // = MIN_PULSE  + (Controller_1 * 70) - (50 * PID_Roll) - (50 * PID_Pitch);
+//              if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+//                MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+//              else if (MOTOR_V4 <= MIN_PULSE + 700)
+//                MOTOR_V4 = MIN_PULSE + 700;
+//            }
             
       
              /*
@@ -399,10 +488,10 @@ int main(void)
              if(MOTOR_V4 = MIN_PULSE  + (Controller_1 * 70) - (25 * pid.output[0]) + (25 * pid.output[1]) >= 15500)
                MOTOR_V4 = MAX_PULSE - 500;
              */
-         }
+         //}
       }
       
-    Motor_Stop(14000);
+    //Motor_Stop(14000);
     
     //sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);

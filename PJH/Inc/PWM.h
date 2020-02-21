@@ -12,9 +12,9 @@
 #define MOTOR_V3 TIM3->CCR1
 #define MOTOR_V4 TIM3->CCR2
 
-#define MoterGain_roll       20.0f
-#define MoterGain_pitch      20.0f
-#define MoterGain_yaw        15.0f
+#define MoterGain_roll       1.0f
+#define MoterGain_pitch      1.0f
+#define MoterGain_yaw        1.0f
 
 #define MOTER_SAFTY             (2500)
 

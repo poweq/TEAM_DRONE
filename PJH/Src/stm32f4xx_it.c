@@ -62,7 +62,9 @@ extern TIM_HandleTypeDef htim3;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
-
+extern uint8_t data;
+extern uint8_t pid_buffer[100];
+extern int num;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -267,6 +269,10 @@ void USART1_IRQHandler(void)
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
+//******************************************
+  HAL_UART_Receive_IT(&huart1, &data, 1);
+  pid_buffer[num++]= data;
+//******************************************
 
   /* USER CODE END USART1_IRQn 1 */
 }
