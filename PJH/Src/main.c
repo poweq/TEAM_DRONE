@@ -31,7 +31,7 @@
 #include "pid.h"
 #include "PWM.h"
 #include "fuzzy.h"
-#include "LPF.h"
+//#include "LPF.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,12 +104,12 @@ float ax, ay, az, gx, gy, gz, mx, my, mz;               // variables to hold lat
 float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
 float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
 float pid_val[3][3] = {{5.0f, 0.000f, 0.0f}, {5.0f, 0.005f, 0.0f}, {5.0f, 0.005f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-float inpid_val[3][3] = {{7.5f, 0.00f, 0.0f}, {5.5f, 0.00f, 0.135f}, {5.5f, 0.00f, 0.135f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+float inpid_val[3][3] = {{5.0f, 0.00f, 0.0f}, {5.5f, 0.00f, 0.135f}, {5.5f, 0.00f, 0.135f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
 float angular_velocity[3];                              //For double loop PID.
 float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
 
-int Controller_1 = 25;                //Moter Throttle.
-int Controller_2 = 0;                 //Moter Throttle. 
+int Controller_1 = 20;                                  //Moter Throttle.
+int Controller_2 = 0;                                   //Moter Throttle. 
 //====================Fuzzy Variables====================================
 float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
 
@@ -257,9 +257,9 @@ int main(void)
     }    
     if (wait_flag == init_angle_average)
     {
-      setting_angle[0] = init_setting_angle[0] / init_angle_average;    //init roll
-      setting_angle[1] = init_setting_angle[1] / init_angle_average;    //init pitch
-      setting_angle[2] = init_setting_angle[2] / init_angle_average;    //init yaw
+      //setting_angle[0] = init_setting_angle[0] / init_angle_average;    //init roll
+      //setting_angle[1] = init_setting_angle[1] / init_angle_average;    //init pitch
+      //setting_angle[2] = init_setting_angle[2] / init_angle_average;    //init yaw
     }
   //---------------must do functionization!!!-------------------
     
@@ -331,85 +331,94 @@ int main(void)
        Motor_Start();
     }
  
-     if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 14000)
-     {
-        if (Controller_1 > 0 && Controller_2 < 2 && Controller_2 > -2)    //Controller_1은 신호를 주고 있고, Controller_2의 조이스틱이 가운데 위치할 때 (고도만 제어할때)
+   if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 12000)
+   {
+     
+     if (Controller_1 <= 5)
          {
-           
-           sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
-           //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+           MOTOR_V1 = MIN_PULSE;
+           MOTOR_V2 = MIN_PULSE;
+           MOTOR_V3 = MIN_PULSE;
+           MOTOR_V4 = MIN_PULSE;
+         }
+     
+      if (Controller_1 > 5 && Controller_2 < 2 && Controller_2 > -2)    //Controller_1은 신호를 주고 있고, Controller_2의 조이스틱이 가운데 위치할 때 (고도만 제어할때)
+       {     
          
-           MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);// - (int)(MoterGain_pitch * pid.output[1]);
-           if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
-             MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
-           else if (MOTOR_V1 <= MIN_PULSE + 700)
-             MOTOR_V1 = MIN_PULSE + 700;
-     
-           MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll)  * pid.output[0]);// - (int)((MoterGain_pitch) * pid.output[1]);
-           if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
-             MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
-           else if (MOTOR_V2 <= MIN_PULSE + 700)
-             MOTOR_V2 = MIN_PULSE + 700;
-     
-           MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);// + (int)(MoterGain_pitch * pid.output[1]);
-           if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
-             MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
-           else if (MOTOR_V3 <= MIN_PULSE + 700)
-             MOTOR_V3 = MIN_PULSE + 700;
-     
-           MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]);// + (int)((MoterGain_pitch) * pid.output[1]); 
-           if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
-             MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
-           else if (MOTOR_V4 <= MIN_PULSE + 700)
-             MOTOR_V4 = MIN_PULSE + 700;
-          }  
-      }
+         MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);// - (int)(MoterGain_pitch * pid.output[1]);
+         if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+           MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
+         else if (MOTOR_V1 <= MIN_PULSE + 700)
+           MOTOR_V1 = MIN_PULSE + 700;
+   
+         MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll)  * pid.output[0]);// - (int)((MoterGain_pitch) * pid.output[1]);
+         if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+           MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+         else if (MOTOR_V2 <= MIN_PULSE + 700)
+           MOTOR_V2 = MIN_PULSE + 700;
+   
+         MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);// + (int)(MoterGain_pitch * pid.output[1]);
+         if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+           MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+         else if (MOTOR_V3 <= MIN_PULSE + 700)
+           MOTOR_V3 = MIN_PULSE + 700;
+   
+         MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]);// + (int)((MoterGain_pitch) * pid.output[1]); 
+         if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+           MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+         else if (MOTOR_V4 <= MIN_PULSE + 700)
+           MOTOR_V4 = MIN_PULSE + 700;
+        }  
+    }
       
-    Motor_Stop(14000);
+    Motor_Stop(12000);
     
-    //sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+    sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
-    
 
 //======================BLDC Moter Part END===============================================  
     
 //==============Data transmit part==============================================        
     sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
-    //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC), 10);
-  
+    HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC), 10);
+//*********************************************************************************  
     if(num>=100)
     {
-      //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //출력테스트용.
-//**************************************************************
-      //char * ptr = strtok((char*)pid_buffer, "");
-      if (strstr(pid_buffer,"B") != NULL)
+      HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //출력테스트용.
+      if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
       {
       Parsing_PID_val(pid_buffer, pid_val);
       sprintf((char*)uart1_tx_to_MFC2,"PPP%6.3fPPI%6.3fPPD%6.3fPRRP%6.3fRRI%6.3fRRD%6.3fRYYP%6.3fYYI%6.3fYYD%6.3fY\r\n", pid_val[1][0], pid_val[1][1], pid_val[1][2], pid_val[0][0], pid_val[0][1], pid_val[0][2], pid_val[2][0], pid_val[2][1], pid_val[2][2]);
       pid_gain_update(&pid, pid_val, inpid_val);
       HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
       HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
-//**************************************************************
-      //echo
       memset(pid_buffer,'\0',sizeof(pid_buffer));
       memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
       num = 0;
       }
-      else if (strstr(pid_buffer,"A") != NULL)
+      else if (strstr((char*)pid_buffer,"A") != NULL)          //Inner PID.
       {
         Parsing_inPID_val(pid_buffer, inpid_val);
         sprintf((char*)uart1_tx_to_MFC2,"PP%6.3fPI%6.3fPD%6.3fPRP%6.3fRI%6.3fRD%6.3fRYP%6.3fYI%6.3fYD%6.3fY\r\n", inpid_val[1][0], inpid_val[1][1], inpid_val[1][2], inpid_val[0][0], inpid_val[0][1], inpid_val[0][2], inpid_val[2][0], inpid_val[2][1], inpid_val[2][2]);
         pid_gain_update(&pid, pid_val, inpid_val);
         HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
         HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
-  //**************************************************************      
-        //echo
+        memset(pid_buffer,'\0',sizeof(pid_buffer));
+        memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
+        num = 0;
+      }
+      else if (strstr((char*)pid_buffer,"C") != NULL)          //Throttle.
+      {
+        Parsing_Throttle_val(pid_buffer, &Controller_1);
+        sprintf((char*)uart1_tx_to_MFC2,"T%6.3f\r\n", (float)Controller_1);
+        HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
+        HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);    
         memset(pid_buffer,'\0',sizeof(pid_buffer));
         memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
         num = 0;
       }
     }
-
+//*********************************************************************************
 //-------------------TIme Check--------------------
     int bb = HAL_GetTick();
     sprintf((char*)uart2_tx_data,"%d  %d\r\n",  aa, bb);    

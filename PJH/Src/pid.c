@@ -381,7 +381,12 @@ void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
     pid_val[1][2] = atof(P_D);
     pid_val[2][0] = atof(Y_P);
     pid_val[2][1] = atof(Y_I);
-    pid_val[2][2] = atof(Y_D);
-    
-    
+    pid_val[2][2] = atof(Y_D);   
+}
+
+void Parsing_Throttle_val(uint8_t* arr, int *Controller_1)
+{
+    char* T;
+    T = strtok((char*)arr, ",");         
+    *Controller_1 = atof(T);   
 }

@@ -73,7 +73,7 @@ void Motor_Init(void)
 void Motor_Start(void)
 {
   //MOTOR_V1 = MIN_PULSE + 200;
-  MOTOR_V1 = MIN_PULSE + 700;
+  MOTOR_V1 = MIN_PULSE + 700;//700
   MOTOR_V2 = MIN_PULSE + 700;
   MOTOR_V3 = MIN_PULSE + 700;
   MOTOR_V4 = MIN_PULSE + 700;
