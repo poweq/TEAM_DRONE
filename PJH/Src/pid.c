@@ -334,27 +334,54 @@ float Standard_pid_update(__PID * pid, float set, float actual, int axis)
   return stabilizedKp;
 }
 
+void Parsing_inPID_val(uint8_t* arr, float inpid_val[][3])
+{
+    char* iR_P, * iR_I, * iR_D, * iP_P, * iP_I, * iP_D, * iY_P, * iY_I, * iY_D;
+    iR_P = strtok((char*)arr, ",");
+    iR_I = strtok(NULL, ",");
+    iR_D = strtok(NULL,",");
+    iP_P = strtok(NULL,",");
+    iP_I = strtok(NULL,",");
+    iP_D = strtok(NULL,",");
+    iY_P = strtok(NULL,",");
+    iY_I = strtok(NULL,",");
+    iY_D = strtok(NULL,",");
+     
+    inpid_val[0][0] = atof(iR_P);
+    inpid_val[0][1] = atof(iR_I);
+    inpid_val[0][2] = atof(iR_D);
+    inpid_val[1][0] = atof(iP_P);
+    inpid_val[1][1] = atof(iP_I);
+    inpid_val[1][2] = atof(iP_D);
+    inpid_val[2][0] = atof(iY_P);
+    inpid_val[2][1] = atof(iY_I);
+    inpid_val[2][2] = atof(iY_D);
+    
+    
+}
+
 void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
 {
-    char* R_PP, * R_PI, * R_PD, * R_P, * R_I, * R_D, * R_YP, * R_YI, * R_YD;
-
-    R_PP = strtok((char*)arr, "PP");
-    R_PI = strtok(NULL, "PI");
-    R_PD = strtok(NULL, "PD");
-    R_P = strtok(NULL, "PRP");
-    R_I = strtok(NULL, "RI");
-    R_D = strtok(NULL, "RD");
-    R_YP = strtok(NULL, "RYP");
-    R_YI = strtok(NULL, "YI");
-    R_YD = strtok(NULL, "YD");
+    char* R_P, * R_I, * R_D, * P_P, * P_I, * P_D, * Y_P, * Y_I, * Y_D;
+    R_P = strtok((char*)arr, ",");
+    R_I = strtok(NULL, ",");
+    R_D = strtok(NULL,",");
+    P_P = strtok(NULL,",");
+    P_I = strtok(NULL,",");
+    P_D = strtok(NULL,",");
+    Y_P = strtok(NULL,",");
+    Y_I = strtok(NULL,",");
+    Y_D = strtok(NULL,",");
      
     pid_val[0][0] = atof(R_P);
     pid_val[0][1] = atof(R_I);
     pid_val[0][2] = atof(R_D);
-    pid_val[1][0] = atof(R_PP);
-    pid_val[1][1] = atof(R_PI);
-    pid_val[1][2] = atof(R_PD);
-    pid_val[2][0] = atof(R_YP);
-    pid_val[2][1] = atof(R_YI);
-    pid_val[2][2] = atof(R_YD);
+    pid_val[1][0] = atof(P_P);
+    pid_val[1][1] = atof(P_I);
+    pid_val[1][2] = atof(P_D);
+    pid_val[2][0] = atof(Y_P);
+    pid_val[2][1] = atof(Y_I);
+    pid_val[2][2] = atof(Y_D);
+    
+    
 }
