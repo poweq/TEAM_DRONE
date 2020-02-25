@@ -13,3 +13,6 @@ Bitcamp TEAMDRONE
 
 ### 5. MFC Flow Chart 
 ![KakaoTalk_20200225_130940333](https://user-images.githubusercontent.com/45223302/75214220-25f74e80-57d0-11ea-8af9-6f434d384400.jpg)
+
+### 6. ESP-32
+![KakaoTalk_20200225_173125101](https://user-images.githubusercontent.com/45223302/75229758-e7748a80-57f5-11ea-8c06-7029c8863998.png)
