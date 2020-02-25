@@ -1,5 +1,5 @@
 # TEAM_DRONE
-비트 캠프 드론팀 소스 코드 백업 및 공유 \
+Bitcamp TEAMDRONE
 ### 1. Controller Tx
 ![KakaoTalk_20200224_100800096](https://user-images.githubusercontent.com/45223302/75125544-fa556500-56f8-11ea-90cd-dabd6dee555f.jpg)
 ### 2. Controller Rx (Drone)
