@@ -2,8 +2,8 @@
 
 #include "pid.h"
 
-#define PID_IMAX             (40.0f)
-#define PID_IMIN              (-40.0f)
+#define PID_IMAX             (50.0f)
+#define PID_IMIN              (-50.0f)
 
 extern float deltat;
 
@@ -389,4 +389,16 @@ void Parsing_Throttle_val(uint8_t* arr, int *Controller_1)
     char* T;
     T = strtok((char*)arr, ",");         
     *Controller_1 = atof(T);   
+}
+
+void Parsing_SettingPoint_val(uint8_t* arr, float* setting_angle)
+{
+    char* Setting_R, *Setting_P, *Setting_Y;
+    Setting_R = strtok((char*)arr, ",");
+    Setting_P = strtok(NULL, ",");
+    Setting_Y = strtok(NULL,",");    
+     
+    setting_angle[0] = atof(Setting_R);
+    setting_angle[1] = atof(Setting_P);
+    setting_angle[2] = atof(Setting_Y);   
 }

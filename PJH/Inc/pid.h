@@ -28,6 +28,7 @@ float Standard_pid_update(__PID * pid, float set, float actual, int axis);
 void Parsing_PID_val(uint8_t* arr, float pid_val[][3]);
 void Parsing_inPID_val(uint8_t* arr, float pid_val[][3]);
 void Parsing_Throttle_val(uint8_t* arr, int *Controller_1);
+void Parsing_SettingPoint_val(uint8_t* arr, float* setting_angle);
 
 #endif
 
