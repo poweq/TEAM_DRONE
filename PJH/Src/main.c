@@ -20,16 +20,17 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
-//#include <stdio.h>
+#include <stdio.h>
 #include <math.h>
 #include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
 #include "pid.h"
 #include "PWM.h"
-#include "fuzzy.h"
+//#include "fuzzy.h"
 #include "LPF.h"
 /* USER CODE END Includes */
 
@@ -81,62 +82,25 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 //========================GLOBAL VARIABLES=========================
+//================================================================
 //========================USER VARIABLES===========================
-uint8_t uart1_tx_to_MFC[30];                           //Trandmit variable.
+uint8_t uart1_tx_to_MFC[100];                             //Trandmit variable.
 uint8_t uart1_tx_to_MFC2[100];                           //Trandmit variable.
 uint8_t uart2_tx_data2[255];
-uint8_t uart2_tx_data3[255];
+//uint8_t uart2_tx_data3[255];
 //======================UART variables============================
 uint8_t pid_buffer[70];
 int num = 0;
 uint8_t data;
-
 //=======================INIT Variables=============================
 TM_MPU9250_t    MPU9250;                                //MPU9250 Sensor structure.
 __PID           pid;                                    //PID Controll structure.
-
 //=======================MPU9250 variables==========================
 float ax, ay, az, gx, gy, gz, mx, my, mz;               // variables to hold latest sensor data values.
-
-//=======================Changing Variable from external controll========
-float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
-float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-float pid_val[3][3] = {{4.0f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-float inpid_val[3][3] = {{1.5f, 0.8f, 0.6f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-float angular_velocity[3];                              //For double loop PID.
-float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
-
-int Controller_1 = 30;                                  //Moter Throttle.(40이면 뜰듯)
-int Controller_2 = 0
-;                                   //Moter Throttle. 
-//====================Fuzzy Variables====================================
-float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
-
 //====================Quaternion VARIABLES===============================
-float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
-float delta_angle[3] = {0.0f, 0.0f, 0.0f};              //d_roll d_pitch d_yaw.
-float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
-float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
-float eInt[3] = {0.0f, 0.0f, 0.0f};                     // vector to hold integral error for Mahony method.
 float deltat = 0.0f;                                    //integration interval for filter schemes.
 
-
-    
-//=====================Flag and Time flag=================================    
-uint32_t Now = 0;                                       //Used to calculate integration interval.
-uint32_t lastUpdate = 0;                                //Used to calculate integration interval.
-uint32_t before_while = 0;                              //Time of Before entering while loop.
-uint16_t wait = 0;                                      //getting initiate setting_angle waiting time(3secs) 
-uint8_t wait_flag = 0;                                  //Time waiting flag.
-uint8_t Mcal_flag = 0;                                  //User Magnetic bias flag.
-
-uint32_t UART_Now = 0;     
-uint32_t UART_lastUpdate = 0;
-uint32_t UART_deltat = 0;
-
-float dt2 = 0.0f;                                       //임시 테스트용.
-//========================================================================
 /* USER CODE END 0 */
 
 /**
@@ -146,6 +110,39 @@ float dt2 = 0.0f;                                       //임시 테스트용.
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+//====================================================================  
+  float angular_velocity[3];                              //For double loop PID.
+  float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.  
+  //=====================Flag and Time flag=================================    
+  uint32_t Now = 0;                                       //Used to calculate integration interval.
+  uint32_t lastUpdate = 0;                                //Used to calculate integration interval.
+  uint32_t before_while = 0;                              //Time of Before entering while loop.
+  uint16_t wait = 0;                                      //getting initiate setting_angle waiting time(3secs) 
+  uint8_t wait_flag = 0;                                  //Time waiting flag.
+  uint8_t Mcal_flag = 0;                                  //User Magnetic bias flag.
+
+  //uint32_t UART_Now = 0;     
+  //uint32_t UART_lastUpdate = 0;
+  //uint32_t UART_deltat = 0;
+
+  //float dt2 = 0.0f;                                       //임시 테스트용.
+  //====================Fuzzy Variables====================================
+  //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
+  //========================================================================
+  int Controller_1 = 30;                                  //Moter Throttle.(40이면 뜰듯)
+  //int Controller_2 = 0;                                   //Moter Throttle. 
+  //=======================Changing Variable from external controll========
+  float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
+  //float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
+  float pid_val[3][3] = {{4.0f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{1.6f, 0.9f, 0.6f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float angular_velocity[3];                              //For double loop PID.
+  //float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
+  //====================Quaternion VARIABLES===============================
+  float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
+  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
+  float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
+  //====================================================================
   /* USER CODE END 1 */
   
 
@@ -153,11 +150,11 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-  
+
   /* USER CODE BEGIN Init */
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   pid_init(&pid, pid_val, inpid_val);
-  fuzzy_init();
+  //fuzzy_init();
 
   /* USER CODE END Init */
 
@@ -189,7 +186,7 @@ int main(void)
   }    
   //======Automatic calculation of Magnetic filed bias END======
   //================PWM START===================================
-  if (0)
+  if (1)
   {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
@@ -217,7 +214,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {         
-    int aa = HAL_GetTick();     //Get time for 
+    //int aa = HAL_GetTick();     //Get time for 
     
     HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID 받을 때.
 
@@ -254,9 +251,12 @@ int main(void)
       wait = HAL_GetTick() - before_while;
       if (wait >= 3500)
       {            
-        init_setting_angle[0] += Euler_angle[0];         //roll
-        init_setting_angle[1] += Euler_angle[1];         //pitch
-        init_setting_angle[2] += Euler_angle[2];         //yaw
+//        init_setting_angle[0] += Euler_angle[0];         //roll
+//        init_setting_angle[1] += Euler_angle[1];         //pitch
+//        init_setting_angle[2] += Euler_angle[2];         //yaw
+        setting_angle[0] += Euler_angle[0];         //roll
+        setting_angle[1] += Euler_angle[1];         //pitch
+        setting_angle[2] += Euler_angle[2];         //yaw
         wait_flag ++;
       }
     }    
@@ -265,6 +265,9 @@ int main(void)
       //setting_angle[0] = init_setting_angle[0] / init_angle_average;    //init roll
       //setting_angle[1] = init_setting_angle[1] / init_angle_average;    //init pitch
       //setting_angle[2] = init_setting_angle[2] / init_angle_average;    //init yaw
+      setting_angle[0] = setting_angle[0] / init_angle_average;    //init roll
+      setting_angle[1] = setting_angle[1] / init_angle_average;    //init pitch
+      setting_angle[2] = setting_angle[2] / init_angle_average;    //init yaw
     }
   //---------------must do functionization!!!-------------------
     
@@ -275,10 +278,10 @@ int main(void)
     if (deltat >= dt)                           //Update term.(500Hz.dt=2)
     {
       deltat /= 1000.0f;                        //Make millisecond to second.
-      dt2 = deltat;
+      //dt2 = deltat;
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
       //MadgwickAHRSupdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz);
-      Quternion2Euler(q); //Get Euler angles (roll, pitch, yaw) from Quaternions.
+      Quternion2Euler(q, Euler_angle); //Get Euler angles (roll, pitch, yaw) from Quaternions.
       __LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
 
       //=========================Fuzzy part============================
@@ -332,8 +335,6 @@ int main(void)
     
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
-    //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);        
-
  //======================BLDC Moter Part===============================================  
    
     if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
@@ -341,7 +342,7 @@ int main(void)
        Motor_Start();
     }
  
-   if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 30000)
+   if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 20000)
    {
      
      if (Controller_1 <= 5)
@@ -384,18 +385,18 @@ int main(void)
        }
     }
     
-    Motor_Stop(30000);
+    Motor_Stop(20000, before_while);
     
-    sprintf((char*)uart2_tx_data3,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
-    //HAL_UART_Transmit(&huart2,uart2_tx_data3 ,sizeof(uart2_tx_data3), 10);
+    //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
 
 //======================BLDC Moter Part END======================================
 
     
 //==============Data transmit part==============================================
-    UART_Now = HAL_GetTick();               //Get current time.
-    UART_deltat += (UART_Now - UART_lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
-    UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
+    //UART_Now = HAL_GetTick();               //Get current time.
+    //UART_deltat += (UART_Now - UART_lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
+    //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
 //    if (UART_deltat >= 10)
 //    {
       //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
@@ -403,9 +404,10 @@ int main(void)
       sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
       HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC), 5);
+      //HAL_Delay(3);
       HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 4);
       
-      UART_deltat = 0;
+      //UART_deltat = 0;
 //    }
 //*********************************************************************************
   
@@ -457,7 +459,7 @@ int main(void)
     }
 //*********************************************************************************
 //-------------------TIme Check--------------------
-    int bb = HAL_GetTick();
+    //int bb = HAL_GetTick();
     //sprintf((char*)uart2_tx_data2,"%d  %d\r\n",  aa, bb);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
 //-------------------TIme Check END--------------------

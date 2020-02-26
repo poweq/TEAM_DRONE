@@ -1,50 +1,5 @@
 #include "PWM.h"
 
-
-
-void Motor_Test(void)
-{
-  int i = 0;
-  for (i = MIN_PULSE; i < MAX_PULSE;)
-  {
-          //  TIM2->CCR1 = i;
-          MOTOR_V1 = i;
-          MOTOR_V2 = i;
-          MOTOR_V3 = i;
-          MOTOR_V4 = i;
-          HAL_Delay(100);
-          i += 50;
-  }
-}
-
-void Motor_Test_2(void)
-{
-  int i = 0;
-  int a = 0;
-  int b = 9700;
-  for (i = MIN_PULSE; i < 9700;)
-  {
-          //  TIM2->CCR1 = i;
-          MOTOR_V1 = i;
-          MOTOR_V2 = i;
-          MOTOR_V3 = i;
-          MOTOR_V4 = i;
-          HAL_Delay(100);
-          i += 10;
-  }
-  for (i = 9700; i < 10500;)
-  {
-          //  TIM2->CCR1 = i;
-          MOTOR_V1 = i;
-          MOTOR_V2 = i;
-          MOTOR_V3 = b - a;
-          MOTOR_V4 = i;
-          HAL_Delay(100);
-          i += 10;
-          a += 10;
-  }
-}
-
 void ESC_Calibration(void)
 {
   //  TIM2->CCR1 = 15500;
@@ -77,64 +32,9 @@ void Motor_Start(void)
   MOTOR_V2 = MIN_PULSE + 700;
   MOTOR_V3 = MIN_PULSE + 700;
   MOTOR_V4 = MIN_PULSE + 700;
-  //HAL_Delay(100);
-  
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
-  //
-  //MOTOR_V1 += 100;
-  //MOTOR_V2 += 100;
-  //MOTOR_V3 += 100;
-  //MOTOR_V4 += 100;
-  ////HAL_Delay(100);
 }
 
-void Motor_Stop(int count)
+void Motor_Stop(int count, uint32_t before_while)
 {
   if (HAL_GetTick() - before_while > count)
   {

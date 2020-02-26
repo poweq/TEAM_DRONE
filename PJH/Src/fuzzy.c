@@ -74,7 +74,7 @@ void fuzzy_init() {
         for (j = 0; j < 5; j++) 
         {
           Fuzzy_Matrix[i][j].Fuzzy_Val = 0.0f;
-          Fuzzy_Matrix[i][j].index = i + j + 1;
+          //Fuzzy_Matrix[i][j].index = i + j + 1;
           Fuzzy_Matrix[i][j].Selected_PID[0]=Rule_Base[i][j][0];
           Fuzzy_Matrix[i][j].Selected_PID[1]=Rule_Base[i][j][1];
           Fuzzy_Matrix[i][j].Selected_PID[2]=Rule_Base[i][j][2];

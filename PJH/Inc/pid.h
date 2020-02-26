@@ -18,13 +18,10 @@ typedef struct PID
 	float integral[3];
 }__PID;
 
-
-//void pid_init(struct PID * pid, float p, float i, float d);
 void pid_init(__PID * pid, float pid_val[][3], float inpid_val[][3]);
 void pid_gain_update(__PID * pid, float pid_val[][3], float inpid_val[][3]);
 void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float * angular_velocity);
 void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis);
-float Standard_pid_update(__PID * pid, float set, float actual, int axis);
 void Parsing_PID_val(uint8_t* arr, float pid_val[][3]);
 void Parsing_inPID_val(uint8_t* arr, float pid_val[][3]);
 void Parsing_Throttle_val(uint8_t* arr, int *Controller_1);

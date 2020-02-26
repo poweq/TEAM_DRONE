@@ -12,7 +12,7 @@
 typedef struct __fuzzy_stru
 {
     float Fuzzy_Val;
-    uint8_t index;
+    //uint8_t index;
     float Selected_PID[3];
 
 }_Fuzzy_stru;

@@ -10,7 +10,7 @@ extern float integralFBx,  integralFBy, integralFBz;	// integral error terms sca
 
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 void MahonyAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float gz);
-void Quternion2Euler(float *q);
+void Quternion2Euler(float *q, float *Euler_angle);
 float invSqrt(float x);
 
 

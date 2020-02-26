@@ -20,13 +20,7 @@
 
 void ESC_Calibration(void);
 void Motor_Init(void);
-void Motor_Test(void);
-void Motor_Test_2(void);
 void Motor_Start(void);
-void Motor_Stop(int count);
-
-extern uint32_t before_while;
-
-
+void Motor_Stop(int count, uint32_t before_while);
 
 #endif
