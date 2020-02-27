@@ -128,6 +128,7 @@ int fputc(int ch ,FILE *f)
 
 void Display_UI()
 {
+   printf("\r\n  --------------Enter Debugging Mode---------------\r\n");
    printf("  ------------------------------------------------------\r\n");
    printf("     Roll             Pitch                Yaw\r\n");
    printf("  ------------------------------------------------------\r\n");
@@ -202,7 +203,7 @@ void nRF24_Transmit_ASCII(uint8_t adr_value)
        memset(tempbuf,'\0',7); // C_buff 메모리 초기화
 }
 
-void nRF24_Transmit_Debug_Mode(uint8_t adr_value)
+void nRF24_Transmit_Mode_Change(uint8_t adr_value)
 {
   TM_DELAY_SetTime(0);
   buffer[6]=adr_value;
@@ -501,17 +502,19 @@ int main(void)
           {
             for(int i =0; i<3;i++)
             {
-              nRF24_Transmit_Set_Point(&Set_Point[i],key_tr);
+              nRF24_Transmit_Set_Point(&Set_Point[i],key_input);         
             }
             printf("Set_Roll : %d\r\nSet_Pitch : %d\r\nSet_Yaw : %d\r\n",Set_Point[0],Set_Point[1],Set_Point[2]);
+            //key_input = '\0';
             
           }
           else if(key_input == 'd' || key_input == 'D')      //디버깅 모드로 진입
           {
           // 드론으로부터 데이터를 받은 내용을 토대로 ui 함수에 출력
-            printf("\r\n  --------------Enter Debugging Mode---------------\r\n");
+            
             Display_UI();
-            nRF24_Transmit_Debug_Mode(key_input);
+            nRF24_Transmit_Mode_Change(key_input);
+
             key_input='\0';
             while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
             switch(key_input)
@@ -709,8 +712,18 @@ int main(void)
               nRF24_Transmit_Status();
               key_tr ='\0';
               break;
-                
-              default:
+              
+            case 'x':
+              key_tr = key_input;
+              key_input = '\0';
+              printf("Throttle : ");
+              
+              nRF24_Transmit_Mode_Change(key_tr);
+              nRF24_Transmit_Status();
+              key_tr='\0';
+              break;
+              
+             default:
                 printf("\r\nError Number\r\n");
                 break;
           }
