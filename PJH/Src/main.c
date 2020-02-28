@@ -352,13 +352,13 @@ int main(void)
   //====================Fuzzy Variables====================================
   //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 15;                                  //Moter Throttle.(40ÀÌ¸é ¶ãµí)
+  int Controller_1 = 20;                                  //Moter Throttle.(40ÀÌ¸é ¶ãµí)
   //int Controller_2 = 0;                                   //Moter Throttle. 
   //=======================Changing Variable from external controll========
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
   float pid_val[3][3] = {{4.0f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{1.6f, 0.9f, 0.6f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{3.0f, 1.0f, 1.2f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   //float angular_velocity[3];                              //For double loop PID.
   //float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
   //====================Quaternion VARIABLES===============================
@@ -561,7 +561,7 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",dt2);
     
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
  //====================Data print transmit UART part END===================== 
     
  //======================BLDC Moter Part=================================
@@ -571,7 +571,7 @@ int main(void)
        Motor_Start();
     }
  
-   if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 300000)
+   if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 400000)
    {
      
      if (Controller_1 <= 5)
@@ -614,7 +614,7 @@ int main(void)
        }
     }
     
-    Motor_Stop(300000, before_while);
+    Motor_Stop(400000, before_while);
     
     //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);

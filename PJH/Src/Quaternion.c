@@ -12,8 +12,6 @@
 float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;			// quaternion of sensor frame relative to auxiliary frame
 float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;	// integral error terms scaled by Ki
 
-extern float q[4];
-
 //=====================================================================================================
 // MahonyAHRS.c
 //=====================================================================================================
