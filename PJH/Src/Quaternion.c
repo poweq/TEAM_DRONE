@@ -3,16 +3,16 @@
 
 #include "Quaternion.h"
 
-#define twoKp      (2.0f * 8.0f)        // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
-#define twoKi      (2.0f * 0.005f)
+#define twoKp      (2.0f * 11.0f)        // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+#define twoKi      (2.0f * 0.000f)
 #define PI         (3.141592f)
+#define sampleFreq      (200.0f)
 
 // Variable definitions
 float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;			// quaternion of sensor frame relative to auxiliary frame
 float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;	// integral error terms scaled by Ki
 
 extern float q[4];
-extern float deltat;                                                    // integration interval for both filter schemes
 
 //=====================================================================================================
 // MahonyAHRS.c
@@ -26,7 +26,7 @@ extern float deltat;                                                    // integ
 //====================================================================================================
 // AHRS algorithm update
 
-void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz) {
+void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz, float* q, float deltat) {
 	float recipNorm;
         float q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;  
 	float hx, hy, bx, bz;
@@ -36,7 +36,7 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
 
 	// Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
 	if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
-		MahonyAHRSupdateIMU(ax, ay, az, gx, gy, gz);
+		MahonyAHRSupdateIMU(ax, ay, az, gx, gy, gz, q, deltat);
 		return;
 	}
 
@@ -88,9 +88,9 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
 
 		// Compute and apply integral feedback if enabled
 		if(twoKi > 0.0f) {
-			//integralFBx += twoKi * halfex * (1.0f / sampleFreq);	// integral error scaled by Ki
-			//integralFBy += twoKi * halfey * (1.0f / sampleFreq);
-			//integralFBz += twoKi * halfez * (1.0f / sampleFreq);
+//			integralFBx += twoKi * halfex * (1.0f / sampleFreq);	// integral error scaled by Ki
+//			integralFBy += twoKi * halfey * (1.0f / sampleFreq);
+//			integralFBz += twoKi * halfez * (1.0f / sampleFreq);
                         integralFBx += twoKi * halfex * deltat;	// integral error scaled by Ki
 			integralFBy += twoKi * halfey * deltat;
 			integralFBz += twoKi * halfez * deltat;
@@ -111,9 +111,9 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
 	}
 	
 	// Integrate rate of change of quaternion
-	//gx *= (0.5f * (1.0f / sampleFreq));		// pre-multiply common factors
-	//gy *= (0.5f * (1.0f / sampleFreq));
-	//gz *= (0.5f * (1.0f / sampleFreq));
+//	gx *= (0.5f * (1.0f / sampleFreq));		// pre-multiply common factors
+//	gy *= (0.5f * (1.0f / sampleFreq));
+//	gz *= (0.5f * (1.0f / sampleFreq));
         gx *= (0.5f * deltat);		// pre-multiply common factors
 	gy *= (0.5f * deltat);
 	gz *= (0.5f * deltat);
@@ -141,7 +141,7 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
 //---------------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void MahonyAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float gz) {
+void MahonyAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float gz, float* q, float deltat) {
 	float recipNorm;
 	float halfvx, halfvy, halfvz;
 	float halfex, halfey, halfez;

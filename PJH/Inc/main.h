@@ -62,8 +62,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define CEpin_Pin GPIO_PIN_0
 #define CEpin_GPIO_Port GPIOC
-#define CSpin_Pin GPIO_PIN_1
-#define CSpin_GPIO_Port GPIOC
+#define CSNpin_Pin GPIO_PIN_1
+#define CSNpin_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3

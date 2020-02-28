@@ -63,7 +63,7 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 extern uint8_t data;
-extern uint8_t pid_buffer[100];
+extern uint8_t pid_buffer[71];
 extern int num;
 /* USER CODE END EV */
 

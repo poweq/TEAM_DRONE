@@ -70,14 +70,14 @@ void pid_gain_update(__PID * pid, float pid_val[][3], float inpid_val[][3])
 	pid->Kd[2]		= pid_val[2][2];
 }
 
-void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float * angular_velocity)
+void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float * angular_velocity, float deltat)
 {
-  pid_update(pid, setting_angle[0], Euler_angle[0], angular_velocity[0], 0);
-  pid_update(pid, setting_angle[1], Euler_angle[1], angular_velocity[1], 1);
-  pid_update(pid, setting_angle[2], Euler_angle[2], angular_velocity[2], 2);
+  pid_update(pid, setting_angle[0], Euler_angle[0], angular_velocity[0], 0, deltat);
+  pid_update(pid, setting_angle[1], Euler_angle[1], angular_velocity[1], 1, deltat);
+  pid_update(pid, setting_angle[2], Euler_angle[2], angular_velocity[2], 2, deltat);
 }
 #if 1 //double loop PID 
-void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis)
+void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis, float deltat)
 {  
   //set 목표각도
   //actual 현재각도
@@ -180,7 +180,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
 }
 #else
 
-void pid_update(__PID * pid, float set, float actual,float angular_velocity, int axis)
+void pid_update(__PID * pid, float set, float actual,float angular_velocity, int axis, float deltat)
 {  
   float Kp_term, Ki_term, Kd_term;
   float D_err = 0.0f;
@@ -307,7 +307,7 @@ void Parsing_Throttle_val(uint8_t* arr, int *Controller_1)
 {
     char* T;
     T = strtok((char*)arr, ",");         
-    *Controller_1 = atof(T);   
+    *Controller_1 = atoi(T);   
 }
 
 void Parsing_SettingPoint_val(uint8_t* arr, float* setting_angle)
