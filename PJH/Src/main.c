@@ -326,9 +326,6 @@ int main(void)
   //=======================INIT Variables=============================
   TM_MPU9250_t    MPU9250;                                //MPU9250 Sensor structure.
   __PID           pid;                                    //PID Controll structure.
-  //====================================================================  
-  float angular_velocity[3];                              //For double loop PID.
-  float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.  
   //=====================Flag and Time flag=================================    
   uint32_t Now = 0;                                       //Used to calculate integration interval.
   uint32_t lastUpdate = 0;                                //Used to calculate integration interval.
@@ -354,22 +351,23 @@ int main(void)
   //========================================================================
   int Controller_1 = 20;                                  //Moter Throttle.(40이면 뜰듯)
   //int Controller_2 = 0;                                   //Moter Throttle. 
-  //=======================Changing Variable from external controll========
+  //===================hanging Variables from external controll====================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
   float pid_val[3][3] = {{4.0f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float inpid_val[3][3] = {{3.0f, 1.0f, 1.2f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float angular_velocity[3];                              //For double loop PID.
-  //float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
+  float angular_velocity[3];                              //For double loop PID.
+  float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
+  float Magscale[3] = {0.0f, 0.0f, 0.0f};
   //====================Quaternion VARIABLES===============================
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
   float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
-  //====================================================================
-  
+  //===========================MPU9250 Variables=============================
+  float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};          //MPU9250 Accell and Gyro Self_Test.
   //========================nRF24L01 VARIABLES==============================
-  int temp_int;                                           // uint8_t 형으로 받는 data int형으로 변환, Throttle 값 
-  float temp;                                             // uint8_t 형으로 받는 data flaot형으로 변환, PID 값
+  //int temp_int;                                           // uint8_t 형으로 받는 data int형으로 변환, Throttle 값 
+  //float temp;                                             // uint8_t 형으로 받는 data flaot형으로 변환, PID 값
   
   /* USER CODE END 1 */
   
@@ -380,6 +378,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  MPU9250SelfTest(&MPU9250, &Self_Test[0]);
+
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   pid_init(&pid, pid_val, inpid_val);
   //fuzzy_init();
@@ -406,7 +406,7 @@ int main(void)
   //=========Automatic calculation of Magnetic filed bias=======
   if (Mcal_flag == 1)
   { 
-    magcal(Magbias);
+    magcal(Magbias, Magscale);
     Magbias[0] = Magbias[0] * MPU9250.MMult * MPU9250.ASAX;
     Magbias[1] = Magbias[1] * MPU9250.MMult * MPU9250.ASAY;
     Magbias[2] = Magbias[2] * MPU9250.MMult * MPU9250.ASAZ;
@@ -450,7 +450,7 @@ int main(void)
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
     TM_MPU9250_ReadMag(&MPU9250);       //get Magnetic data.
-    
+
     //MPU9250.Gx -= 2.55f;                //callibration values.
     //MPU9250.Gy -= 0.15f;
     //MPU9250.Gz -= 0.24f;
@@ -459,9 +459,13 @@ int main(void)
     //MPU9250.My -= 60.0f;
     //MPU9250.Mz -= 21.5f;    
     
-    MPU9250.Mx -= 21.0f;                  //callibration values.(SH's)
-    MPU9250.My -= 18.5f;
-    MPU9250.Mz -= -19.0f;    
+    //MPU9250.Mx -= 21.0f;                  //callibration values.(SH's)
+    //MPU9250.My -= 18.5f;
+    //MPU9250.Mz -= -19.0f;    
+    
+//    MPU9250.Mx -= 28.0f;                  //callibration values.(SH's)
+//    MPU9250.My -= 3.5f;
+//    MPU9250.Mz -= 20.0f;    
   //=========Subtract Automatic Magnetic filed bias============
     if (Mcal_flag == 2)
     {
@@ -543,6 +547,9 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f \r\n", MPU9250.Mx, MPU9250.My ,MPU9250.Mz);
+    //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", (int)MPU9250.Mx_Raw, (int)MPU9250.My_Raw , (int)MPU9250.Mz_Raw);
+    sprintf((char*)uart2_tx_data2,"%f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2]);
+
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
@@ -550,10 +557,10 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
 
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2]);
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2]);
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], Magbias[0], Magbias[1], Magbias[2]);
 
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
-    sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
     //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
     //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);

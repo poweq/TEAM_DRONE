@@ -71,7 +71,7 @@ extern "C" {
 //#include "defines.h"
 #include "tm_stm32_i2c.h"
 #include "tm_stm32_delay.h"
-
+#include <math.h>
 /**
  * @defgroup TM_LIB_Macros
  * @brief    Library defines
@@ -139,6 +139,8 @@ typedef struct _TM_MPU9250_t {
     float AMult, GMult, MMult;
     float ASAX, ASAY, ASAZ;
     float Magbiasx, Magbiasy, Magbiasz;
+    float Accbiasx, Accbiasy, Accbiasz;
+    float Gybiasx, Gybiasy, Gybiasz;
     
     uint8_t I2C_Addr;
     uint8_t I2C_Addr_Mag;
@@ -154,6 +156,9 @@ typedef struct _TM_MPU9250_t {
  * @{
  */
 
+
+void MPU9250SelfTest(TM_MPU9250_t* MPU9250, float * Self_Test);
+
 TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t dev);
 
 void TM_MPU9250_ReadAcce(TM_MPU9250_t* MPU9250);
@@ -162,9 +167,8 @@ void TM_MPU9250_ReadMag(TM_MPU9250_t* MPU9250);
 TM_MPU9250_Result_t TM_MPU9250_DataReady(TM_MPU9250_t* MPU9250);
 
 void TM_MPU9250_ReadMagASA(TM_MPU9250_t* MPU9250);
-void magcal(float * Magbias);
-
-
+void magcal(float * Magbias, float* Magscale);
+void TM_MPU9250_ReadMag_Bias(TM_MPU9250_t* MPU9250);
 
 /**
  * @}
