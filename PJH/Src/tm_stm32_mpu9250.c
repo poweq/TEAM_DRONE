@@ -305,6 +305,7 @@ void calibrateMPU9250(TM_MPU9250_t* MPU9250)
     uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
     uint16_t ii, packet_count, fifo_count;
     int32_t gyro_bias[3]  = {0, 0, 0}, accel_bias[3] = {0, 0, 0};
+    uint32_t tempbias[6] = {0,0,0,0,0,0};
 
     // reset device
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, PWR_MGMT_1, 0x80); // Write a one to bit 7 reset bit; toggle reset device
@@ -444,6 +445,28 @@ void calibrateMPU9250(TM_MPU9250_t* MPU9250)
     MPU9250->Accbiasx = (float)accel_bias[0]/(float)accelsensitivity; 
     MPU9250->Accbiasy = (float)accel_bias[1]/(float)accelsensitivity;
     MPU9250->Accbiasz = (float)accel_bias[2]/(float)accelsensitivity;
+    
+    
+    HAL_FLASH_Unlock();
+  
+    FLASH_Erase_Sector(FLASH_SECTOR_5, FLASH_VOLTAGE_RANGE_3);      
+    
+    tempbias[0] = (int)(MPU9250->Accbiasx * 10000);
+    tempbias[1] = (int)(MPU9250->Accbiasy * 10000);
+    tempbias[2] = (int)(MPU9250->Accbiasz * 10000);
+    tempbias[3] = (int)(MPU9250->Gybiasx * 10000);
+    tempbias[4] = (int)(MPU9250->Gybiasy * 10000);
+    tempbias[5] = (int)(MPU9250->Gybiasz * 10000);
+    
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020000, tempbias[0]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020004, tempbias[1]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020008, tempbias[2]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0802000C, tempbias[3]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020010, tempbias[4]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020014, tempbias[5]);
+
+    HAL_Delay(30);  
+    HAL_FLASH_Lock();   
 }
 
 void AK8963SelfTest(TM_MPU9250_t* MPU9250, float* Self_Test_Mag)
@@ -730,6 +753,20 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
     MPU9250->Magscalex = avg_rad/((float)mag_scale[0]);
     MPU9250->Magscaley = avg_rad/((float)mag_scale[1]);
     MPU9250->Magscalez = avg_rad/((float)mag_scale[2]);
+//=====================Save Bias data in flash memory=================
+    HAL_FLASH_Unlock();
+  
+    FLASH_Erase_Sector(FLASH_SECTOR_5, FLASH_VOLTAGE_RANGE_3);      
+    
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020000, (int32_t)MPU9250->Magbiasx);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020004, (int32_t)MPU9250->Magbiasy);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020008, (int32_t)MPU9250->Magbiasz);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0802000C, (int32_t)MPU9250->Magscalex);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020010, (int32_t)MPU9250->Magscaley);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020014, (int32_t)MPU9250->Magscalez);
+
+    HAL_Delay(30);  
+    HAL_FLASH_Lock();   
 }
 
 

@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 //#include "fuzzy.h"
+#include "stm32f4xx_hal.h"
 #include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
 #include "pid.h"
@@ -379,7 +380,9 @@ int main(void)
   /* USER CODE BEGIN Init */
   __INIT__MPU9250(&MPU9250);
   MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);
+  if (0){
   calibrateMPU9250(&MPU9250);
+  }
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
   AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
@@ -436,6 +439,24 @@ int main(void)
   TM_NRF24L01_Init(15,32);  
   TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
   TM_NRF24L01_SetMyAddress(MyAddress);
+  //==================================================================
+  if(1){
+  __IO uint32_t data32=0;
+  uint32_t Address = 0x08020000;
+  data32 = *(__IO uint32_t*)(Address);  
+  MPU9250.Accbiasx = (float)((int)(data32) / 10000.0f);
+  data32 = *(__IO uint32_t*)(Address+4);  
+  MPU9250.Accbiasy = (float)((int)(data32) / 10000.0f);
+  data32 = *(__IO uint32_t*)(Address+8);  
+  MPU9250.Accbiasz = (float)((int)(data32) / 10000.0f);
+  data32 = *(__IO uint32_t*)(Address+12);  
+  MPU9250.Gybiasx = (float)((int)(data32) / 10000.0f);
+  data32 = *(__IO uint32_t*)(Address+16);  
+  MPU9250.Gybiasy = (float)((int)(data32) / 10000.0f);
+  data32 = *(__IO uint32_t*)(Address+20);  
+  MPU9250.Gybiasz = (float)((int)(data32) / 10000.0f);
+  }
+  //==================================================================
   
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
@@ -472,14 +493,10 @@ int main(void)
 //    MPU9250.My -= 3.5f;
 //    MPU9250.Mz -= 20.0f;    
   //=========Subtract Automatic Magnetic filed bias============
-    if (Mcal_flag == 2)
-    {
-       MPU9250.Mx -= MPU9250.Magbiasx;        //Automatic User callibration values.
-       MPU9250.My -= MPU9250.Magbiasy;
-       MPU9250.Mz -= MPU9250.Magbiasz;    
-    }
-  //=========Subtract Automatic Magnetic filed bias END========
-  
+     MPU9250.Mx -= MPU9250.Magbiasx;        //Automatic User callibration values.
+     MPU9250.My -= MPU9250.Magbiasy;
+     MPU9250.Mz -= MPU9250.Magbiasz;       
+  //=========Subtract Automatic Magnetic filed bias END========  
   //==================Init settiing angle=====================
     if (wait_flag < init_angle_average)
     {
@@ -555,9 +572,9 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", (int)MPU9250.Mx_Raw, (int)MPU9250.My_Raw , (int)MPU9250.Mz_Raw);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2], Self_Test[3], Self_Test[4], Self_Test[5]);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f\r\n", Self_Test_Mag[0], Self_Test_Mag[1], Self_Test_Mag[2]);
-    sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz, MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz);
-    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz);
-
+    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz, MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz);
+    sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz);
+    //sprintf((char*)uart2_tx_data2,"%d\r\n", data32);
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
