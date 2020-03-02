@@ -71,7 +71,7 @@ extern "C" {
 //#include "defines.h"
 #include "tm_stm32_i2c.h"
 #include "tm_stm32_delay.h"
-
+#include <math.h>
 /**
  * @defgroup TM_LIB_Macros
  * @brief    Library defines
@@ -132,13 +132,18 @@ typedef struct _TM_MPU9250_t {
     float Ax, Ay, Az;         /*!< Accelerometer raw data */
     float Gx, Gy, Gz;         /*!< Gyroscope raw data */
     float Mx, My, Mz;         /*!< Magnetometer raw data */
+
     int16_t Ax_Raw, Ay_Raw, Az_Raw;         /*!< Accelerometer raw data */
     int16_t Gx_Raw, Gy_Raw, Gz_Raw;         /*!< Gyroscope raw data */
     int16_t Mx_Raw, My_Raw, Mz_Raw;         /*!< Magnetometer raw data */
     
     float AMult, GMult, MMult;
     float ASAX, ASAY, ASAZ;
+
+    float Accbiasx, Accbiasy, Accbiasz;
+    float Gybiasx, Gybiasy, Gybiasz;
     float Magbiasx, Magbiasy, Magbiasz;
+    float Magscalex, Magscaley, Magscalez;
     
     uint8_t I2C_Addr;
     uint8_t I2C_Addr_Mag;
@@ -154,6 +159,13 @@ typedef struct _TM_MPU9250_t {
  * @{
  */
 
+
+void __INIT__MPU9250(TM_MPU9250_t* MPU9250);
+
+TM_MPU9250_Result_t MPU9250SelfTest(TM_MPU9250_t* MPU9250, float * Self_Test,  TM_MPU9250_Device_t dev);
+void calibrateMPU9250(TM_MPU9250_t* MPU9250);
+void AK8963SelfTest(TM_MPU9250_t* MPU9250, float* Self_Test_Mag);
+
 TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t dev);
 
 void TM_MPU9250_ReadAcce(TM_MPU9250_t* MPU9250);
@@ -162,9 +174,8 @@ void TM_MPU9250_ReadMag(TM_MPU9250_t* MPU9250);
 TM_MPU9250_Result_t TM_MPU9250_DataReady(TM_MPU9250_t* MPU9250);
 
 void TM_MPU9250_ReadMagASA(TM_MPU9250_t* MPU9250);
-void magcal(float * Magbias);
-
-
+void MagCalibration(TM_MPU9250_t* MPU9250);
+void TM_MPU9250_ReadMag_Bias(TM_MPU9250_t* MPU9250);
 
 /**
  * @}
