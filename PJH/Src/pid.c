@@ -127,7 +127,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->err[1] = PID_IMIN;
         
         stabilPgain = pid->Kp[1] * pid->err[1];                                          //p항 = Kp * 오차
-        stabilIgain += pid->Ki[0] *pid->err[0] * deltat;
+        stabilIgain += pid->Ki[1] *pid->err[1] * deltat;
 
         
         pid->rateError[1] =  stabilPgain - angular_velocity;
@@ -157,7 +157,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->err[2] = PID_IMIN;
         
         stabilPgain = pid->Kp[2] * pid->err[2];                                           //p항 = Kp * 오차
-        stabilIgain += pid->Ki[0] *pid->err[0] * deltat;
+        stabilIgain += pid->Ki[2] *pid->err[2] * deltat;
 
         pid->rateError[2] = stabilPgain - angular_velocity;
 

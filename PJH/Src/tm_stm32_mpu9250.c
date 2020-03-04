@@ -161,7 +161,9 @@
 #define ZA_OFFSET_H         0x7D
 #define ZA_OFFSET_L         0x7E
 
-#define WhoAmIReturn        0x71 // Some device get 0x73
+#define WhoAmIReturn        (0x71)
+#define WhoAmIReturn2       (0x73)
+
 
 void __INIT__MPU9250(TM_MPU9250_t* MPU9250)
 {
@@ -208,7 +210,8 @@ TM_MPU9250_Result_t MPU9250SelfTest(TM_MPU9250_t* MPU9250, float * Self_Test,  T
     
     /* Check who I am */
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, WHO_AM_I_MPU9250, &data);
-    if (data != WhoAmIReturn) {
+    if ((data != WhoAmIReturn) && (data != WhoAmIReturn2)) {
+
         return TM_MPU9250_Result_DeviceNotConnected;
     }
 
@@ -451,12 +454,13 @@ void calibrateMPU9250(TM_MPU9250_t* MPU9250)
   
     FLASH_Erase_Sector(FLASH_SECTOR_5, FLASH_VOLTAGE_RANGE_3);      
     
-    tempbias[0] = (int)(MPU9250->Accbiasx * 10000);
-    tempbias[1] = (int)(MPU9250->Accbiasy * 10000);
-    tempbias[2] = (int)(MPU9250->Accbiasz * 10000);
-    tempbias[3] = (int)(MPU9250->Gybiasx * 10000);
-    tempbias[4] = (int)(MPU9250->Gybiasy * 10000);
-    tempbias[5] = (int)(MPU9250->Gybiasz * 10000);
+    tempbias[0] = (int)(MPU9250->Accbiasx * 1000);
+    tempbias[1] = (int)(MPU9250->Accbiasy * 1000);
+    tempbias[2] = (int)(MPU9250->Accbiasz * 1000);
+    tempbias[3] = (int)(MPU9250->Gybiasx * 1000);
+    tempbias[4] = (int)(MPU9250->Gybiasy * 1000);
+    tempbias[5] = (int)(MPU9250->Gybiasz * 1000);
+
     
     HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020000, tempbias[0]);
     HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020004, tempbias[1]);
@@ -534,7 +538,8 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     
     /* Check who I am */
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, WHO_AM_I_MPU9250, &data);
-    if (data != WhoAmIReturn) {
+    if ((data != WhoAmIReturn) && (data != WhoAmIReturn2)) {
+
         return TM_MPU9250_Result_DeviceNotConnected;
     }
     
@@ -717,9 +722,13 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
   int32_t mag_scale[3] = {0, 0, 0};
   int16_t mag_max[3] = {-32767, -32767, -32767}, mag_min[3] = {32767, 32767, 32767};
   TM_MPU9250_t mag_temp;
-   
+  uint32_t tempbias[6] = {0,0,0,0,0,0};
+  
+  mag_temp.I2C_Addr_Mag = MPU9250_I2C_ADDR_MAG;
+  
   // shoot for ~twenty seconds of mag data
-   sample_count = 2000;
+   sample_count = 2000;//2000
+
    for(ii = 0; ii < sample_count; ii++) {
     TM_MPU9250_ReadMag_Bias(&mag_temp);
       if(mag_temp.Mx_Raw > mag_max[0]) mag_max[0] = mag_temp.Mx_Raw;
@@ -738,9 +747,9 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
     mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
     mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
         
-    MPU9250->Magbiasx = (float)mag_bias[0];
-    MPU9250->Magbiasy = (float)mag_bias[1];
-    MPU9250->Magbiasz = (float)mag_bias[2];
+    MPU9250->Magbiasx = ((float)mag_bias[0]) * MPU9250->MMult * MPU9250->ASAX;
+    MPU9250->Magbiasy = ((float)mag_bias[1]) * MPU9250->MMult * MPU9250->ASAX;
+    MPU9250->Magbiasz = ((float)mag_bias[2]) * MPU9250->MMult * MPU9250->ASAX;  
     
 // Get soft iron correction estimate
     mag_scale[0]  = (mag_max[0] - mag_min[0])/2;  // get average x axis max chord length in counts
@@ -753,17 +762,25 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
     MPU9250->Magscalex = avg_rad/((float)mag_scale[0]);
     MPU9250->Magscaley = avg_rad/((float)mag_scale[1]);
     MPU9250->Magscalez = avg_rad/((float)mag_scale[2]);
+
 //=====================Save Bias data in flash memory=================
     HAL_FLASH_Unlock();
   
-    FLASH_Erase_Sector(FLASH_SECTOR_5, FLASH_VOLTAGE_RANGE_3);      
+    FLASH_Erase_Sector(FLASH_SECTOR_6, FLASH_VOLTAGE_RANGE_3);      
     
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020000, (int32_t)MPU9250->Magbiasx);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020004, (int32_t)MPU9250->Magbiasy);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020008, (int32_t)MPU9250->Magbiasz);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0802000C, (int32_t)MPU9250->Magscalex);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020010, (int32_t)MPU9250->Magscaley);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020014, (int32_t)MPU9250->Magscalez);
+    tempbias[0] = (int)(MPU9250->Magbiasx * 10);
+    tempbias[1] = (int)(MPU9250->Magbiasy * 10);
+    tempbias[2] = (int)(MPU9250->Magbiasz * 10);
+    tempbias[3] = (int)(MPU9250->Magscalex * 1000);
+    tempbias[4] = (int)(MPU9250->Magscaley * 1000);
+    tempbias[5] = (int)(MPU9250->Magscalez * 1000);
+    
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, tempbias[0]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, tempbias[1]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, tempbias[2]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, tempbias[3]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, tempbias[4]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, tempbias[5]);
 
     HAL_Delay(30);  
     HAL_FLASH_Lock();   
