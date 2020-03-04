@@ -140,94 +140,109 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, float (*
   {
     case 0:
       *Throttle = temp_int;
-      printf("Throttle : %d\r\n",temp_int);                                      // ?“°ë¡œí? ê°? ???¥
+      printf("Throttle : %d\r\n",temp_int);                                      // ?ï¿½ï¿½ë¡œï¿½? ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
     case 1:
       inpid_val[0][0] = temp;
-      printf("Roll_P[0][0] : %.3f\r\n",temp);                                 // Roll_P ê°? ???¥
+      printf("Roll_P[0][0] : %.3f\r\n",temp);                                 // Roll_P ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 2:
       inpid_val[1][0] = temp;
-      printf("Pitch_P[1][0] : %.3f\r\n",temp);                               // Pitch_P ê°? ???¥
+      printf("Pitch_P[1][0] : %.3f\r\n",temp);                               // Pitch_P ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 3:
       inpid_val[2][0] = temp;
-      printf("Yaw_P[2][0] : %.3f\r\n",temp);                                // Yaw_P ê°? ???¥
+      printf("Yaw_P[2][0] : %.3f\r\n",temp);                                // Yaw_P ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 4:
       inpid_val[0][1] = temp;
-      printf("Roll_I[0][1] : %.3f\r\n",temp);                                 // Roll_I ê°? ???¥
+      printf("Roll_I[0][1] : %.3f\r\n",temp);                                 // Roll_I ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 5:
       inpid_val[1][1] = temp;
-      printf("Pitch_I[1][1] : %.3f\r\n",temp);                               // Pitch_I ê°? ???¥
+      printf("Pitch_I[1][1] : %.3f\r\n",temp);                               // Pitch_I ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 6:
       inpid_val[2][1] = temp;
-      printf("Yaw_I[2][1] : %.3f\r\n",temp);                                 // Yaw_I ê°? ???¥
+      printf("Yaw_I[2][1] : %.3f\r\n",temp);                                 // Yaw_I ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 7:
       inpid_val[0][2] = temp;
-      printf("Roll_D[0][2] : %.3f\r\n",temp);                                // Roll_D ê°? ???¥
+      printf("Roll_D[0][2] : %.3f\r\n",temp);                                // Roll_D ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 8:
       inpid_val[1][2] = temp;
-      printf("Pitch_D[1][2] : %.3f\r\n",temp);                              // Pitch_D ê°? ???¥
+      printf("Pitch_D[1][2] : %.3f\r\n",temp);                              // Pitch_D ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 9:
       inpid_val[2][2] = temp;
-      printf("Yaw_D[2][2] : %.3f\r\n",temp);                               // Yaw_D ê°? ???¥
+      printf("Yaw_D[2][2] : %.3f\r\n",temp);                               // Yaw_D ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 'r':
       setting_angle[0] = temp;
-      printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint ê°? ???¥
+      printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
        
      case 'p':
       setting_angle[1] = temp;
-      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[1]);           // Pitch_SetPoint ê°? ???¥
+      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[1]);           // Pitch_SetPoint ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
      case 'y':
       setting_angle[2] = temp;
-      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint ê°? ???¥
+      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint ï¿½? ???ï¿½ï¿½
       value = '\0';
+
       break;
       
     case 'x':
       *Throttle = temp_int;
-      printf("Throttle_Reset : %d\r\n",temp_int);                                     // ?“°ë¡œí? ê°? ???¥(Throttle = MIN_PULSE)
+      printf("Throttle_Reset : %d\r\n",temp_int);                                     // ?ï¿½ï¿½ë¡œï¿½? ï¿½? ???ï¿½ï¿½(Throttle = MIN_PULSE)
       value = '\0';
+
       break;
   }
 }
 
-void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3],float* setting_angle)    // Controller?—?„œ PIDê°? ?ˆ˜?‹ 
+void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3],float* setting_angle)    // Controller?ï¿½ï¿½?ï¿½ï¿½ PIDï¿½? ?ï¿½ï¿½?ï¿½ï¿½
 {
-  int value='\0';     // ì»¨íŠ¸ë¡¤ëŸ¬?—?„œ ë°›ì? key_input ê°? ???¥ ë³??ˆ˜
+  int value='\0';     // ì»¨íŠ¸ë¡¤ëŸ¬?ï¿½ï¿½?ï¿½ï¿½ ë°›ï¿½? key_input ï¿½? ???ï¿½ï¿½ ï¿½??ï¿½ï¿½
   uint8_t dataIn[32]={0};                                     // Controller Data Receive Buffer
+
 
   //printf("Receive_Data_Ready : %d\r\n",TM_NRF24L01_DataReady());
   
@@ -237,14 +252,16 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3]
        
       TM_NRF24L01_GetData(dataIn);
       
-        if(dataIn[6]=='q'||dataIn[6]=='Q')      // q ?ˆŒ???„ ?•Œ ?? ?…Œ?Š¤?Š¸
+        if(dataIn[6]=='q'||dataIn[6]=='Q')      // q ?ï¿½ï¿½???ï¿½ï¿½ ?ï¿½ï¿½ ?? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½
+
         {
           value = dataIn[6];
           dataIn[6]='\0';
           printf("\r\n[6] : %c\r\n",value);
         }
         
-        else if(dataIn[6] == 'd'||dataIn[6]=='D')       // d ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ ?””ë²„ê·¸ ëª¨ë“œ
+        else if(dataIn[6] == 'd'||dataIn[6]=='D')       // d ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ ?ï¿½ï¿½ë²„ê·¸ ëª¨ë“œ
+
         {
           value = dataIn[6];
           dataIn[6] = '\0'; 
@@ -253,14 +270,15 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3]
           //printf("\r\n dataIn_test : %d\r\n",temp_int);
         }
         
-        else if(dataIn[6] == 's')                     // s ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ ì£¼í–‰ ëª¨ë“œ (ì»¨íŠ¸ë¡¤ëŸ¬?—?„œ s ?ˆ„ë¥´ë©´ ?“œë¡ ì˜ ?˜„?¬ Roll, Pitch, Yaw ê°’ì„ ì»¨íŠ¸ë¡¤ëŸ¬ ë¡? ?†¡?‹ ?•˜ê²? êµ¬í˜„?•  ?˜ˆ? •)
+
+        else if(dataIn[6] == 's'||dataIn[6] == 'S')                     // s ï¿½ï¿½ï¿½ï¿½ ï¿½Ç¾ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ï¿½ï¿½ s ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Roll, Pitch, Yaw ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ ï¿½ï¿½ ï¿½Û½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         {
           value = dataIn[6];
           dataIn[6] = '\0';
           //printf("key_input : %c", value);
         }
         
-        else if(dataIn[6] == 'x')                                             // x ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ  Throttleê°? ì´ˆê¸°?™”
+        else if(dataIn[6] == 'x')                                             // x ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½  Throttleï¿½? ì´ˆê¸°?ï¿½ï¿½
         {
           value = dataIn[6];
           dataIn[6] = '\0'; 
@@ -268,43 +286,44 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3]
           temp_int = 0;
         }
         
-        else if(dataIn[6] == 'r'||dataIn[6]=='R')                       // r, R ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ Roll SetPoint ê°? ?ˆ˜?‹ 
+        else if(dataIn[6] == 'r'||dataIn[6]=='R')                       // r, R ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ Roll SetPoint ï¿½? ?ï¿½ï¿½?ï¿½ï¿½
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                       // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Roll SetPoint ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
+          temp = atof((char*)dataIn);                                       // uint8_t ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ Roll SetPoint ê°’ì„ float?ï¿½ï¿½?ï¿½ï¿½ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ temp ?ï¿½ï¿½ ???ï¿½ï¿½
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
         
-        else if(dataIn[6] == 'p'||dataIn[6]=='P')                       // p, P ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ Pitch SetPoint ê°? ?ˆ˜?‹ 
+        else if(dataIn[6] == 'p'||dataIn[6]=='P')                       // p, P ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ Pitch SetPoint ï¿½? ?ï¿½ï¿½?ï¿½ï¿½
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                        // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Pitch SetPoint ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
+          temp = atof((char*)dataIn);                                        // uint8_t ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ Pitch SetPoint ê°’ì„ float?ï¿½ï¿½?ï¿½ï¿½ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ temp ?ï¿½ï¿½ ???ï¿½ï¿½
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
         
-        else if(dataIn[6] == 'y'||dataIn[6]=='Y')                        // y, Y ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ Yaw SetPoint ê°? ?ˆ˜?‹ 
+        else if(dataIn[6] == 'y'||dataIn[6]=='Y')                        // y, Y ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ Yaw SetPoint ï¿½? ?ï¿½ï¿½?ï¿½ï¿½
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                       // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Yaw SetPoint ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
+          temp = atof((char*)dataIn);                                       // uint8_t ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ Yaw SetPoint ê°’ì„ float?ï¿½ï¿½?ï¿½ï¿½ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ temp ?ï¿½ï¿½ ???ï¿½ï¿½
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
  
-        else if(dataIn[6]<='9' && dataIn[6]>='1')                     // 1~9ë²? ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ pidê°? ?ˆ˜?‹ 
+        else if(dataIn[6]<='9' && dataIn[6]>='1')                     // 1~9ï¿½? ?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½ pidï¿½? ?ï¿½ï¿½?ï¿½ï¿½
         {
           value = dataIn[6]-48;
           dataIn[6]='\0';
-          temp=atof((char*)dataIn);                                         // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ PID ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
+          temp=atof((char*)dataIn);                                         // uint8_t ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ PID ê°’ì„ float?ï¿½ï¿½?ï¿½ï¿½ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ temp ?ï¿½ï¿½ ???ï¿½ï¿½
           //printf("\r\n dataIn_test : %.3f\r\n",temp);
         }
         
-        else if(dataIn[6]=='0')                                               // 0ë²? ?ˆŒ???„ ?•Œ Throttleê°? ?ˆ˜?‹ 
+        else if(dataIn[6]=='0')                                               // 0ï¿½? ?ï¿½ï¿½???ï¿½ï¿½ ?ï¿½ï¿½ Throttleï¿½? ?ï¿½ï¿½?ï¿½ï¿½
         {
           value = dataIn[6]-48;  
           dataIn[6]='\0';
-          temp_int=atoi((char*)dataIn);                                     //  uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Throttle ê°’ì„ int?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp_init?— ???¥
+          temp_int=atoi((char*)dataIn);                                     //  uint8_t ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ Throttle ê°’ì„ int?ï¿½ï¿½?ï¿½ï¿½ï¿½? ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ temp_init?ï¿½ï¿½ ???ï¿½ï¿½
+
           //printf("\r\n dataIn_test : %d\r\n",temp_int);
 //          if(temp_int>5)
 //          {
@@ -320,7 +339,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3]
 //          
 //        }
         
-      NRF24_Data_save(Throttle,temp,temp_int,value,inpid_val,setting_angle);        //  ?ˆ˜?‹ ?œ ?°?´?„° ???¥ ?•¨?ˆ˜
+      NRF24_Data_save(Throttle,temp,temp_int,value,inpid_val,setting_angle);        //  ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ???ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½
       TM_NRF24L01_PowerUpRx();
   }
 }
@@ -362,7 +381,8 @@ int main(void)
   //====================Fuzzy Variables====================================
   //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 30;                                  //Moter Throttle.(40ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿?)
+  int Controller_1 = 30;                                  //Moter Throttle.(40ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½?)
+
   //int Controller_2 = 0;                                   //Moter Throttle. 
   //===================hanging Variables from external controll====================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
@@ -380,6 +400,7 @@ int main(void)
   //========================nRF24L01 VARIABLES==============================
   int temp_int;                                           // uint8_t ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ş´ï¿½ data intï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯, Throttle ï¿½ï¿½
   float temp;                                             // uint8_t ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ş´ï¿½ data flaotï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯, PID ï¿½ï¿½
+
 
   /* USER CODE END 1 */
   
@@ -449,17 +470,18 @@ int main(void)
   TM_NRF24L01_Init(15,32);  
   TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
   TM_NRF24L01_SetMyAddress(MyAddress);
+
   //====================Get Biases From Flash Memory==========================
   if(1){
     Get_biases(&MPU9250);
   }
   //===================Get Biases From Flash Memory END=======================  
+
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
   
   HAL_UART_Transmit_DMA(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2));
   /* USER CODE END 2 */
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -572,7 +594,6 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz, MPU9250.Magscalex, MPU9250.Magscaley, MPU9250.Magscalez);
     //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", MPU9250.Mx_Raw, MPU9250.My_Raw, MPU9250.Mz_Raw);
 
-    
     //sprintf((char*)uart2_tx_data2,"%d\r\n", data32);
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
@@ -591,8 +612,8 @@ int main(void)
           //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
           sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n", setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[2], pid.output[1]);   
 
-    }
-    
+    }    
+
     //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
     //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);
@@ -604,7 +625,6 @@ int main(void)
  //====================Data print transmit UART part END===================
     
  //======================BLDC Motor Part===================================
-   
     if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
     {
        Motor_Start();
@@ -672,7 +692,8 @@ int main(void)
       sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
       //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),5);
-      //HAL_Delay(3);
+
+      //HAL_Delay(5);
       //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
 
       // UART_deltat = 0;
@@ -694,7 +715,8 @@ int main(void)
       //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
       if (UART_deltat >= 10)
       {
-          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //ï¿½ï¿½ï¿½ï¿½×½ï¿½Æ?ï¿½ï¿½.
+          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //ï¿½ï¿½ï¿½ï¿½×½ï¿½ï¿½?ï¿½ï¿½.
+
           if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
           {
             Parsing_PID_val(pid_buffer, pid_val);
