@@ -26,15 +26,18 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+
+//#include "fuzzy.h"
+#include "stm32f4xx_hal.h"
 #include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
 #include "pid.h"
 #include "PWM.h"
-//#include "fuzzy.h"
 #include "LPF.h"
+#include "STM32F4_FLASH_MEMORY.h"
 #include "tm_stm32_nrf24l01.h"
 #include "tm_stm32_delay.h"
-#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,7 +48,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define PI                      (3.141592f)             //the ratio of the circumference of a circle to its diameter.
-#define dt                      (2.0f)                  //Least dt milliseconds (>1/dt mHz)Update term (milliseconds).
+#define dt                      (4.0f)                  //Least dt milliseconds (>1/dt mHz)Update term (milliseconds).
 #define init_angle_average      (40)                    //Initiate_Setting_angle.
 /* USER CODE END PD */
 
@@ -64,6 +67,9 @@ TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -72,6 +78,7 @@ UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USART2_UART_Init(void);
@@ -89,8 +96,8 @@ static void MX_SPI1_Init(void);
 //======================UART variables=============================
 uint8_t uart1_tx_to_MFC[100];                             //Trandmit variable.
 uint8_t uart1_tx_to_MFC2[100];                           //Trandmit variable.
-uint8_t uart2_tx_data[255];
 uint8_t uart2_tx_data2[255];
+uint8_t uart2_tx_data[255];
 
 uint8_t pid_buffer[71];
 int num = 0;
@@ -99,14 +106,14 @@ uint8_t data;
 //=======================MPU9250 variables==========================
 //==================================================================
 //========================nRF24L01 GLOBAL VARIABLES==============================
-//uint8_t TxAddress[] = {                                 // Controller ·Î µ¥ÀÌÅÍ º¸³¾ ÁÖ¼Ò
+//uint8_t TxAddress[] = {                                 // Controller ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¼ï¿½
 //  0xE7,
 //  0xE7,
 //  0xE7,
 //  0xE7,
 //  0xE7
 //};
-uint8_t MyAddress[] = {                                 // Controller ¿¡¼­ µ¥ÀÌÅÍ ¹ŞÀ» ÁÖ¼Ò
+uint8_t MyAddress[] = {                                 // Controller ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¼ï¿½
   0x7E,
   0x7E,
   0x7E,
@@ -114,7 +121,7 @@ uint8_t MyAddress[] = {                                 // Controller ¿¡¼­ µ¥ÀÌÅ
   0x7E
 };
 
-//int value=0;                                            // ÄÁÆ®·Ñ·¯¿¡¼­ ¹ŞÀº key_input °ª ÀúÀå º¯¼ö
+//int value=0;                                            // ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ key_input ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 //========================================================================
 
@@ -133,165 +140,171 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, float (*
   {
     case 0:
       *Throttle = temp_int;
-      printf("Throttle : %d\r\n",temp_int);                                      // ¾²·ÎÆ² °ª ÀúÀå
-      value = 0;
+      printf("Throttle : %d\r\n",temp_int);                                      // ?“°ë¡œí? ê°? ???¥
+      value = '\0';
       break;
       
     case 1:
       inpid_val[0][0] = temp;
-      printf("Roll_P[0][0] : %.3f\r\n",temp);                                 // Roll_P °ª ÀúÀå
-      value = 0;
+      printf("Roll_P[0][0] : %.3f\r\n",temp);                                 // Roll_P ê°? ???¥
+      value = '\0';
       break;
       
      case 2:
       inpid_val[1][0] = temp;
-      printf("Pitch_P[1][0] : %.3f\r\n",temp);                               // Pitch_P °ª ÀúÀå
-      value = 0;
+      printf("Pitch_P[1][0] : %.3f\r\n",temp);                               // Pitch_P ê°? ???¥
+      value = '\0';
       break;
       
      case 3:
       inpid_val[2][0] = temp;
-      printf("Yaw_P[2][0] : %.3f\r\n",temp);                                // Yaw_P °ª ÀúÀå
-      value = 0;
+      printf("Yaw_P[2][0] : %.3f\r\n",temp);                                // Yaw_P ê°? ???¥
+      value = '\0';
       break;
       
      case 4:
       inpid_val[0][1] = temp;
-      printf("Roll_I[0][1] : %.3f\r\n",temp);                                 // Roll_I °ª ÀúÀå
-      value = 0;
+      printf("Roll_I[0][1] : %.3f\r\n",temp);                                 // Roll_I ê°? ???¥
+      value = '\0';
       break;
       
      case 5:
       inpid_val[1][1] = temp;
-      printf("Pitch_I[1][1] : %.3f\r\n",temp);                               // Pitch_I °ª ÀúÀå
-      value = 0;
+      printf("Pitch_I[1][1] : %.3f\r\n",temp);                               // Pitch_I ê°? ???¥
+      value = '\0';
       break;
       
      case 6:
       inpid_val[2][1] = temp;
-      printf("Yaw_I[2][1] : %.3f\r\n",temp);                                 // Yaw_I °ª ÀúÀå
-      value = 0;
+      printf("Yaw_I[2][1] : %.3f\r\n",temp);                                 // Yaw_I ê°? ???¥
+      value = '\0';
       break;
       
      case 7:
       inpid_val[0][2] = temp;
-      printf("Roll_D[0][2] : %.3f\r\n",temp);                                // Roll_D °ª ÀúÀå
-      value = 0;
+      printf("Roll_D[0][2] : %.3f\r\n",temp);                                // Roll_D ê°? ???¥
+      value = '\0';
       break;
       
      case 8:
       inpid_val[1][2] = temp;
-      printf("Pitch_D[1][2] : %.3f\r\n",temp);                              // Pitch_D °ª ÀúÀå
-      value = 0;
+      printf("Pitch_D[1][2] : %.3f\r\n",temp);                              // Pitch_D ê°? ???¥
+      value = '\0';
       break;
       
      case 9:
       inpid_val[2][2] = temp;
-      printf("Yaw_D[2][2] : %.3f\r\n",temp);                               // Yaw_D °ª ÀúÀå
-      value = 0;
+      printf("Yaw_D[2][2] : %.3f\r\n",temp);                               // Yaw_D ê°? ???¥
+      value = '\0';
       break;
       
      case 'r':
       setting_angle[0] = temp;
-      printf("Roll_Set_Point : %.0f\r\n ",setting_angle[0]);            // Roll_SetPoint °ª ÀúÀå
-      value = 0;
+      printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint ê°? ???¥
+      value = '\0';
       break;
        
      case 'p':
       setting_angle[1] = temp;
-      printf("Pitch_Set_Point : %.0f\r\n ",setting_angle[1]);           // Pitch_SetPoint °ª ÀúÀå
-      value = 0;
+      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[1]);           // Pitch_SetPoint ê°? ???¥
+      value = '\0';
       break;
       
      case 'y':
       setting_angle[2] = temp;
-      printf("Pitch_Set_Point : %.0f\r\n ",setting_angle[2]);           // Yaw_SetPoint °ª ÀúÀå
-      value = 0;
+      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint ê°? ???¥
+      value = '\0';
       break;
       
-    case 'd':
+    case 'x':
       *Throttle = temp_int;
-      printf("Throttle : %d\r\n",temp_int);                                     // ¾²·ÎÆ² °ª ÀúÀå(Throttle = MIN_PULSE)
-      value = 0;
+      printf("Throttle_Reset : %d\r\n",temp_int);                                     // ?“°ë¡œí? ê°? ???¥(Throttle = MIN_PULSE)
+      value = '\0';
       break;
-      
-       
   }
 }
 
-void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3],float* setting_angle)    // Controller¿¡¼­ PID°ª ¼ö½Å
+void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3],float* setting_angle)    // Controller?—?„œ PIDê°? ?ˆ˜?‹ 
 {
-  int value=0;     // ÄÁÆ®·Ñ·¯¿¡¼­ ¹ŞÀº key_input °ª ÀúÀå º¯¼ö
-  uint8_t dataIn[32]={'x'};                                     // Controller Data Receive Buffer
+  int value='\0';     // ì»¨íŠ¸ë¡¤ëŸ¬?—?„œ ë°›ì? key_input ê°? ???¥ ë³??ˆ˜
+  uint8_t dataIn[32]={0};                                     // Controller Data Receive Buffer
 
   //printf("Receive_Data_Ready : %d\r\n",TM_NRF24L01_DataReady());
   
   if(TM_NRF24L01_DataReady())
   {
    // printf("Receive_Data_Ok : %d\r\n",TM_NRF24L01_DataReady());
-    
+       
       TM_NRF24L01_GetData(dataIn);
       
-        if(dataIn[6]=='q'||dataIn[6]=='Q')      // q ´­·¶À» ¶§ Äü Å×½ºÆ®
+        if(dataIn[6]=='q'||dataIn[6]=='Q')      // q ?ˆŒ???„ ?•Œ ?? ?…Œ?Š¤?Š¸
         {
           value = dataIn[6];
           dataIn[6]='\0';
           printf("\r\n[6] : %c\r\n",value);
         }
         
-        else if(dataIn[6] == 'd'||dataIn[6]=='D')       // d ¼ö½Å µÇ¾úÀ» ¶§ µğ¹ö±× ¸ğµå
+        else if(dataIn[6] == 'd'||dataIn[6]=='D')       // d ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ ?””ë²„ê·¸ ëª¨ë“œ
         {
           value = dataIn[6];
           dataIn[6] = '\0'; 
           temp_int=atoi((char*)dataIn);
-          temp_int = 0;
-          printf("\r\n dataIn_test : %d\r\n",temp_int);
-          
+          //temp_int = 0;
+          //printf("\r\n dataIn_test : %d\r\n",temp_int);
         }
         
-        else if(dataIn[6] == 's'||dataIn[6] == 'S')                     // s ¼ö½Å µÇ¾úÀ» ¶§ ÁÖÇà ¸ğµå (ÄÁÆ®·Ñ·¯¿¡¼­ s ´©¸£¸é µå·ĞÀÇ ÇöÀç Roll, Pitch, Yaw °ªÀ» ÄÁÆ®·Ñ·¯ ·Î ¼Û½ÅÇÏ°Ô ±¸ÇöÇÒ ¿¹Á¤)
+        else if(dataIn[6] == 's')                     // s ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ ì£¼í–‰ ëª¨ë“œ (ì»¨íŠ¸ë¡¤ëŸ¬?—?„œ s ?ˆ„ë¥´ë©´ ?“œë¡ ì˜ ?˜„?¬ Roll, Pitch, Yaw ê°’ì„ ì»¨íŠ¸ë¡¤ëŸ¬ ë¡? ?†¡?‹ ?•˜ê²? êµ¬í˜„?•  ?˜ˆ? •)
         {
           value = dataIn[6];
           dataIn[6] = '\0';
           //printf("key_input : %c", value);
         }
-        else if(dataIn[6] == 'r'||dataIn[6]=='R')                       // r, R ¼ö½Å µÇ¾úÀ» ¶§ Roll SetPoint °ª ¼ö½Å
+        
+        else if(dataIn[6] == 'x')                                             // x ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ  Throttleê°? ì´ˆê¸°?™”
+        {
+          value = dataIn[6];
+          dataIn[6] = '\0'; 
+          temp_int=atoi((char*)dataIn);
+          temp_int = 0;
+        }
+        
+        else if(dataIn[6] == 'r'||dataIn[6]=='R')                       // r, R ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ Roll SetPoint ê°? ?ˆ˜?‹ 
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                       // uint8_t ÇüÀ¸·Î ¼ö½ÅµÈ Roll SetPoint °ªÀ» floatÇüÀ¸·Î º¯È¯ÇÏ¿© temp ¿¡ ÀúÀå
+          temp = atof((char*)dataIn);                                       // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Roll SetPoint ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
         
-        else if(dataIn[6] == 'p'||dataIn[6]=='P')                       // p, P ¼ö½Å µÇ¾úÀ» ¶§ Pitch SetPoint °ª ¼ö½Å
+        else if(dataIn[6] == 'p'||dataIn[6]=='P')                       // p, P ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ Pitch SetPoint ê°? ?ˆ˜?‹ 
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                        // uint8_t ÇüÀ¸·Î ¼ö½ÅµÈ Pitch SetPoint °ªÀ» floatÇüÀ¸·Î º¯È¯ÇÏ¿© temp ¿¡ ÀúÀå
+          temp = atof((char*)dataIn);                                        // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Pitch SetPoint ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
         
-        else if(dataIn[6] == 'y'||dataIn[6]=='Y')                        // y, Y ¼ö½Å µÇ¾úÀ» ¶§ Yaw SetPoint °ª ¼ö½Å
+        else if(dataIn[6] == 'y'||dataIn[6]=='Y')                        // y, Y ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ Yaw SetPoint ê°? ?ˆ˜?‹ 
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                       // uint8_t ÇüÀ¸·Î ¼ö½ÅµÈ Yaw SetPoint °ªÀ» floatÇüÀ¸·Î º¯È¯ÇÏ¿© temp ¿¡ ÀúÀå
+          temp = atof((char*)dataIn);                                       // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Yaw SetPoint ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
  
-        else if(dataIn[6]<='9' && dataIn[6]>='1')                     // 1~9¹ø ¼ö½Å µÇ¾úÀ» ¶§ pid°ª ¼ö½Å
+        else if(dataIn[6]<='9' && dataIn[6]>='1')                     // 1~9ë²? ?ˆ˜?‹  ?˜?—ˆ?„ ?•Œ pidê°? ?ˆ˜?‹ 
         {
           value = dataIn[6]-48;
           dataIn[6]='\0';
-          temp=atof((char*)dataIn);                                         // uint8_t ÇüÀ¸·Î ¼ö½ÅµÈ PID °ªÀ» floatÇüÀ¸·Î º¯È¯ÇÏ¿© temp ¿¡ ÀúÀå
+          temp=atof((char*)dataIn);                                         // uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ PID ê°’ì„ float?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp ?— ???¥
           //printf("\r\n dataIn_test : %.3f\r\n",temp);
         }
         
-        else if(dataIn[6]=='0')                                               // 0¹ø ´­·¶À» ¶§ Throttle°ª ¼ö½Å
+        else if(dataIn[6]=='0')                                               // 0ë²? ?ˆŒ???„ ?•Œ Throttleê°? ?ˆ˜?‹ 
         {
           value = dataIn[6]-48;  
           dataIn[6]='\0';
-          temp_int=atoi((char*)dataIn);                                     //  uint8_t ÇüÀ¸·Î ¼ö½ÅµÈ Throttle °ªÀ» intÇüÀ¸·Î º¯È¯ÇÏ¿© temp_init¿¡ ÀúÀå
+          temp_int=atoi((char*)dataIn);                                     //  uint8_t ?˜•?œ¼ë¡? ?ˆ˜?‹ ?œ Throttle ê°’ì„ int?˜•?œ¼ë¡? ë³??™˜?•˜?—¬ temp_init?— ???¥
           //printf("\r\n dataIn_test : %d\r\n",temp_int);
 //          if(temp_int>5)
 //          {
@@ -307,7 +320,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3]
 //          
 //        }
         
-      NRF24_Data_save(Throttle,temp,temp_int,value,inpid_val,setting_angle);        //  ¼ö½ÅµÈ µ¥ÀÌÅÍ ÀúÀå ÇÔ¼ö
+      NRF24_Data_save(Throttle,temp,temp_int,value,inpid_val,setting_angle);        //  ?ˆ˜?‹ ?œ ?°?´?„° ???¥ ?•¨?ˆ˜
       TM_NRF24L01_PowerUpRx();
   }
 }
@@ -333,7 +346,7 @@ int main(void)
   uint16_t wait = 0;                                      //getting initiate setting_angle waiting time(3secs) 
   uint8_t wait_flag = 0;                                  //Time waiting flag.
   uint8_t Mcal_flag = 0;                                  //User Magnetic bias flag.
-
+ 
   uint32_t UART_Now = 0;     
   uint32_t UART_Pre = 0;
   uint32_t UART_deltat = 0;
@@ -341,7 +354,7 @@ int main(void)
   uint8_t UART_flag=0;
   uint8_t UART_sytic_flag=0;
 
-  //float dt2 = 0.0f;                                       //ÀÓ½Ã Å×½ºÆ®¿ë.
+  //float dt2 = 0.0f;                                       //ï¿½Ó½ï¿½ ï¿½×½ï¿½Æ®ï¿½ï¿½.
   //=========================UART Variables===============================
   //====================Quaternion VARIABLES===============================
   float deltat = 0.0f;                                    //integration interval for filter schemes.
@@ -349,26 +362,25 @@ int main(void)
   //====================Fuzzy Variables====================================
   //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 20;                                  //Moter Throttle.(40ÀÌ¸é ¶ãµí)
+  int Controller_1 = 30;                                  //Moter Throttle.(40ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿?)
   //int Controller_2 = 0;                                   //Moter Throttle. 
   //===================hanging Variables from external controll====================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
   float pid_val[3][3] = {{4.0f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}, {3.5f, 0.00f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{3.0f, 1.0f, 1.2f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{2.0f, 1.0f, 1.2f}, {2.0f, 1.1f, 0.66f}, {2.0f, 1.1f, 0.66f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
-  float Magbias[3] = {0.0f, 0.0f, 0.0f};                  //Magnetic data bias.
-  float Magscale[3] = {0.0f, 0.0f, 0.0f};
   //====================Quaternion VARIABLES===============================
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
   float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
   //===========================MPU9250 Variables=============================
-  float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};          //MPU9250 Accell and Gyro Self_Test.
+  float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
+  float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f}; //MPU9250 Magnetometer Self_Test.
   //========================nRF24L01 VARIABLES==============================
-  //int temp_int;                                           // uint8_t ÇüÀ¸·Î ¹Ş´Â data intÇüÀ¸·Î º¯È¯, Throttle °ª 
-  //float temp;                                             // uint8_t ÇüÀ¸·Î ¹Ş´Â data flaotÇüÀ¸·Î º¯È¯, PID °ª
-  
+  int temp_int;                                           // uint8_t ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ş´ï¿½ data intï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯, Throttle ï¿½ï¿½
+  float temp;                                             // uint8_t ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ş´ï¿½ data flaotï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯, PID ï¿½ï¿½
+
   /* USER CODE END 1 */
   
 
@@ -378,9 +390,15 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  MPU9250SelfTest(&MPU9250, &Self_Test[0]);
-
+  __INIT__MPU9250(&MPU9250);
+  MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);
+  if (0){
+  calibrateMPU9250(&MPU9250);
+  }
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
+  TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
+  AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
+
   pid_init(&pid, pid_val, inpid_val);
   //fuzzy_init();
 
@@ -395,6 +413,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_TIM3_Init();
   MX_USART2_UART_Init();
@@ -402,14 +421,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
   //=========Automatic calculation of Magnetic filed bias=======
   if (Mcal_flag == 1)
   { 
-    magcal(Magbias, Magscale);
-    Magbias[0] = Magbias[0] * MPU9250.MMult * MPU9250.ASAX;
-    Magbias[1] = Magbias[1] * MPU9250.MMult * MPU9250.ASAY;
-    Magbias[2] = Magbias[2] * MPU9250.MMult * MPU9250.ASAZ;
+    MagCalibration(&MPU9250);
     Mcal_flag ++;
   }    
   //======Automatic calculation of Magnetic filed bias END======
@@ -427,16 +442,24 @@ int main(void)
   //  Motor_Start();
     
   //*********************************************
-    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //ÀÎÅÍ·´ÇÁ È°¼ºÈ­.
-    memset(pid_buffer,'\0',sizeof(pid_buffer));           //¹öÆÛºñ¿ì±â
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ È°ï¿½ï¿½È­.
+    memset(pid_buffer,'\0',sizeof(pid_buffer));           //ï¿½ï¿½ï¿½Ûºï¿½ï¿½ï¿½
   //********************************************
   
   TM_NRF24L01_Init(15,32);  
   TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
   TM_NRF24L01_SetMyAddress(MyAddress);
-  
+  //====================Get Biases From Flash Memory==========================
+  if(1){
+    Get_biases(&MPU9250);
+  }
+  //===================Get Biases From Flash Memory END=======================  
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
+  
+  HAL_UART_Transmit_DMA(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2));
+  //HAL_UART_Transmit_DMA(&huart2,uart2_tx_data2 ,110);
+  //HAL_UART_Transmit_DMA(&huart1,uart1_tx_to_MFC ,19);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -445,15 +468,25 @@ int main(void)
   {         
     int aa = HAL_GetTick();     //Get time for 
     
-    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID ¹ŞÀ» ¶§.
-
+    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½.
+  //========================Get MPU9250 data===========================  
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
     TM_MPU9250_ReadMag(&MPU9250);       //get Magnetic data.
+  //======================Get MPU9250 data END===========================  
+  //=========Subtract Automatic Accelometer Gyroscope and Magnetic filed bias========
 
-    //MPU9250.Gx -= 2.55f;                //callibration values.
-    //MPU9250.Gy -= 0.15f;
-    //MPU9250.Gz -= 0.24f;
+     MPU9250.Ax -= MPU9250.Accbiasx;             //callibration values.
+     MPU9250.Ay -= MPU9250.Accbiasy;
+     MPU9250.Az -= MPU9250.Accbiasz;
+
+     MPU9250.Gx -= MPU9250.Gybiasx;              //callibration values.
+     MPU9250.Gy -= MPU9250.Gybiasy;
+     MPU9250.Gz -= MPU9250.Gybiasz;  
+     
+     MPU9250.Mx -= MPU9250.Magbiasx;             //callibration values.
+     MPU9250.My -= MPU9250.Magbiasy;
+     MPU9250.Mz -= MPU9250.Magbiasz;   
     
     //MPU9250.Mx -= 67.5f;                //callibration values.
     //MPU9250.My -= 60.0f;
@@ -465,16 +498,8 @@ int main(void)
     
 //    MPU9250.Mx -= 28.0f;                  //callibration values.(SH's)
 //    MPU9250.My -= 3.5f;
-//    MPU9250.Mz -= 20.0f;    
-  //=========Subtract Automatic Magnetic filed bias============
-    if (Mcal_flag == 2)
-    {
-       MPU9250.Mx -= Magbias[0];        //Automatic User callibration values.
-       MPU9250.My -= Magbias[1];
-       MPU9250.Mz -= Magbias[2];    
-    }
-  //=========Subtract Automatic Magnetic filed bias END========
-  
+//    MPU9250.Mz -= 20.0f;            
+  //=======Subtract Automatic Accelometer Gyroscope and Magnetic filed bias END=======
   //==================Init settiing angle=====================
     if (wait_flag < init_angle_average)
     {
@@ -489,16 +514,12 @@ int main(void)
     }    
     if (wait_flag == init_angle_average)
     {
-      setting_angle[0] = init_setting_angle[0] / init_angle_average;    //init roll
-      setting_angle[1] = init_setting_angle[1] / init_angle_average;    //init pitch
-      setting_angle[2] = init_setting_angle[2] / init_angle_average;    //init yaw
+//      setting_angle[0] = init_setting_angle[0] / init_angle_average;    //init roll
+//      setting_angle[1] = init_setting_angle[1] / init_angle_average;    //init pitch
+//      setting_angle[2] = init_setting_angle[2] / init_angle_average;    //init yaw
       wait_flag ++;
     }
   //================Init settiing angle END====================
-    
-//    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;           //angular velocity (degree/2ms)
-//    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
-//    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;
    //====================Get delta T =======================
     Now = HAL_GetTick();                //Get current time.
     deltat += (Now - lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
@@ -536,7 +557,6 @@ int main(void)
       {
         __pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
       }    
-      //Euler_angle[1] -= 2.5f;                                  // pich bias.
       //Euler_angle[2] -= 8.2f;                                  // Declination at Seoul korea on 2020-02-04(yaw bias)            
       //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f;       // Ensure yaw stays between 0 and 360
       
@@ -548,8 +568,14 @@ int main(void)
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f \r\n", MPU9250.Mx, MPU9250.My ,MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", (int)MPU9250.Mx_Raw, (int)MPU9250.My_Raw , (int)MPU9250.Mz_Raw);
-    sprintf((char*)uart2_tx_data2,"%f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2]);
+    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2], Self_Test[3], Self_Test[4], Self_Test[5]);
+    //sprintf((char*)uart2_tx_data2,"%f  %f  %f\r\n", Self_Test_Mag[0], Self_Test_Mag[1], Self_Test_Mag[2]);
+    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz, MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz);
+    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz, MPU9250.Magscalex, MPU9250.Magscaley, MPU9250.Magscalez);
+    //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", MPU9250.Mx_Raw, MPU9250.My_Raw, MPU9250.Mz_Raw);
 
+    
+    //sprintf((char*)uart2_tx_data2,"%d\r\n", data32);
     //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
     
@@ -560,18 +586,21 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], Magbias[0], Magbias[1], Magbias[2]);
 
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1]);   
+
+    
     //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
     //sprintf((char*)uart2_tx_data3,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], q[1], q[2], q[3]);
     //sprintf((char*)uart2_tx_data2,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
 
-    //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",dt2);
+    //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",dt2);   
     
-    HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
- //====================Data print transmit UART part END===================== 
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+ //====================Data print transmit UART part END===================
     
- //======================BLDC Moter Part=================================
+ //======================BLDC Motor Part===================================
    
     if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
     {
@@ -589,7 +618,7 @@ int main(void)
            MOTOR_V4 = MIN_PULSE;
          }
      
-      if (Controller_1 > 5)    //Controller_1Àº ½ÅÈ£¸¦ ÁÖ°í ÀÖ°í, Controller_2ÀÇ Á¶ÀÌ½ºÆ½ÀÌ °¡¿îµ¥ À§Ä¡ÇÒ ¶§ (°íµµ¸¸ Á¦¾îÇÒ¶§)
+      if (Controller_1 > 5)    //Controller_1ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½ ï¿½Ö°ï¿½ ï¿½Ö°ï¿½, Controller_2ï¿½ï¿½ ï¿½ï¿½ï¿½Ì½ï¿½Æ½ï¿½ï¿½ ï¿½ï¿½ï¿½îµ¥ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ò¶ï¿½)
        {     
          if (fabs(LPF_Euler_angle[0]) <= 15.0f && fabs(LPF_Euler_angle[1]) <= 15.0f)    //Restrict yaw acting Euler angle.
          {           
@@ -626,29 +655,24 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
 
-//======================BLDC Moter Part END==================================  
+//======================BLDC Motor Part END==================================  
     
 //======================NRF24L01 Receive Part=================================    
-  //NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           // ÄÁÆ®·Ñ·¯¿¡¼­ µ¥ÀÌÅÍ ¼ö½Å ¹Ş´Â ÇÔ¼ö    
+  //NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           // ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ş´ï¿½ ï¿½Ô¼ï¿½    
 //=====================NRF24L01 Receive Part END==============================  
     
 //========================Data transmit part===================================
-//    UART_Now = HAL_GetTick();               //Get current time.
-//    UART_deltat += (UART_Now - UART_lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
-//    UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
-//    if (UART_deltat >= 10)
-//    {
-     if(UART_flag ==0)
-     {
-    //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
+    if(UART_flag ==0)
+    {
+      //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", Euler_angle[0], Euler_angle[1], Euler_angle[2]);
       //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2]);
       sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
-      HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),5);
-      //HAL_Delay(5);
-      //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 5);
-      
-     // UART_deltat = 0;
+      //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),5);
+      //HAL_Delay(3);
+      //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
+
+      // UART_deltat = 0;
     }
 //*********************************************************************************
   
@@ -659,6 +683,7 @@ int main(void)
       {
         UART_Pre = HAL_GetTick();
         UART_sytic_flag=1;
+        
       }
       UART_Now = HAL_GetTick();               //Get current time.
       UART_deltat += (UART_Now - UART_Pre);       //Set integration time by time elapsed since last filter update (milliseconds).
@@ -666,7 +691,7 @@ int main(void)
       //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
       if (UART_deltat >= 10)
       {
-          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //Ãâ·ÂÅ×½ºÆ®¿ë.
+          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //ï¿½ï¿½ï¿½ï¿½×½ï¿½Æ?ï¿½ï¿½.
           if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
           {
             Parsing_PID_val(pid_buffer, pid_val);
@@ -718,12 +743,13 @@ int main(void)
     
 //=====================TIme Check==========================
     int bb = HAL_GetTick();
-    //sprintf((char*)uart2_tx_data2,"%d  %d\r\n",  aa, bb);    
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    sprintf((char*)uart2_tx_data,"%d  %d\r\n",  aa, bb);    
+    HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 3);
 //=====================TIme Check END======================
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    
   }
   /* USER CODE END 3 */
 }
@@ -743,12 +769,11 @@ void SystemClock_Config(void)
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
   /** Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 72;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
@@ -1035,6 +1060,29 @@ static void MX_USART2_UART_Init(void)
 
 }
 
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA1_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA2_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
+
+}
+
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -1063,6 +1111,17 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+//void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
+//{
+//    HAL_UART_Transmit_DMA(huart,uart2_tx_data2 ,120);
+//}
+ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    HAL_UART_Transmit_DMA(huart,uart2_tx_data2 ,sizeof(uart2_tx_data2));
+    //HAL_UART_Transmit_DMA(huart,uart2_tx_data2 ,110);
+    //HAL_UART_Transmit_DMA(huart,uart1_tx_to_MFC ,19);
+    //memset(uart2_tx_data2,'\0',sizeof(uart2_tx_data2));
+}
 /* USER CODE END 4 */
 
 /**
