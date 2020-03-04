@@ -26,6 +26,8 @@
 #include "stm32f4xx.h"
 #include "tm_stm32_nrf24l01.h"
 #include "tm_stm32_delay.h"
+#include "nRF_Transmit.h"
+#include "key_Debug.h"
 //#include "tm_stm32_usart.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,25 +90,25 @@ uint8_t TxAddress[] = {
 };
 
 // nRF 통신 변수//
-TM_NRF24L01_Transmit_Status_t transmissionStatus;
-uint8_t buffer[7];
-uint8_t dataOut[32], dataIn[32];
+
+
+uint8_t  dataIn[32];
+uint8_t buffer_ADC[255];
 
 //디버깅 모드 변수//
 uint8_t key_input=0;
 uint8_t key_tr=0;
-uint8_t debug_buf[32];
-uint8_t C_buff[7];
-uint8_t tempbuf[7];
-uint16_t C_count;
+
 float temp_1;
-float Qick_q;
 uint8_t r_temp[32];
-uint8_t d_transmit[1];
 
 // 전송 실패 카운트 변수
-int fail_count;
+int fail_count=1;
 
+// ADC 버퍼 변수
+uint32_t ADC_DATA[4];   // ADC값 저장 버퍼
+uint32_t ADC_Avg[4];     // 변환된 ADC값의 평균값 저장 버퍼
+uint16_t avg=0;
 
 //pid값, throttle 변수
 float Roll_P=0, Roll_I=0, Roll_D=0;
@@ -117,8 +119,8 @@ float Throttle=0;
 //SettingPoint
 int Set_Point[3];       // Roll_SetPoint, Pitch_SetPoint, Yaw_SetPoint
 
-int count=1;
 
+int count=1;
 
 int fputc(int ch ,FILE *f)
 {
@@ -143,248 +145,41 @@ void Display_UI()
 
       // 드론쪽에서 DATA가 어디에 저장되는지 확인//
 
-void nRF24_Transmit(float* temp, uint8_t adr_value)
-{
-  sprintf((char*)buffer,"%.3f",*temp);
-    /* Reset time, start counting microseconds */
-      TM_DELAY_SetTime(0);
-      buffer[6] = (uint8_t)adr_value;
-      /* Transmit data, goes automatically to TX mode */
-      
-       TM_NRF24L01_Transmit((uint8_t*)buffer);
-       //TM_NRF24L01_Transmit((uint8_t*)adr_value);
-      
-      /* Wait for data to be sent */
-      do {
-        /* Get transmission status */
-            transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-            //printf("\r\nTransmition Ok\r\n");
-      } 
-      while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-      printf("\r\nbuffer : %c",buffer[6]);
-       memset(buffer,'\0',7); // C_buff 메모리 초기화  
-}
-
-void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
-{
-  sprintf((char*)buffer,"%d",*temp);
-    /* Reset time, start counting microseconds */
-      TM_DELAY_SetTime(0);
-      buffer[6] = (uint8_t)adr_value;
-      /* Transmit data, goes automatically to TX mode */
-      
-       TM_NRF24L01_Transmit((uint8_t*)buffer);
-       //TM_NRF24L01_Transmit((uint8_t*)adr_value);
-      
-      /* Wait for data to be sent */
-      do {
-        /* Get transmission status */
-            transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-            //printf("\r\nTransmition Ok\r\n");
-      } 
-      while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-      //printf("\r\nbuffer : %c",buffer[6]);
-       memset(buffer,'\0',7); // C_buff 메모리 초기화
-}
-
-// ===============Qick Test를 위한 q 전송===============//
-void nRF24_Transmit_ASCII(uint8_t adr_value)
-{
-     TM_DELAY_SetTime(0);
-     buffer[6] = (uint8_t)adr_value;
-     TM_NRF24L01_Transmit((uint8_t*)buffer);
-     
-     do {
-        /* Get transmission status */
-            transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-      } 
-      while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-      printf("\r\nbuffer : %c",buffer[6]);
-       memset(tempbuf,'\0',7); // C_buff 메모리 초기화
-}
-
-void nRF24_Transmit_Mode_Change(uint8_t adr_value)
-{
-  TM_DELAY_SetTime(0);
-  buffer[6]=adr_value;
-  TM_NRF24L01_Transmit((uint8_t*)buffer);
-  
-  do {
-        /* Get transmission status */
-            transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-      } 
-      while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-      memset(buffer,'\0',7); // C_buff 메모리 초기화
-  
-}
-
-void nRF24_Receive()
-{
-  TM_NRF24L01_GetData(r_temp);
-   
-  printf("receive_echo : %s\r\n",dataIn);
-  HAL_Delay(300);
-}
-
-void nRF24_Transmit_Echo()
-{
-  sprintf((char*)dataOut,"%s",dataIn);
-      TM_NRF24L01_Transmit(dataOut);
-
-      while (!TM_NRF24L01_DataReady() && TM_DELAY_Time() < 100);
-      do {
-        /* Get transmission status */
-            transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-      } 
-      while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-}
-
-void nRF24_Transmit_Status()
-{
-   
-  /* Check transmit status */
-      if (transmissionStatus == TM_NRF24L01_Transmit_Status_Ok) 
-      {
-        /* Transmit went OK */
-        printf("\r\nOK   %d \r\n",count);
-        //return 1;        
-      }
-       else if (transmissionStatus == TM_NRF24L01_Transmit_Status_Lost) 
-       {
-         /* Message was LOST */
-           printf("\r\nLOST \r\n");
-          // return 0; 
-       }
-      else {
-	/* This should never happen */
-         printf("\r\nSEND \r\n");
-      } 
-}
-
-
-
-void Keyboard_Debug(float* temp,uint8_t key_flag)
-{
-  char save_flag = 0;
-  
-  //char set_flag;
- // static char i;
-  int j=0;
-
-  //while(!(key_input==0x0D))
-  while(!save_flag)
-  {
-    while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))
-    {
-      if(key_input==0x0D)// 엔터 입력 받으면 저장
-      {
-        key_input='\0';                 //키 버퍼 초기화
-        C_buff[6]='\0';
-        sprintf((char*)tempbuf,"%s", C_buff);
-        printf("\r\n save : %s",tempbuf);
-        
-        memset(C_buff,'\0',7); // C_buff 메모리 초기화
-
-        C_count=0;//문자 카운터 초기화
-        save_flag=1;
-        break;
-      }
-      else if(key_flag<='9' || key_flag>='1')           // key_input값이 1~9를 받았을 때
-      {
-        if(key_input <= '9' && key_input >= '0' ||key_input == '.' )
-        {
-          
-          if(C_count<6)// 6글자 이하만 입력 받음
-          {
-            C_buff[C_count]=key_input;
-            ++C_count;
-            printf("%c",C_buff[j++]);
-            if(C_count==6)
-            {
-              printf("\r\n");
-              printf("Modify data : %s",C_buff);
-            }
-          }
-         
-          *temp = atof((char*)C_buff);
-            key_input ='\0';
-            key_flag = '\0';
-            
-         }
-      }
-      else if(key_flag=='0')                            // key_input값이 0을 받았을때
-      {
-        if(key_input == '0')
-       {
-         if(C_count<2)   // 2글자 이하만 입력 받음
-         {
-           C_buff[C_count]=key_input;
-           ++C_count;
-           printf("%c",C_buff[j++]);
-           if(C_count==2)
-           {
-             printf("\r\nModify data : %s",C_buff);
-           }
-         }
-         *temp = atoi((char*)C_buff);
-           key_input ='\0';
-           key_flag = '\0';
-       }
-      }
-    }
-  }
- }
-
-void Keyboard_Debug_Set_Point(int* temp)
-{
-  char save_flag = 0;
-  
-  //char set_flag;
- // static char i;
-  int j=0;
-
-  //while(!(key_input==0x0D))
-  while(!save_flag)
-  {
-    while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))
-    {
-      if(key_input==0x0D)// 엔터 입력 받으면 저장
-      {
-        key_input='\0';                 //키 버퍼 초기화
-        C_buff[6]='\0';
-        sprintf((char*)tempbuf,"%s", C_buff);
-        printf("\r\n save : %s",tempbuf);
-        
-        memset(C_buff,'\0',7); // C_buff 메모리 초기화
-
-        C_count=0;//문자 카운터 초기화
-        save_flag=1;
-        break;
-      }
-      
-        else if(key_input <= '9' && key_input >= '0')
-        {
-          
-          if(C_count<5)// 5글자 이하만 입력 받음
-          {
-            C_buff[C_count]=key_input;
-            ++C_count;
-            printf("%c",C_buff[j++]);
-            if(C_count==5)
-            {
-              printf("\r\n");
-              printf("Modify data : %s",C_buff);
-            }
-          }
-         
-          *temp = atoi((char*)C_buff);
-            key_input ='\0';
-         }
-    }
-  }
- }
-
-
+//void nRF24_Transmit(float* temp, uint8_t adr_value)
+//{
+//  char Re_transmit=0;
+//  sprintf((char*)buffer,"%.3f",*temp);
+//    /* Reset time, start counting microseconds */
+//      TM_DELAY_SetTime(0);
+//      
+//      buffer[6] = (uint8_t)adr_value;
+//      /* Transmit data, goes automatically to TX mode */
+//      if(Re_transmit == 0)
+//      {
+//        TM_NRF24L01_Transmit((uint8_t*)buffer);
+//        Re_transmit = 1;
+//      }
+//       
+//       //TM_NRF24L01_Transmit((uint8_t*)adr_value);
+//      
+//      /* Wait for data to be sent */
+//      else if(Re_transmit == 1)
+//      {
+//        do {
+//        /* Get transmission status */
+//            transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
+//            //printf("transmission : %d\r\n",transmissionStatus);
+//        } 
+//        while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
+//        printf("\r\nbuffer : %c",buffer[6]);
+//        memset(buffer,'\0',7); // C_buff 메모리 초기화  
+//      }
+//      
+//      else if(!(transmissionStatus == TM_NRF24L01_Transmit_Status_Lost))
+//      {
+//        Re_transmit = 0;
+//      }
+//}
 
 /* USER CODE END 0 */
 
@@ -397,7 +192,8 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
 //char str[40];
-//uint32_t ADC_DATA[2];
+
+
 //uint8_t Exit_flag=0;
   /* USER CODE END 1 */
   
@@ -425,22 +221,24 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   TM_NRF24L01_Init(15,32);
-        TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
-	
-	/* Set my address, 5 bytes */
-	TM_NRF24L01_SetMyAddress(MyAddress);
-	
-	/* Set TX address, 5 bytes */
-	TM_NRF24L01_SetTxAddress(TxAddress);
-	
-	/* Reset counter */
-	TM_DELAY_SetTime(2001);
-        
-        /* Reset counter */
-	//TM_DELAY_SetTime(2001);
+  TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
+
+  /* Set my address, 5 bytes */
+  TM_NRF24L01_SetMyAddress(MyAddress);
+
+  /* Set TX address, 5 bytes */
+  TM_NRF24L01_SetTxAddress(TxAddress);
+
+  /* Reset counter */
+  TM_DELAY_SetTime(2001);
+
+  /* Reset counter */
+  //TM_DELAY_SetTime(2001);
    
      
     //HAL_UART_Receive_IT(&huart2,(uint8_t*)key_input, 1);
+        //printf("hello\r\n");
+  HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
  
  
@@ -452,30 +250,50 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-   
-
+    
+  
 //    printf("%d",count);
 //    HAL_Delay(300);
     //count++;
     
- //----------------------ADC-----------------------//
-//    HAL_ADC_Start(&hadc1);
-//    HAL_ADC_PollForConversion(&hadc1, 100);
-//    ADC_DATA[0] = HAL_ADC_GetValue(&hadc1);
-//    sprintf((char*)buffer,"adc0 : %d",ADC_DATA[0]);
-//    HAL_UART_Transmit(&huart2,buffer, sizeof(buffer),10);
-//    
-//    TM_NRF24L01_Transmit(buffer);
-//    
-//    HAL_ADC_Start(&hadc1);
-//    HAL_ADC_PollForConversion(&hadc1, 100);
-//    ADC_DATA[1] = HAL_ADC_GetValue(&hadc1);
-//    sprintf((char*)buffer,"adc1 : %d \r\n",ADC_DATA[1]);
-//    HAL_UART_Transmit(&huart2,buffer, sizeof(buffer),10);
-//    
-//    TM_NRF24L01_Transmit(buffer);
-//    HAL_Delay(300);
- //----------------------ADC-----------------------//
+//----------------------ADC-----------------------//
+//  for(char a = 0; a<50; a++)
+//  {
+//     
+//      for(char i=0; i<4;i++)
+//      {
+//       HAL_ADC_Start(&hadc1);
+//       HAL_ADC_PollForConversion(&hadc1, 100);                              
+//       ADC_DATA[i] = HAL_ADC_GetValue(&hadc1);
+//      }
+//      ADC_Avg[0]+= ADC_DATA[0];
+//      ADC_Avg[1]+= ADC_DATA[1];
+//      ADC_Avg[2]+= ADC_DATA[2];
+//      ADC_Avg[3]+= ADC_DATA[3];
+//
+//  }
+//  
+//  for(char d = 0; d<4; d++)
+//  {
+//    ADC_Avg[d] = ADC_Avg[d]/50;
+//  }
+////    buffer_ADC[0] = ADC_Avg[0];
+////    buffer_ADC[1] = ADC_Avg[1];
+////    buffer_ADC[2] = ADC_Avg[2];
+////    buffer_ADC[3] = ADC_Avg[3];
+////    
+////    printf("adc0 : %4d adc1 : %4d adc2 : %4d adc3 : %4d\r\n",buffer_ADC[0], buffer_ADC[1],buffer_ADC[2], buffer_ADC[3]);
+////   sprintf((char*)buffer_ADC,"adc0 : %4d adc1 : %4d adc2 : %4d adc3 : %4d\r\n",ADC_Avg[0], ADC_Avg[1],ADC_Avg[2], ADC_Avg[3]);
+//    sprintf((char*)buffer_ADC,"%4d / %4d  / %4d / %4d\r\n",ADC_DATA[0], ADC_DATA[1],ADC_DATA[2], ADC_DATA[3]); 
+//    HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
+    //memset(buffer_ADC,'\0',4);
+//    //HAL_Delay(500);
+
+    
+   
+   //TM_NRF24L01_Transmit(buffer);
+   //HAL_Delay(1000);
+//----------------------ADC-----------------------//
     
 //      nRF24_Transmit();
 //    
@@ -514,7 +332,8 @@ int main(void)
             
             Display_UI();
             nRF24_Transmit_Mode_Change(key_input);
-
+            
+            
             key_input='\0';
             while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
             switch(key_input)
@@ -531,7 +350,7 @@ int main(void)
                   key_tr = '\0';
                   break;
                   
-                case '1':
+               case '1':
                   key_tr = key_input;
                   key_input='\0';
                   printf("R_P Data: ");
@@ -548,8 +367,8 @@ int main(void)
     //                  r_temp[32] = '\0';
                     
                     
-//                   //전송 실패시 성공할 때 까지 전송
-//                    while(transmissionStatus==TM_NRF24L01_Transmit_Status_Lost)
+                   //전송 실패시 성공할 때 까지 전송
+//                    while(!(transmissionStatus==TM_NRF24L01_Transmit_Status_Lost))
 //                    {
 //                        fail_count++;
 //                        if(fail_count >= 1000)
@@ -665,8 +484,6 @@ int main(void)
                   
                  while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))
                   {
-                    //Keyboard_Debug(&Qick_q);
-                    
                     if(count <= 1000)
                     {
                       nRF24_Transmit_ASCII(key_tr);
@@ -717,13 +534,12 @@ int main(void)
               key_tr = key_input;
               key_input = '\0';
               printf("Throttle : ");
-              
               nRF24_Transmit_Mode_Change(key_tr);
               nRF24_Transmit_Status();
               key_tr='\0';
               break;
-              
-             default:
+     
+              default:
                 printf("\r\nError Number\r\n");
                 break;
           }
@@ -793,7 +609,6 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 0 */
 
   ADC_ChannelConfTypeDef sConfig = {0};
-  ADC_InjectionConfTypeDef sConfigInjected = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -810,7 +625,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 4;
   hadc1.Init.DMAContinuousRequests = DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -821,31 +636,32 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /** Configures for the selected ADC injected channel its corresponding rank in the sequencer and its sample time 
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
   */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
-  sConfigInjected.InjectedRank = 1;
-  sConfigInjected.InjectedNbrOfConversion = 2;
-  sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_56CYCLES;
-  sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONVEDGE_NONE;
-  sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
-  sConfigInjected.AutoInjectedConv = DISABLE;
-  sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
-  sConfigInjected.InjectedOffset = 0;
-  if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /** Configures for the selected ADC injected channel its corresponding rank in the sequencer and its sample time 
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
   */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
-  sConfigInjected.InjectedRank = 2;
-  if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+  */
+  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Rank = 4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -936,12 +752,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, CSNpin_Pin|CEpin_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : CSNpin_Pin CEpin_Pin */
   GPIO_InitStruct.Pin = CSNpin_Pin|CEpin_Pin;
@@ -950,9 +773,28 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
+
+//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+//{
+//   static uint8_t adc_count;
+//   
+//   ADC_DATA[adc_count] += HAL_ADC_GetValue(hadc);
+//   adc_count++;
+//
+//   if(adc_count >3)
+//   {
+//     adc_count=0;
+//   }
+//
+//  HAL_ADC_Start_IT(&hadc1);
+//}
 
 /* USER CODE END 4 */
 
