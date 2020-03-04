@@ -458,8 +458,6 @@ int main(void)
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
   
   HAL_UART_Transmit_DMA(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2));
-  //HAL_UART_Transmit_DMA(&huart2,uart2_tx_data2 ,110);
-  //HAL_UART_Transmit_DMA(&huart1,uart1_tx_to_MFC ,19);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -587,8 +585,13 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1]);   
+    
+    if ((HAL_GetTick() % 5) == 0)
+    {
+          //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
+          sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n", setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[2], pid.output[1]);   
 
+    }
     
     //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
@@ -743,8 +746,8 @@ int main(void)
     
 //=====================TIme Check==========================
     int bb = HAL_GetTick();
-    sprintf((char*)uart2_tx_data,"%d  %d\r\n",  aa, bb);    
-    HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 3);
+    //sprintf((char*)uart2_tx_data,"%d  %d\r\n",  aa, bb);    
+    //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 3);
 //=====================TIme Check END======================
     /* USER CODE END WHILE */
 
