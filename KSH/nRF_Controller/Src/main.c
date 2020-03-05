@@ -238,7 +238,7 @@ int main(void)
      
     //HAL_UART_Receive_IT(&huart2,(uint8_t*)key_input, 1);
         //printf("hello\r\n");
-  HAL_ADC_Start_IT(&hadc1);
+  //HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
  
  
@@ -251,41 +251,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     
-  
-//    printf("%d",count);
-//    HAL_Delay(300);
-    //count++;
     
 //----------------------ADC-----------------------//
-//  for(char a = 0; a<50; a++)
-//  {
-//     
-//      for(char i=0; i<4;i++)
-//      {
-//       HAL_ADC_Start(&hadc1);
-//       HAL_ADC_PollForConversion(&hadc1, 100);                              
-//       ADC_DATA[i] = HAL_ADC_GetValue(&hadc1);
-//      }
-//      ADC_Avg[0]+= ADC_DATA[0];
-//      ADC_Avg[1]+= ADC_DATA[1];
-//      ADC_Avg[2]+= ADC_DATA[2];
-//      ADC_Avg[3]+= ADC_DATA[3];
-//
-//  }
-//  
-//  for(char d = 0; d<4; d++)
-//  {
-//    ADC_Avg[d] = ADC_Avg[d]/50;
-//  }
-////    buffer_ADC[0] = ADC_Avg[0];
-////    buffer_ADC[1] = ADC_Avg[1];
-////    buffer_ADC[2] = ADC_Avg[2];
-////    buffer_ADC[3] = ADC_Avg[3];
-////    
-////    printf("adc0 : %4d adc1 : %4d adc2 : %4d adc3 : %4d\r\n",buffer_ADC[0], buffer_ADC[1],buffer_ADC[2], buffer_ADC[3]);
-////   sprintf((char*)buffer_ADC,"adc0 : %4d adc1 : %4d adc2 : %4d adc3 : %4d\r\n",ADC_Avg[0], ADC_Avg[1],ADC_Avg[2], ADC_Avg[3]);
-//    sprintf((char*)buffer_ADC,"%4d / %4d  / %4d / %4d\r\n",ADC_DATA[0], ADC_DATA[1],ADC_DATA[2], ADC_DATA[3]); 
-//    HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
+ //   sprintf((char*)buffer_ADC,"%4d / %4d  / %4d / %4d\r\n",ADC_DATA[0], ADC_DATA[1],ADC_DATA[2], ADC_DATA[3]); 
+ //   HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
     //memset(buffer_ADC,'\0',4);
 //    //HAL_Delay(500);
 
@@ -358,6 +327,30 @@ int main(void)
                   Keyboard_Debug(&Roll_P,key_tr);
                   nRF24_Transmit(&Roll_P,key_tr);
                   nRF24_Transmit_Status();
+                  
+                  key_tr = '\0';
+                  break;
+                  
+  //-----------------------------Re Transmit--------------------------//
+//                  if(transmissionStatus == TM_NRF24L01_Transmit_Status_Lost)
+//                  {
+//                    fail_count ++;
+//                  }
+//                  if(fail_count <= 1000)
+//                  {
+//                    nRF24_Transmit(&Roll_P,key_tr);
+//                    HAL_Delay(1);
+//                    nRF24_Transmit_Status();
+//                    fail_count++;
+//                  }
+//                
+//                  fail_count=1;
+//
+//                  Keyboard_Debug(&Roll_P,key_tr);
+//                  nRF24_Transmit(&Roll_P,key_tr);
+//                  nRF24_Transmit_Status();
+                  
+                 
                    //Qick_NRF24L01_Transmit(&Roll_P);
                     //TM_NRF24L01_PowerUpRx();
     //                TM_NRF24L01_GetData(r_temp);
@@ -365,28 +358,8 @@ int main(void)
     //                 printf("r_temp : %s\r\n", r_temp);
     //                 printf("receive : %.3f\r\n", temp_1);
     //                  r_temp[32] = '\0';
-                    
-                    
-                   //전송 실패시 성공할 때 까지 전송
-//                    while(!(transmissionStatus==TM_NRF24L01_Transmit_Status_Lost))
-//                    {
-//                        fail_count++;
-//                        if(fail_count >= 1000)
-//                        {
-//                          printf("\r\n Transmiton Fail\r\n");
-//                        }
-//                        else
-//                        {
-//                          nRF24_Transmit(&Roll_P,key_input);
-//                          printf("\r\n Transmiton Successfully\r\n");
-//                        }
-//                        fail_count = 1;
-//                        break;  
-//                    }
-                    
-                  key_tr = '\0';
-                  break;
-                  
+ //-----------------------------Re Transmit--------------------------//                   
+               
                 case '2':
                  key_tr = key_input;
                  key_input='\0';
@@ -785,7 +758,7 @@ static void MX_GPIO_Init(void)
 //{
 //   static uint8_t adc_count;
 //   
-//   ADC_DATA[adc_count] += HAL_ADC_GetValue(hadc);
+//   ADC_DATA[adc_count] = HAL_ADC_GetValue(hadc);
 //   adc_count++;
 //
 //   if(adc_count >3)
