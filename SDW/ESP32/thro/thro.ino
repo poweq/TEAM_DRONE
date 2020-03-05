@@ -114,7 +114,6 @@ void *t_function(void *arg)
             }
             else if(strstr(ch,"T")!=NULL)
             {
-              Serial.println("");
               parsing_thro(ch);
               Serial.print('C');
               memset(ch,'\0',sizeof(ch));

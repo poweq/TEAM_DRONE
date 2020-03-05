@@ -9,7 +9,7 @@
 const char* ssid = "room201";
 const char* password =  "room201201";
 
-const char * serverAddress = "192.168.0.21";
+const char * serverAddress = "192.168.0.23";
 const int serverPort = 9000;
 
 WiFiUDP udp;
@@ -21,6 +21,7 @@ static int socket_flag = 1;
 static int thread_flag = 1;
 char buff[255]={0,};
 char tcp_buff[100]={0,};
+char ack_buff[100];
 //vTaskDelay(10);
 
 void parsing_pid(char* pb);
@@ -103,6 +104,15 @@ void *t_function(void *arg)
               parsing_pid(ch);
               Serial.print('A'); // solo
               memset(ch,'\0',sizeof(ch));  
+            }
+            else if(strstr(ch,"T")!=NULL)
+            {
+              parsing_thro(ch);
+              Serial.print('C');
+              memset(ch,'\0',sizeof(ch));
+              memset(ack_buff,'\0',sizeof(ack_buff));
+              ack_buff[0]='1';
+              wifiClient.write(ack_buff,100);
             }
             i=0;
           }
