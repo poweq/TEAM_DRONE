@@ -1,18 +1,14 @@
-# TEAM_DRONE
-Bitcamp TEAMDRONE
-### 1. Controller Tx
-![KakaoTalk_20200224_100800096](https://user-images.githubusercontent.com/45223302/75125544-fa556500-56f8-11ea-90cd-dabd6dee555f.jpg)
-### 2. Controller Rx (Drone)
-![KakaoTalk_20200224_100824578](https://user-images.githubusercontent.com/45223302/75125546-fcb7bf00-56f8-11ea-8d4c-10c242c6dd62.jpg)
+조이스틱 개발 노트
 
-### 3. Drone Drive Mode 
-![drone_control](https://user-images.githubusercontent.com/45223302/75125552-fe818280-56f8-11ea-9e5a-04d7ac53f9c2.jpg)
+3.6
+adc 인터럽트  adc 0 1 2 3 구현
+-> 조이스틱 기능
+pc 13 버튼인터럽트 구현
+->모드 설정
 
-### 4. Drone Debug Mode
-![drone_debug](https://user-images.githubusercontent.com/45223302/75125555-ffb2af80-56f8-11ea-9a38-35fbc1b6c463.jpg)
+3.7
+pc13 버튼 채터링 방지 구현
+메뉴 1회씩만 출력 구현
+소스코드 간소화
 
-### 5. MFC Flow Chart 
-![KakaoTalk_20200225_130940333](https://user-images.githubusercontent.com/45223302/75214220-25f74e80-57d0-11ea-8af9-6f434d384400.jpg)
 
-### 6. ESP-32
-![KakaoTalk_20200225_173125101](https://user-images.githubusercontent.com/45223302/75229758-e7748a80-57f5-11ea-8c06-7029c8863998.png)
