@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "JOYSTICK.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -35,8 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define Debug_Mode_Flag      0
-#define Drive_Mode_Flag      1
+//#define Debug_Mode_Flag      0
+//#define Drive_Mode_Flag      1
 
 /* USER CODE END PD */
 
@@ -63,19 +64,18 @@ static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-char INPUT_THROTTLE();
-char INPUT_CONTORLLER();
-void Print_Mode(uint8_t* Mode_Flag);
+//char INPUT_THROTTLE();
+//char INPUT_CONTORLLER();
+//void Print_Mode(uint8_t* Mode_Flag);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/* VAL ADC----------------------------------------------------------------*/
+/*============ VAL ADC====================*/
 uint32_t ADC_DATA[4];  
-uint8_t buffer_ADC[50];
-uint8_t C_buffer[50];
-char str[20];
+//uint8_t C_buffer[50];
+//char str[20];
 uint8_t button_flag=0;
 
 /* USER CODE END 0 */
@@ -129,26 +129,28 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
 /*========================DEBUG MODE===================*/
+    
     if(button_flag)
     {
-      if(Mode_Flag==Debug_Mode_Flag)
+      if(Mode_Flag==Debug_Mode_Flag){
         Print_Mode(&Mode_Flag);
+      }
 
-      sprintf((char*)buffer_ADC,"%4d / %4d  / %4d / %4d\r\n",ADC_DATA[0], ADC_DATA[1],ADC_DATA[2], ADC_DATA[3]); 
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-      memset(buffer_ADC,'\0',50);
+      Print_ADC_DEBUG();
       HAL_Delay(50);
+
      }
-    
 /*========================DRIVE MODE===================*/
-    else
+   
+ else
     {
-      if(Mode_Flag==Drive_Mode_Flag)
-          Print_Mode(&Mode_Flag);
+      if(Mode_Flag==Drive_Mode_Flag){
+          Print_Mode(&Mode_Flag);    
+      }
       INPUT_CONTORLLER();
+      INPUT_THROTTLE();
       HAL_Delay(100);
     }
   }
@@ -380,88 +382,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
- /*=======PRINT MODE==================*/
-void Print_Mode(uint8_t* Mode_Flag)
-{
-      if(*Mode_Flag==Debug_Mode_Flag)
-      {
-        *Mode_Flag= Drive_Mode_Flag;
-        sprintf((char*)buffer_ADC,"\r\n =======DEBUG MODE======\r\n"); 
-        HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-        memset(buffer_ADC,'\0',50);
-      }
-     
-    
-   else if(*Mode_Flag==Drive_Mode_Flag)
-      {
-        *Mode_Flag= Debug_Mode_Flag;
-        sprintf((char*)buffer_ADC,"\r\n =======DRIVER MODE======\r\n"); 
-        HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-        memset(buffer_ADC,'\0',50);
-      }
-}
- /*=======INPUT THROTTLE DATA==================*/
-char INPUT_THROTTLE()
-{
-
-  static char count= 0; 
-    if(ADC_DATA[3]>3000)//UP
-      {
-      sprintf((char*)buffer_ADC,"\r\n%d",count++);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-      }
-      else if(ADC_DATA[3]<500)//DOWN
-    {
-      sprintf((char*)buffer_ADC,"\r\n%d ",count--);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-    }
-
-      if(ADC_DATA[4]>3000)//LEFT
-    {
-      sprintf((char*)buffer_ADC," \r\n%d",count = count+10);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-    }
-       else if(ADC_DATA[4]<500)//RIGHT
-    {
-      sprintf((char*)buffer_ADC," \r\n%d ",count = count-10);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-    }
-    memset(buffer_ADC,'\0',50);
-    
-    return 0;
-}
-
-
- /*=======INPUT JOYSTICK DATA==================*/
-char INPUT_CONTORLLER()
-{
-  static char count= 0; 
-    if(ADC_DATA[0]>3000)//UP
-      {
-      sprintf((char*)buffer_ADC,"\r\n%d",count++);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-      }
-      else if(ADC_DATA[0]<500)//DOWN
-    {
-      sprintf((char*)buffer_ADC,"\r\n%d ",count--);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-    }
-
-      if(ADC_DATA[1]>3000)//LEFT
-    {
-      sprintf((char*)buffer_ADC," \r\n%d",count = count+10);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-    }
-       else if(ADC_DATA[1]<500)//RIGHT
-    {
-      sprintf((char*)buffer_ADC," \r\n%d ",count = count-10);
-      HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
-    }
-    memset(buffer_ADC,'\0',50);
-    
-    return 0;
-}
-
   
 /*==================ADC CALLBACK===================*/
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
