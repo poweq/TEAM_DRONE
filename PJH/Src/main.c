@@ -108,14 +108,14 @@ uint8_t data;
 //=======================MPU9250 variables==========================
 //==================================================================
 //========================nRF24L01 GLOBAL VARIABLES==============================
-//uint8_t TxAddress[] = {                                 // Controller �� ������ ���� �ּ�
+//uint8_t TxAddress[] = {                                 // Controller 占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙 占쌍쇽옙
 //  0xE7,
 //  0xE7,
 //  0xE7,
 //  0xE7,
 //  0xE7
 //};
-uint8_t MyAddress[] = {                                 // Controller ���� ������ ���� �ּ�
+uint8_t MyAddress[] = {                                 // Controller 占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙 占쌍쇽옙
   0x7E,
   0x7E,
   0x7E,
@@ -123,7 +123,7 @@ uint8_t MyAddress[] = {                                 // Controller ����
   0x7E
 };
 
-//int value=0;                                            // ��Ʈ�ѷ����� ���� key_input �� ���� ����
+//int value=0;                                            // 占쏙옙트占싼뤄옙占쏙옙占쏙옙 占쏙옙占쏙옙 key_input 占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙
 
 //========================================================================
 
@@ -168,7 +168,7 @@ int main(void)
   //====================Fuzzy Variables====================================
   //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 35;                                  //Moter Throttle.(40�̸� ���?)
+  int Controller_1 = 35;                                  //Moter Throttle.(40占싱몌옙 占쏙옙占?)
   //int Controller_2 = 0;                                   //Moter Throttle. 
   //===================hanging Variables from external controll====================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
@@ -184,8 +184,8 @@ int main(void)
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
   float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f}; //MPU9250 Magnetometer Self_Test.
   //========================nRF24L01 VARIABLES==============================
-  int temp_int;                                           // uint8_t ������ �޴� data int������ ��ȯ, Throttle ��
-  float temp;                                             // uint8_t ������ �޴� data flaot������ ��ȯ, PID ��
+  int temp_int;                                           // uint8_t 占쏙옙占쏙옙占쏙옙 占쌨댐옙 data int占쏙옙占쏙옙占쏙옙 占쏙옙환, Throttle 占쏙옙
+  float temp;                                             // uint8_t 占쏙옙占쏙옙占쏙옙 占쌨댐옙 data flaot占쏙옙占쏙옙占쏙옙 占쏙옙환, PID 占쏙옙
 
   /* USER CODE END 1 */
   
@@ -248,8 +248,8 @@ int main(void)
   //  Motor_Start();
     
   //*********************************************
-    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //���ͷ��� Ȱ��ȭ.
-    memset(pid_buffer,'\0',sizeof(pid_buffer));           //���ۺ���
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //占쏙옙占싶뤄옙占쏙옙 활占쏙옙화.
+    memset(pid_buffer,'\0',sizeof(pid_buffer));           //占쏙옙占쌜븝옙占쏙옙
   //********************************************
   
   TM_NRF24L01_Init(15,32);  
@@ -271,7 +271,7 @@ int main(void)
   {         
     int aa = HAL_GetTick();     //Get time for 
     
-    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID ���� ��.
+    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID 占쏙옙占쏙옙 占쏙옙.
   //========================Get MPU9250 data===========================  
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
@@ -407,7 +407,7 @@ int main(void)
            MOTOR_V4 = MIN_PULSE;
          }
      
-      if (Controller_1 > 5)    //Controller_1�� ��ȣ�� �ְ� �ְ�, Controller_2�� ���̽�ƽ�� ��� ��ġ�� �� (������ �����Ҷ�)
+      if (Controller_1 > 5)    //Controller_1占쏙옙 占쏙옙호占쏙옙 占쌍곤옙 占쌍곤옙, Controller_2占쏙옙 占쏙옙占싱쏙옙틱占쏙옙 占쏙옙占쏘데 占쏙옙치占쏙옙 占쏙옙 (占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙占쌀띰옙)
        {     
          if (fabs(LPF_Euler_angle[0]) <= 15.0f && fabs(LPF_Euler_angle[1]) <= 15.0f)    //Restrict yaw acting Euler angle.
          {           
@@ -447,7 +447,7 @@ int main(void)
 //======================BLDC Motor Part END===================================
     
 //======================NRF24L01 Receive Part=================================    
-  NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           // ��Ʈ�ѷ����� ������ ���� �޴� �Լ�    
+  NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           // 占쏙옙트占싼뤄옙占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙 占쌨댐옙 占쌉쇽옙    
 //=====================NRF24L01 Receive Part END==============================  
     
 //========================Data transmit part==================================
@@ -476,7 +476,7 @@ int main(void)
       //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
       if (UART_deltat >= 10)
       {
-          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //����׽��?��.
+          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //占쏙옙占쏙옙謬占싣?占쏙옙.
           if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
           {
             Parsing_PID_val(pid_buffer, pid_val);
