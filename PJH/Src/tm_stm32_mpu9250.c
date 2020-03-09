@@ -164,7 +164,6 @@
 #define WhoAmIReturn        (0x71)
 #define WhoAmIReturn2       (0x73)
 
-
 void __INIT__MPU9250(TM_MPU9250_t* MPU9250)
 {
     MPU9250->Ax=0; MPU9250->Ay=0; MPU9250->Az=0;
@@ -211,7 +210,6 @@ TM_MPU9250_Result_t MPU9250SelfTest(TM_MPU9250_t* MPU9250, float * Self_Test,  T
     /* Check who I am */
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, WHO_AM_I_MPU9250, &data);
     if ((data != WhoAmIReturn) && (data != WhoAmIReturn2)) {
-
         return TM_MPU9250_Result_DeviceNotConnected;
     }
 
@@ -460,7 +458,6 @@ void calibrateMPU9250(TM_MPU9250_t* MPU9250)
     tempbias[3] = (int)(MPU9250->Gybiasx * 1000);
     tempbias[4] = (int)(MPU9250->Gybiasy * 1000);
     tempbias[5] = (int)(MPU9250->Gybiasz * 1000);
-
     
     HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020000, tempbias[0]);
     HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08020004, tempbias[1]);
@@ -539,7 +536,6 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     /* Check who I am */
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, WHO_AM_I_MPU9250, &data);
     if ((data != WhoAmIReturn) && (data != WhoAmIReturn2)) {
-
         return TM_MPU9250_Result_DeviceNotConnected;
     }
     
@@ -728,7 +724,6 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
   
   // shoot for ~twenty seconds of mag data
    sample_count = 2000;//2000
-
    for(ii = 0; ii < sample_count; ii++) {
     TM_MPU9250_ReadMag_Bias(&mag_temp);
       if(mag_temp.Mx_Raw > mag_max[0]) mag_max[0] = mag_temp.Mx_Raw;
