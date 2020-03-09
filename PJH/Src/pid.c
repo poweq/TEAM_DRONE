@@ -79,9 +79,9 @@ void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float
 #if 1 //double loop PID 
 void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis, float deltat)
 {  
-  //set ëª©í‘œê°ë„
-  //actual í˜„ì¬ê°ë„
-  //angular_velocity í˜„ì¬ ê°ì†ë„
+  //set ¸ñÇ¥°¢µµ
+  //actual ÇöÀç°¢µµ
+  //angular_velocity ÇöÀç °¢¼Óµµ
   float Kp_term, Ki_term, Kd_term;
   float D_err = 0.0f;
   float stabilPgain = 0.0f;
@@ -91,87 +91,87 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
   {
   case 0: //roll
     {      
-        pid->err[0] = set - actual;                                             //ì˜¤ì°¨ = ëª©í‘œì¹˜ - í˜„ì¬ê°’	
+        pid->err[0] = set - actual;                                             //¿ÀÂ÷ = ¸ñÇ¥Ä¡ - ÇöÀç°ª	
 
         if (pid->err[0] >  PID_IMAX)
         pid->err[0] = PID_IMAX;
         if (pid->err[0] < PID_IMIN)
         pid->err[0] = PID_IMIN;
         
-        stabilPgain = pid->Kp[0] * pid->err[0];                                          //pí•­ = Kp * ì˜¤ì°¨
+        stabilPgain = pid->Kp[0] * pid->err[0];                                          //pÇ× = Kp * ¿ÀÂ÷
         stabilIgain += pid->Ki[0] *pid->err[0] * deltat;
           
         pid->rateError[0] = stabilPgain - angular_velocity;
 
-        Kp_term = pid->iKp[0] * pid->rateError[0];                                     //pí•­ = KpGain * rateì˜¤ì°¨.        
+        Kp_term = pid->iKp[0] * pid->rateError[0];                                     //pÇ× = KpGain * rate¿ÀÂ÷.        
 
-        pid->integral[0] += (pid->rateError[0] * deltat);                              //ì˜¤ì°¨ì ë¶„ = ì˜¤ì°¨ì ë¶„ + (ì˜¤ì°¨rate * dt).        
-        Ki_term = pid->iKi[0] * pid->integral[0];                                         //ií•­ = Ki * ì˜¤ì°¨ì ë¶„.        
+        pid->integral[0] += (pid->rateError[0] * deltat);                              //¿ÀÂ÷ÀûºĞ = ¿ÀÂ÷ÀûºĞ + (¿ÀÂ÷rate * dt).        
+        Ki_term = pid->iKi[0] * pid->integral[0];                                         //iÇ× = Ki * ¿ÀÂ÷ÀûºĞ.        
 
-        D_err = (pid->rateError[0] - pid->preRateError[0]) / deltat;             //ì˜¤ì°¨ë¯¸ë¶„ = (í˜„ì¬rateì˜¤ì°¨-ì´ì „rateì˜¤ì°¨)/dt.        
-        Kd_term = pid->iKd[0] * D_err;                                                       //dí•­ = Kd * rateì˜¤ì°¨ë¯¸ë¶„.	
+        D_err = (pid->rateError[0] - pid->preRateError[0]) / deltat;             //¿ÀÂ÷¹ÌºĞ = (ÇöÀçrate¿ÀÂ÷-ÀÌÀürate¿ÀÂ÷)/dt.        
+        Kd_term = pid->iKd[0] * D_err;                                                       //dÇ× = Kd * rate¿ÀÂ÷¹ÌºĞ.	
         
-        pid->output[0] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //ì œì–´ëŸ‰ = Kpí•­ + Kií•­ + Kdí•­
+        pid->output[0] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //Á¦¾î·® = KpÇ× + KiÇ× + KdÇ×
 
-        pid->preRateError[0] = pid->rateError[0];                                      //í˜„ì¬rateì˜¤ì°¨ë¥¼ ì´ì „rateì˜¤ì°¨ë¡œ.
+        pid->preRateError[0] = pid->rateError[0];                                      //ÇöÀçrate¿ÀÂ÷¸¦ ÀÌÀürate¿ÀÂ÷·Î.
         
       break;
     }
   case 1: //pitch
     {
-        pid->err[1] = set - actual; //ì˜¤ì°¨ = ëª©í‘œì¹˜ - í˜„ì¬ê°’	
+        pid->err[1] = set - actual; //¿ÀÂ÷ = ¸ñÇ¥Ä¡ - ÇöÀç°ª	
 
         if (pid->err[1] >  PID_IMAX)
         pid->err[1] = PID_IMAX;
         if (pid->err[1] < PID_IMIN)
         pid->err[1] = PID_IMIN;
         
-        stabilPgain = pid->Kp[1] * pid->err[1];                                          //pí•­ = Kp * ì˜¤ì°¨
+        stabilPgain = pid->Kp[1] * pid->err[1];                                          //pÇ× = Kp * ¿ÀÂ÷
         stabilIgain += pid->Ki[1] *pid->err[1] * deltat;
 
         
         pid->rateError[1] =  stabilPgain - angular_velocity;
 
-        Kp_term = pid->iKp[1] * pid->rateError[1];                                     //pí•­ = KpGain * rateì˜¤ì°¨.        
+        Kp_term = pid->iKp[1] * pid->rateError[1];                                     //pÇ× = KpGain * rate¿ÀÂ÷.        
 
-        pid->integral[1] += (pid->rateError[1] * deltat);                              //ì˜¤ì°¨ì ë¶„ = ì˜¤ì°¨ì ë¶„ + ì˜¤ì°¨rate * dt.        
-        Ki_term = pid->iKi[1] * pid->integral[1];                                         //ií•­ = Ki * ì˜¤ì°¨ì ë¶„.        
+        pid->integral[1] += (pid->rateError[1] * deltat);                              //¿ÀÂ÷ÀûºĞ = ¿ÀÂ÷ÀûºĞ + ¿ÀÂ÷rate * dt.        
+        Ki_term = pid->iKi[1] * pid->integral[1];                                         //iÇ× = Ki * ¿ÀÂ÷ÀûºĞ.        
 
-        D_err = (pid->rateError[1] - pid->preRateError[1]) / deltat;             //ì˜¤ì°¨ë¯¸ë¶„ = (í˜„ì¬rateì˜¤ì°¨-ì´ì „rateì˜¤ì°¨)/dt.        
-        Kd_term = pid->iKd[1] * D_err;                                                       //dí•­ = Kd * rateì˜¤ì°¨ë¯¸ë¶„.	
+        D_err = (pid->rateError[1] - pid->preRateError[1]) / deltat;             //¿ÀÂ÷¹ÌºĞ = (ÇöÀçrate¿ÀÂ÷-ÀÌÀürate¿ÀÂ÷)/dt.        
+        Kd_term = pid->iKd[1] * D_err;                                                       //dÇ× = Kd * rate¿ÀÂ÷¹ÌºĞ.	
         
-        pid->output[1] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //ì œì–´ëŸ‰ = Kpí•­ + Kií•­ + Kdí•­
+        pid->output[1] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //Á¦¾î·® = KpÇ× + KiÇ× + KdÇ×
 
-        pid->preRateError[1] = pid->rateError[1];                                      //í˜„ì¬rateì˜¤ì°¨ë¥¼ ì´ì „rateì˜¤ì°¨ë¡œ.
+        pid->preRateError[1] = pid->rateError[1];                                      //ÇöÀçrate¿ÀÂ÷¸¦ ÀÌÀürate¿ÀÂ÷·Î.
 
         
       break;
     }
   case 2:  //yaw
     {
-        pid->err[2] = set - actual; //ì˜¤ì°¨ = ëª©í‘œì¹˜ - í˜„ì¬ê°’	
+        pid->err[2] = set - actual; //¿ÀÂ÷ = ¸ñÇ¥Ä¡ - ÇöÀç°ª	
 
         if (pid->err[2] >  PID_IMAX)
         pid->err[2] = PID_IMAX;
         if (pid->err[2] < PID_IMIN)
         pid->err[2] = PID_IMIN;
         
-        stabilPgain = pid->Kp[2] * pid->err[2];                                           //pí•­ = Kp * ì˜¤ì°¨
+        stabilPgain = pid->Kp[2] * pid->err[2];                                           //pÇ× = Kp * ¿ÀÂ÷
         stabilIgain += pid->Ki[2] *pid->err[2] * deltat;
 
         pid->rateError[2] = stabilPgain - angular_velocity;
 
-        Kp_term = pid->iKp[2] * pid->rateError[2];                                     //pí•­ = KpGain * rateì˜¤ì°¨.        
+        Kp_term = pid->iKp[2] * pid->rateError[2];                                     //pÇ× = KpGain * rate¿ÀÂ÷.        
 
-        pid->integral[2] += (pid->rateError[2] * deltat);                              //ì˜¤ì°¨ì ë¶„ = ì˜¤ì°¨ì ë¶„ + ì˜¤ì°¨rate * dt.        
-        Ki_term = pid->iKi[2] * pid->integral[2];                                         //ií•­ = Ki * ì˜¤ì°¨ì ë¶„.        
+        pid->integral[2] += (pid->rateError[2] * deltat);                              //¿ÀÂ÷ÀûºĞ = ¿ÀÂ÷ÀûºĞ + ¿ÀÂ÷rate * dt.        
+        Ki_term = pid->iKi[2] * pid->integral[2];                                         //iÇ× = Ki * ¿ÀÂ÷ÀûºĞ.        
 
-        D_err = (pid->rateError[2] - pid->preRateError[2]) / deltat;             //ì˜¤ì°¨ë¯¸ë¶„ = (í˜„ì¬rateì˜¤ì°¨-ì´ì „rateì˜¤ì°¨)/dt.        
-        Kd_term = pid->iKd[2] * D_err;                                                       //dí•­ = Kd * rateì˜¤ì°¨ë¯¸ë¶„.	
+        D_err = (pid->rateError[2] - pid->preRateError[2]) / deltat;             //¿ÀÂ÷¹ÌºĞ = (ÇöÀçrate¿ÀÂ÷-ÀÌÀürate¿ÀÂ÷)/dt.        
+        Kd_term = pid->iKd[2] * D_err;                                                       //dÇ× = Kd * rate¿ÀÂ÷¹ÌºĞ.	
         
-        pid->output[2] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //ì œì–´ëŸ‰ = Kpí•­ + Kií•­ + Kdí•­
+        pid->output[2] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //Á¦¾î·® = KpÇ× + KiÇ× + KdÇ×
 
-        pid->preRateError[2] = pid->rateError[2];                                      //í˜„ì¬rateì˜¤ì°¨ë¥¼ ì´ì „rateì˜¤ì°¨ë¡œ.
+        pid->preRateError[2] = pid->rateError[2];                                      //ÇöÀçrate¿ÀÂ÷¸¦ ÀÌÀürate¿ÀÂ÷·Î.
 
       break;
     }
@@ -188,45 +188,45 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
   {
   case 0: //roll
     {
-        pid->err[0] = set - actual; //ì˜¤ì°¨ = ëª©í‘œì¹˜ - í˜„ì¬ê°’	
+        pid->err[0] = set - actual; //¿ÀÂ÷ = ¸ñÇ¥Ä¡ - ÇöÀç°ª	
         if (pid->err[0] >  PID_IMAX)
           pid->err[0] = PID_IMAX;
         if (pid->err[0] < PID_IMIN)
           pid->err[0] = PID_IMIN;
-        Kp_term = pid->Kp[0] * pid->err[0]; //pí•­ = Kp * ì˜¤ì°¨
+        Kp_term = pid->Kp[0] * pid->err[0]; //pÇ× = Kp * ¿ÀÂ÷
         
-        pid->integral[0] += pid->err[0] * deltat;//ì˜¤ì°¨ì ë¶„ = ì˜¤ì°¨ì ë¶„ + ì˜¤ì°¨ * dt
-        Ki_term = pid->Ki[0] * pid->integral[0];//ií•­ = Ki * ì˜¤ì°¨ì ë¶„
+        pid->integral[0] += pid->err[0] * deltat;//¿ÀÂ÷ÀûºĞ = ¿ÀÂ÷ÀûºĞ + ¿ÀÂ÷ * dt
+        Ki_term = pid->Ki[0] * pid->integral[0];//iÇ× = Ki * ¿ÀÂ÷ÀûºĞ
         
-        D_err = (pid->err[0] - pid->err_last[0]) / deltat;//ì˜¤ì°¨ë¯¸ë¶„ = (í˜„ì¬ì˜¤ì°¨-ì´ì „ì˜¤ì°¨)/dt
-        Kd_term = pid->Kd[0] * D_err;//dí•­ = Kd * ì˜¤ì°¨ë¯¸ë¶„
+        D_err = (pid->err[0] - pid->err_last[0]) / deltat;//¿ÀÂ÷¹ÌºĞ = (ÇöÀç¿ÀÂ÷-ÀÌÀü¿ÀÂ÷)/dt
+        Kd_term = pid->Kd[0] * D_err;//dÇ× = Kd * ¿ÀÂ÷¹ÌºĞ
 	
-	pid->output[0] = Kp_term + Ki_term + Kd_term;//ì œì–´ëŸ‰ = Kpí•­ + Kií•­ + Kdí•­
-	pid->err_last[0] = pid->err[0];//í˜„ì¬ì˜¤ì°¨ë¥¼ ì´ì „ì˜¤ì°¨ë¡œ.
+	pid->output[0] = Kp_term + Ki_term + Kd_term;//Á¦¾î·® = KpÇ× + KiÇ× + KdÇ×
+	pid->err_last[0] = pid->err[0];//ÇöÀç¿ÀÂ÷¸¦ ÀÌÀü¿ÀÂ÷·Î.
       break;
     }
   case 1: //pitch
     {
-        pid->err[1] = set - actual; //ì˜¤ì°¨ = ëª©í‘œì¹˜ - í˜„ì¬ê°’	
+        pid->err[1] = set - actual; //¿ÀÂ÷ = ¸ñÇ¥Ä¡ - ÇöÀç°ª	
         if (pid->err[1] >  PID_IMAX)
           pid->err[1] = PID_IMAX;
         if (pid->err[1] < PID_IMIN)
           pid->err[1] = PID_IMIN;
-        Kp_term = pid->Kp[1] * pid->err[1]; //pí•­ = Kp * ì˜¤ì°¨
+        Kp_term = pid->Kp[1] * pid->err[1]; //pÇ× = Kp * ¿ÀÂ÷
         
-        pid->integral[1] += pid->err[1] * deltat;//ì˜¤ì°¨ì ë¶„ = ì˜¤ì°¨ì ë¶„ + ì˜¤ì°¨ * dt
-        Ki_term = pid->Ki[1] * pid->integral[1];//ií•­ = Ki * ì˜¤ì°¨ì ë¶„
+        pid->integral[1] += pid->err[1] * deltat;//¿ÀÂ÷ÀûºĞ = ¿ÀÂ÷ÀûºĞ + ¿ÀÂ÷ * dt
+        Ki_term = pid->Ki[1] * pid->integral[1];//iÇ× = Ki * ¿ÀÂ÷ÀûºĞ
         
-        D_err = (pid->err[1] - pid->err_last[1]) / deltat;//ì˜¤ì°¨ë¯¸ë¶„ = (í˜„ì¬ì˜¤ì°¨-ì´ì „ì˜¤ì°¨)/dt
-        Kd_term = pid->Kd[1] * D_err;//dí•­ = Kd * ì˜¤ì°¨ë¯¸ë¶„
+        D_err = (pid->err[1] - pid->err_last[1]) / deltat;//¿ÀÂ÷¹ÌºĞ = (ÇöÀç¿ÀÂ÷-ÀÌÀü¿ÀÂ÷)/dt
+        Kd_term = pid->Kd[1] * D_err;//dÇ× = Kd * ¿ÀÂ÷¹ÌºĞ
 	
-	pid->output[1] = Kp_term + Ki_term + Kd_term;//ì œì–´ëŸ‰ = Kpí•­ + Kií•­ + Kdí•­
-	pid->err_last[1] = pid->err[1];//í˜„ì¬ì˜¤ì°¨ë¥¼ ì´ì „ì˜¤ì°¨ë¡œ.
+	pid->output[1] = Kp_term + Ki_term + Kd_term;//Á¦¾î·® = KpÇ× + KiÇ× + KdÇ×
+	pid->err_last[1] = pid->err[1];//ÇöÀç¿ÀÂ÷¸¦ ÀÌÀü¿ÀÂ÷·Î.
       break;
     }
   case 2:  //yaw
     {
-        pid->err[2] = set - actual; //ì˜¤ì°¨ = ëª©í‘œì¹˜ - í˜„ì¬ê°’	
+        pid->err[2] = set - actual; //¿ÀÂ÷ = ¸ñÇ¥Ä¡ - ÇöÀç°ª	
         
         if (pid->err[2] < -180)                 //correct angle jump ( ex: 180 -> -180)
           pid->err[2] = pid->err[2] + 360;
@@ -237,16 +237,16 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
           pid->err[2] = PID_IMAX;
         if (pid->err[2] < PID_IMIN)
           pid->err[2] = PID_IMIN;
-        Kp_term = pid->Kp[2] * pid->err[2]; //pí•­ = Kp * ì˜¤ì°¨
+        Kp_term = pid->Kp[2] * pid->err[2]; //pÇ× = Kp * ¿ÀÂ÷
         
-        pid->integral[2] += pid->err[2] * deltat;//ì˜¤ì°¨ì ë¶„ = ì˜¤ì°¨ì ë¶„ + ì˜¤ì°¨ * dt
-        Ki_term = pid->Ki[2] * pid->integral[2];//ií•­ = Ki * ì˜¤ì°¨ì ë¶„
+        pid->integral[2] += pid->err[2] * deltat;//¿ÀÂ÷ÀûºĞ = ¿ÀÂ÷ÀûºĞ + ¿ÀÂ÷ * dt
+        Ki_term = pid->Ki[2] * pid->integral[2];//iÇ× = Ki * ¿ÀÂ÷ÀûºĞ
         
-        D_err = (pid->err[2] - pid->err_last[2]) / deltat;//ì˜¤ì°¨ë¯¸ë¶„ = (í˜„ì¬ì˜¤ì°¨-ì´ì „ì˜¤ì°¨)/dt
-        Kd_term = pid->Kd[2] * D_err;//dí•­ = Kd * ì˜¤ì°¨ë¯¸ë¶„
+        D_err = (pid->err[2] - pid->err_last[2]) / deltat;//¿ÀÂ÷¹ÌºĞ = (ÇöÀç¿ÀÂ÷-ÀÌÀü¿ÀÂ÷)/dt
+        Kd_term = pid->Kd[2] * D_err;//dÇ× = Kd * ¿ÀÂ÷¹ÌºĞ
 	
-	pid->output[2] = Kp_term + Ki_term + Kd_term;//ì œì–´ëŸ‰ = Kpí•­ + Kií•­ + Kdí•­
-	pid->err_last[2] = pid->err[2];//í˜„ì¬ì˜¤ì°¨ë¥¼ ì´ì „ì˜¤ì°¨ë¡œ.
+	pid->output[2] = Kp_term + Ki_term + Kd_term;//Á¦¾î·® = KpÇ× + KiÇ× + KdÇ×
+	pid->err_last[2] = pid->err[2];//ÇöÀç¿ÀÂ÷¸¦ ÀÌÀü¿ÀÂ÷·Î.
       break;
     }
   }	

@@ -35,6 +35,7 @@
 #include "pid.h"
 #include "PWM.h"
 #include "LPF.h"
+#include "fuzzy.h"
 #include "STM32F4_FLASH_MEMORY.h"
 #include "nRF24_Receive.h"
 #include "tm_stm32_nrf24l01.h"
@@ -108,14 +109,14 @@ uint8_t data;
 //=======================MPU9250 variables==========================
 //==================================================================
 //========================nRF24L01 GLOBAL VARIABLES==============================
-//uint8_t TxAddress[] = {                                 // Controller 占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙 占쌍쇽옙
+//uint8_t TxAddress[] = {                                 // Controller
 //  0xE7,
 //  0xE7,
 //  0xE7,
 //  0xE7,
 //  0xE7
 //};
-uint8_t MyAddress[] = {                                 // Controller 占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙 占쌍쇽옙
+uint8_t MyAddress[] = {                                 // Controller 
   0x7E,
   0x7E,
   0x7E,
@@ -123,7 +124,7 @@ uint8_t MyAddress[] = {                                 // Controller 占쏙옙�
   0x7E
 };
 
-//int value=0;                                            // 占쏙옙트占싼뤄옙占쏙옙占쏙옙 占쏙옙占쏙옙 key_input 占쏙옙 占쏙옙占쏙옙 占쏙옙占쏙옙
+//int value=0;                                            // 
 
 //========================================================================
 
@@ -166,9 +167,9 @@ int main(void)
   float deltat = 0.0f;                                    //integration interval for filter schemes.
   float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
   //====================Fuzzy Variables====================================
-  //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
+  float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 35;                                  //Moter Throttle.(40占싱몌옙 占쏙옙占?)
+  int Controller_1 = 35;                                  //Moter Throttle.
   //int Controller_2 = 0;                                   //Moter Throttle. 
   //===================hanging Variables from external controll====================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
@@ -183,9 +184,11 @@ int main(void)
   //===========================MPU9250 Variables=============================
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
   float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f}; //MPU9250 Magnetometer Self_Test.
+  //=====================Drone Calibration Mode Variables===================
+  uint8_t CaliFlag = 0;
   //========================nRF24L01 VARIABLES==============================
-  int temp_int;                                           // uint8_t 占쏙옙占쏙옙占쏙옙 占쌨댐옙 data int占쏙옙占쏙옙占쏙옙 占쏙옙환, Throttle 占쏙옙
-  float temp;                                             // uint8_t 占쏙옙占쏙옙占쏙옙 占쌨댐옙 data flaot占쏙옙占쏙옙占쏙옙 占쏙옙환, PID 占쏙옙
+  int temp_int;                                           // uint8_t
+  float temp;                                             // uint8_t
 
   /* USER CODE END 1 */
   
@@ -198,13 +201,13 @@ int main(void)
   /* USER CODE BEGIN Init */
   __INIT__MPU9250(&MPU9250);
   MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);
-  if (0){
-  calibrateMPU9250(&MPU9250);
+  if (0)
+  {
+    calibrateMPU9250(&MPU9250);
   }
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
   AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
-
   pid_init(&pid, pid_val, inpid_val);
   //fuzzy_init();
 
@@ -234,6 +237,24 @@ int main(void)
     Mcal_flag ++;
   }    
   //======Automatic calculation of Magnetic filed bias END======
+  //===================Calibration Part=========================
+  if(CaliFlag == 1)
+  {    
+    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
+    
+    MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);  
+    calibrateMPU9250(&MPU9250);   
+    Delayms(500);     
+    TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
+    TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
+    AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
+    MagCalibration(&MPU9250);
+    while(1){}  //Unlimited loop.
+  }
+  //=================Calibration Part END=======================  
   //================PWM START===================================
   if (1)
   {
@@ -248,8 +269,8 @@ int main(void)
   //  Motor_Start();
     
   //*********************************************
-    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //占쏙옙占싶뤄옙占쏙옙 활占쏙옙화.
-    memset(pid_buffer,'\0',sizeof(pid_buffer));           //占쏙옙占쌜븝옙占쏙옙
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //
+    memset(pid_buffer,'\0',sizeof(pid_buffer));           //
   //********************************************
   
   TM_NRF24L01_Init(15,32);  
@@ -271,7 +292,7 @@ int main(void)
   {         
     int aa = HAL_GetTick();     //Get time for 
     
-    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID 占쏙옙占쏙옙 占쏙옙.
+    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID ���� ��.
   //========================Get MPU9250 data===========================  
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
@@ -322,8 +343,7 @@ int main(void)
   //====================================================  
 //    angular_velocity[0] = MPU9250.Gx / 1000.0f * deltat;           //angular velocity (degree/2ms)
 //    angular_velocity[1] = MPU9250.Gy / 1000.0f * deltat;
-//    angular_velocity[2] = MPU9250.Gz / 1000.0f * deltat;    
-    
+//    angular_velocity[2] = MPU9250.Gz / 1000.0f * deltat;        
     angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;           //angular velocity (degree/2ms)
     angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
     angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
@@ -407,7 +427,7 @@ int main(void)
            MOTOR_V4 = MIN_PULSE;
          }
      
-      if (Controller_1 > 5)    //Controller_1占쏙옙 占쏙옙호占쏙옙 占쌍곤옙 占쌍곤옙, Controller_2占쏙옙 占쏙옙占싱쏙옙틱占쏙옙 占쏙옙占쏘데 占쏙옙치占쏙옙 占쏙옙 (占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙占쌀띰옙)
+      if (Controller_1 > 5)    //Controller_1
        {     
          if (fabs(LPF_Euler_angle[0]) <= 15.0f && fabs(LPF_Euler_angle[1]) <= 15.0f)    //Restrict yaw acting Euler angle.
          {           
@@ -447,7 +467,7 @@ int main(void)
 //======================BLDC Motor Part END===================================
     
 //======================NRF24L01 Receive Part=================================    
-  NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           // 占쏙옙트占싼뤄옙占쏙옙占쏙옙 占쏙옙占쏙옙占쏙옙 占쏙옙占쏙옙 占쌨댐옙 占쌉쇽옙    
+  NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           //    
 //=====================NRF24L01 Receive Part END==============================  
     
 //========================Data transmit part==================================
@@ -476,7 +496,7 @@ int main(void)
       //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
       if (UART_deltat >= 10)
       {
-          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //占쏙옙占쏙옙謬占싣?占쏙옙.
+          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //����׽��?��.
           if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
           {
             Parsing_PID_val(pid_buffer, pid_val);
