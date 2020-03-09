@@ -33,7 +33,7 @@
 const char* ssid = "KT_WLAN_D073";
 const char* password =  "0000004733";
 
-const char * serverAddress = "121.132.203.45";
+const char * serverAddress = "***.***.***.***";
 const int serverPort = 8000;
 
 WiFiUDP udp;
