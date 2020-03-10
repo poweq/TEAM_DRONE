@@ -1,5 +1,6 @@
 #include "main.h"
 #include "nRF_Transmit.h"
+#include <stdint.h>
 
 TM_NRF24L01_Transmit_Status_t transmissionStatus;
 uint8_t buffer[7];
@@ -28,6 +29,25 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
  
   printf("\r\nbuffer : %c",buffer[6]);
   memset(buffer,'\0',7); // C_buff 메모리 초기화  
+}
+
+void nRF24_Transmit_ADC(uint8_t* temp, uint8_t adr_value)
+{
+  memset(buffer,'\0',7); // C_buff 메모리 초기화  
+  sprintf((char*)buffer,"%d",*temp);
+    /* Reset time, start counting microseconds */
+  TM_DELAY_SetTime(0); 
+  buffer[6] = (uint8_t)adr_value; 
+ /* Transmit data, goes automatically to TX mode */
+  TM_NRF24L01_Transmit((uint8_t*)buffer);
+     
+ /* Wait for data to be sent */
+
+  do {
+  /* Get transmission status */
+      transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
+  } 
+  while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
 }
 
 void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)

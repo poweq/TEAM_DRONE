@@ -58,6 +58,17 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define button_Pin GPIO_PIN_13
+#define button_GPIO_Port GPIOC
+#define button_EXTI_IRQn EXTI15_10_IRQn
+#define THROTTLE_2_Pin GPIO_PIN_0
+#define THROTTLE_2_GPIO_Port GPIOC
+#define THROTTLE_1_Pin GPIO_PIN_1
+#define THROTTLE_1_GPIO_Port GPIOC
+#define JOYSTICK_1_Pin GPIO_PIN_0
+#define JOYSTICK_1_GPIO_Port GPIOA
+#define JOYSTICK_2_Pin GPIO_PIN_1
+#define JOYSTICK_2_GPIO_Port GPIOA
 #define CSNpin_Pin GPIO_PIN_5
 #define CSNpin_GPIO_Port GPIOA
 #define CEpin_Pin GPIO_PIN_6
