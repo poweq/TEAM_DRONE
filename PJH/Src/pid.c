@@ -1,7 +1,7 @@
 #include "pid.h"
 
-#define PID_IMAX             (80.0f)
-#define PID_IMIN              (-80.0f)
+#define PID_IMAX             (65.0f)
+#define PID_IMIN              (-65.0f)
 
 extern float deltat;
 

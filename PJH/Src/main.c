@@ -169,17 +169,19 @@ int main(void)
   //====================Fuzzy Variables====================================
   float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 35;                                  //Moter Throttle.
+  int Controller_1 = 40;                                  //Moter Throttle.
   //int Controller_2 = 0;                                   //Moter Throttle. 
   //===================hanging Variables from external controll====================
+  
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{4.0f, 0.005f, 0.0f}, {4.0f, 0.005f, 0.0f}, {4.0f, 0.005f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{3.0f, 1.5f, 0.5f}, {3.0f, 1.5f, 0.5f}, {3.0f, 1.5f, 0.5f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{5.0f, 0.005f, 0.0f}, {5.0f, 0.005f, 0.0f}, {4.0f, 0.005f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{1.8f, 0.5f, 0.4f}, {1.8f, 0.5f, 0.4f}, {3.0f, 1.5f, 0.5f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES===============================
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
   float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
+  
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};          //Used in LPF.
   //===========================MPU9250 Variables=============================
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
@@ -394,10 +396,12 @@ int main(void)
     
     //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
     //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
+    //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.iKp[0],pid.iKi[0],pid.iKd[0],pid.iKp[1],pid.iKi[1],pid.iKd[1],pid.iKp[2],pid.iKi[2],pid.iKd[2]);
+
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], Magbias[0], Magbias[1], Magbias[2]);
 
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
-    sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
    
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n", setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
@@ -433,25 +437,25 @@ int main(void)
          {           
            pid.output[2] = 0.0f;
          }         
-         MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);// - (int)(MoterGain_pitch * pid.output[1]);
+         MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
          if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
            MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
          else if (MOTOR_V1 <= MIN_PULSE + 700)
            MOTOR_V1 = MIN_PULSE + 700;
    
-         MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll)  * pid.output[0]);// - (int)((MoterGain_pitch) * pid.output[1]);
+         MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll)  * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]);
          if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
            MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
          else if (MOTOR_V2 <= MIN_PULSE + 700)
            MOTOR_V2 = MIN_PULSE + 700;
    
-         MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);// + (int)(MoterGain_pitch * pid.output[1]);
+         MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
          if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
            MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
          else if (MOTOR_V3 <= MIN_PULSE + 700)
            MOTOR_V3 = MIN_PULSE + 700;
    
-         MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]);// + (int)((MoterGain_pitch) * pid.output[1]); 
+         MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]); 
          if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
            MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
          else if (MOTOR_V4 <= MIN_PULSE + 700)
@@ -467,7 +471,7 @@ int main(void)
 //======================BLDC Motor Part END===================================
     
 //======================NRF24L01 Receive Part=================================    
-  NRF24_Receive(&Controller_1,temp,temp_int,inpid_val,setting_angle);           //    
+  NRF24_Receive(&Controller_1,temp,temp_int,&pid,setting_angle);           //    
 //=====================NRF24L01 Receive Part END==============================  
     
 //========================Data transmit part==================================
@@ -496,7 +500,7 @@ int main(void)
       //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
       if (UART_deltat >= 10)
       {
-          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10); //ï¿½ï¿½ï¿½ï¿½×½ï¿½Æ?ï¿½ï¿½.
+          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10);
           if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
           {
             Parsing_PID_val(pid_buffer, pid_val);

@@ -4,12 +4,13 @@
 
 #include "tm_stm32_nrf24l01.h"
 #include "tm_stm32_delay.h"
+#include "pid.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 
-void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, float (*inpid_val)[3], float* setting_angle);
-void NRF24_Receive(int* Throttle,float temp, int temp_int, float (*inpid_val)[3],float* setting_angle);
+void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID* pid, float* setting_angle);
+void NRF24_Receive(int* Throttle,float temp, int temp_int, __PID* pid,float* setting_angle);
 
 #endif
