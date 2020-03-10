@@ -17,8 +17,15 @@ void Print_Mode(uint8_t* Mode_Flag)
     
    else if(*Mode_Flag==Drive_Mode_Flag)
       {
-        *Mode_Flag= Debug_Mode_Flag;
+        *Mode_Flag= Key_Mode_Flag;
         sprintf((char*)buffer_str,"\r\n =======DEBUG MODE======\r\n");
+       HAL_UART_Transmit(&huart2,buffer_str, sizeof(buffer_str),10);
+        memset(buffer_str,'\0',50);
+      }
+      else if(*Mode_Flag==Key_Mode_Flag)
+      {
+        *Mode_Flag= Drive_Mode_Flag;
+        sprintf((char*)buffer_str,"\r\n press d keyboard input mode access\r\n");
        HAL_UART_Transmit(&huart2,buffer_str, sizeof(buffer_str),10);
         memset(buffer_str,'\0',50);
       }

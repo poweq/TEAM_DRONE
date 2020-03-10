@@ -2,7 +2,8 @@
 #include <string.h>
 #include <stdio.h>
 
-/*=========DEFINE=========*/       
+/*=========DEFINE=========*/
+#define Key_Mode_Flag        2
 #define Debug_Mode_Flag      1
 #define Drive_Mode_Flag      0
 
