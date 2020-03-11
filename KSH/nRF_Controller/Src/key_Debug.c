@@ -1,5 +1,6 @@
 #include "key_Debug.h"
 #include "main.h"
+#include <stdio.h>
 
 uint8_t C_buff[7];
 uint8_t tempbuf[7];
@@ -10,11 +11,8 @@ extern UART_HandleTypeDef huart2;
 void Keyboard_Debug(float* temp,uint8_t key_flag)
 {
   char save_flag = 0; 
-  //char set_flag;
- // static char i;
   int j=0;
 
-  //while(!(key_input==0x0D))
   while(!save_flag)
   {
     while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))
@@ -34,49 +32,37 @@ void Keyboard_Debug(float* temp,uint8_t key_flag)
       }
       else if(key_flag<='9' || key_flag>='1')           // key_input값이 1~9를 받았을 때
       {
+        while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
         if(key_input <= '9' && key_input >= '0' ||key_input == '.' )
         {
-          
           if(C_count<6)// 6글자 이하만 입력 받음
           {
             C_buff[C_count]=key_input;
             ++C_count;
             printf("%c",C_buff[j++]);
-            if(C_count==6)
+            if(C_count>=6)
             {
-              printf("\r\n");
-              printf("Modify data : %s",C_buff);
               C_count=0;
             }
           }
-          
-          else if(key_input==0x7F)//백스페이스
-          {
-            //key_input ='\0';
-            --C_count;
-            if(C_count==255)
-              C_count=0;
-            
-            C_buff[C_count]='\0';
-           // printf("\r\n[%d)%s",C_count,C_buff);
-          }
-         
            *temp = atof((char*)C_buff);
             key_input ='\0';
-            key_flag = '\0';
-            break;       
+            break;
          }
+        key_flag = '\0';
       }
-      else if(key_flag=='0')                            // key_input값이 0을 받았을때
+      else if(key_flag=='t')                            // key_input값이 0을 받았을때
       {
-        if(key_input == '0')
+        while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
+        if(key_input == 't')
        {
+         
          if(C_count<2)   // 2글자 이하만 입력 받음
          {
            C_buff[C_count]=key_input;
            ++C_count;
            printf("%c",C_buff[j++]);
-           if(C_count==2)
+           if(C_count>=2)
            {
              printf("\r\nModify data : %s",C_buff);
            }
@@ -93,12 +79,8 @@ void Keyboard_Debug(float* temp,uint8_t key_flag)
 void Keyboard_Debug_Set_Point(int* temp)
 {
   char save_flag = 0;
-  
-  //char set_flag;
- // static char i;
   int j=0;
 
-  //while(!(key_input==0x0D))
   while(!save_flag)
   {
     while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))

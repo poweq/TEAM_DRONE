@@ -6,7 +6,8 @@ TM_NRF24L01_Transmit_Status_t transmissionStatus;
 uint8_t buffer[7];
 extern int count;
 
-void nRF24_Transmit(float* temp, uint8_t adr_value)
+//  =============PID DATA TRANSMIT============= //
+void nRF24_Transmit(float* temp, uint8_t adr_value)                     
 {
   int No_Connection=0;
   sprintf((char*)buffer,"%.3f",*temp);
@@ -26,7 +27,6 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
       No_Connection++;
       if(No_Connection >= 1000)
       {
-       // printf("No Connection!\r\n");
         break;
       }
   } 
@@ -35,8 +35,9 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
   printf("\r\nbuffer : %c",buffer[6]);
   memset(buffer,'\0',7); // C_buff 메모리 초기화  
 }
+// =============ADC DATA TRANSMIT============= //
 
-void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)
+void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)                
 {
   int No_Connection=0;
   memset(buffer,'\0',7); // C_buff 메모리 초기화  
@@ -63,6 +64,7 @@ void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)
   
 }
 
+//  =============SETPOINT DATA TRANSMIT============= //
 void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
 {
   int No_Connection=0;
@@ -116,6 +118,7 @@ void nRF24_Transmit_ASCII(uint8_t adr_value)
   
 }
 
+//  =============MODE CHANGE KEY DATA TRANSMIT============= //
 void nRF24_Transmit_Mode_Change(uint8_t adr_value)
 {
   int No_Connection=0;
@@ -137,20 +140,19 @@ void nRF24_Transmit_Mode_Change(uint8_t adr_value)
   memset(buffer,'\0',7); // C_buff 메모리 초기화
 }
 
+// ==================TRANSMIT STATUS CHECK================= //
 void nRF24_Transmit_Status()
 {
   /* Check transmit status */
       if (transmissionStatus == TM_NRF24L01_Transmit_Status_Ok) 
       {
         /* Transmit went OK */
-        printf("\r\nOK   %d\r\n",count);
-        //return 1;        
+        printf("\r\nOK   %d\r\n",count);      
       }
       else if (transmissionStatus == TM_NRF24L01_Transmit_Status_Lost) 
       {
          /* Message was LOST */
            printf("\r\nLOST \r\n");
-          // return 0; 
       }
       else {
 	/* This should never happen */

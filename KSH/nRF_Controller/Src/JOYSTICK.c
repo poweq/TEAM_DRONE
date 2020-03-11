@@ -48,26 +48,26 @@ char INPUT_THROTTLE()
   static char count = 0; 
   uint8_t TH_Str_Buff[50];//THROTTLE BUFF
   memset(TH_Str_Buff,'\0',sizeof(TH_Str_Buff));
-    if(ADC_DATA[3]>55)//UP
+    if(ADC_DATA[3]>15)//UP
       {
       sprintf((char*)TH_Str_Buff,"\r\nTH : %d",count++);
       HAL_UART_Transmit(&huart2,(uint8_t*)TH_Str_Buff, sizeof(TH_Str_Buff),10);
       }
-      else if(ADC_DATA[3]<45)//DOWN
+      else if(ADC_DATA[3]<-10)//DOWN
     {
-      sprintf((char*)TH_Str_Buff,"\r\nTH : %d ",count--);
+      sprintf((char*)TH_Str_Buff,"\r\nTH : %d",count--);
       HAL_UART_Transmit(&huart2,(uint8_t*)TH_Str_Buff, sizeof(TH_Str_Buff),10);
     }
  
 
-      if(ADC_DATA[2]>60)//LEFT
+      if(ADC_DATA[2]>55)//LEFT
     {
       sprintf((char*)TH_Str_Buff," \r\nTH : %d",count = count+10);
       HAL_UART_Transmit(&huart2,(uint8_t*)TH_Str_Buff, sizeof(TH_Str_Buff),10);
     }
         else if(ADC_DATA[2]<45)//RIGHT
     {
-      sprintf((char*)TH_Str_Buff," \r\nTH : %d ",count = count-10);
+      sprintf((char*)TH_Str_Buff," \r\nTH : %d",count = count-10);
       HAL_UART_Transmit(&huart2,(uint8_t*)TH_Str_Buff, sizeof(TH_Str_Buff),10);
     }
     memset(TH_Str_Buff,'\0',sizeof(TH_Str_Buff));
@@ -84,25 +84,25 @@ char INPUT_CONTORLLER()
     uint8_t JS_Str_Buff[50]; //JOYSTICK BUFF    
     memset(JS_Str_Buff,'\0',sizeof(JS_Str_Buff));
     
-   if(ADC_DATA[0]>60)//UP
+   if(ADC_DATA[0]>10)//UP
       {
       sprintf((char*)JS_Str_Buff,"\r\n%d",count++);
       HAL_UART_Transmit(&huart2,(uint8_t*)JS_Str_Buff, sizeof(JS_Str_Buff),10);
       }
-      else if(ADC_DATA[0]<46)//DOWN
+      else if(ADC_DATA[0]<-10)//DOWN
     {
-      sprintf((char*)JS_Str_Buff,"\r\n%d ",count--);
+      sprintf((char*)JS_Str_Buff,"\r\n%d",count--);
       HAL_UART_Transmit(&huart2,(uint8_t*)JS_Str_Buff, sizeof(JS_Str_Buff),10);
     }
 
-      if(ADC_DATA[1]>60)//LEFT
+      if(ADC_DATA[1]>15)//LEFT
     {
       sprintf((char*)JS_Str_Buff," \r\n%d",count = count+10);
       HAL_UART_Transmit(&huart2,(uint8_t*)JS_Str_Buff, sizeof(JS_Str_Buff),10);
     }
-       else if(ADC_DATA[1]<45)//RIGHT
+       else if(ADC_DATA[1]<-10)//RIGHT
     {
-      sprintf((char*)JS_Str_Buff," \r\n%d ",count = count-10);
+      sprintf((char*)JS_Str_Buff," \r\n%d",count = count-10);
       HAL_UART_Transmit(&huart2,(uint8_t*)JS_Str_Buff, sizeof(JS_Str_Buff),10);
     }
     memset(JS_Str_Buff,'\0',50);
