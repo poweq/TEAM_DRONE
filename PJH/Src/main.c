@@ -175,11 +175,13 @@ int main(void)
   //===================hanging Variables from external controll====================  
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{3.0f, 0.005f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{3.5f, 0.005f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   //float inpid_val[3][3] = {{2.85f, 3.15f, 0.65f}, {1.14f, 1.26f, 0.26f}, {1.0f, 1.0f, 0.3f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{3.0f, 2.5f, 1.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{2.0f, 0.7f, 1.1f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES===============================
+  float preGyro[3] = {0.0f, 0.0f, 0.0f};
+  float LPF_Gyro[3] = {0.0f, 0.0f, 0.0f};
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
   float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.  
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};          //Used in LPF.
@@ -346,10 +348,10 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
   //====================================================  
-    angular_velocity[0] = MPU9250.Gx / 1000.0f * deltat;           //angular velocity (degree/2ms)
-    angular_velocity[1] = MPU9250.Gy / 1000.0f * deltat;
-    angular_velocity[2] = MPU9250.Gz / 1000.0f * deltat;        
-//    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;           //angular velocity (degree/2ms)
+    angular_velocity[0] = MPU9250.Gx / 500.0f * deltat;                //angular velocity (degree/2ms)
+    angular_velocity[1] = MPU9250.Gy / 500.0f * deltat;
+    angular_velocity[2] = MPU9250.Gz / 500.0f * deltat;        
+//    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;                  //angular velocity (degree/2ms)
 //    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
 //    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
     
@@ -358,6 +360,7 @@ int main(void)
       //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
       //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 1);   //limit 16bytes when 1ms timeout.
       deltat /= 1000.0f;                        //Make millisecond to second.
+      __LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
       Quternion2Euler(q, Euler_angle);                                                  //Get Euler angles (roll, pitch, yaw) from Quaternions.
       __LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
@@ -387,6 +390,8 @@ int main(void)
 //=====================Data print transmit UART part===============        
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
+    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
+      MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, LPF_Gyro[0],LPF_Gyro[1], LPF_Gyro[2]);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f \r\n", MPU9250.Mx, MPU9250.My ,MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", (int)MPU9250.Mx_Raw, (int)MPU9250.My_Raw , (int)MPU9250.Mz_Raw);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2], Self_Test[3], Self_Test[4], Self_Test[5]);
@@ -415,7 +420,7 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data2,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
     
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
  //====================Data print transmit UART part END===================
     
  //======================BLDC Motor Part===================================
