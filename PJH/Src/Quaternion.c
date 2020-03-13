@@ -6,7 +6,7 @@
 #define twoKp      (2.0f * 8.0f)        // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
 #define twoKi      (2.0f * 0.002f)
 #define PI         (3.141592f)
-#define sampleFreq      (200.0f)
+#define sampleFreq      (500.0f)
 
 // Variable definitions
 float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;			// quaternion of sensor frame relative to auxiliary frame

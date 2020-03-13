@@ -3,18 +3,19 @@
 void ESC_Calibration(void)
 {
   //  TIM2->CCR1 = 15500;
-  TIM2->CCR1 = MAX_PULSE;
+  TIM5->CCR1 = MAX_PULSE;
   TIM2->CCR2 = MAX_PULSE;
+  TIM2->CCR1 = MAX_PULSE;
   TIM3->CCR1 = MAX_PULSE;
-  TIM3->CCR2 = MAX_PULSE;
   HAL_Delay(5000);
   //  TIM2->CCR1 = 8500;
-  TIM2->CCR1 = MIN_PULSE;
+  TIM5->CCR1 = MIN_PULSE;
   TIM2->CCR2 = MIN_PULSE;
+  TIM2->CCR1 = MIN_PULSE;
   TIM3->CCR1 = MIN_PULSE;
-  TIM3->CCR2 = MIN_PULSE;
   HAL_Delay(4000);
 }
+
 
 void Motor_Init(void)
 {

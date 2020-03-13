@@ -67,10 +67,10 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
@@ -88,6 +88,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -167,21 +168,20 @@ int main(void)
   float deltat = 0.0f;                                    //integration interval for filter schemes.
   float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
   //====================Fuzzy Variables====================================
-  float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
+  //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 40;                                  //Moter Throttle.
-  //int Controller_2 = 0;                                   //Moter Throttle. 
-  //===================hanging Variables from external controll====================
-  
+  int Controller_1 = 48;                                  //Moter Throttle.
+  int Controller_2 = 0;                                   //Moter Yaw Throttle. 
+  //===================hanging Variables from external controll====================  
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{5.0f, 0.005f, 0.0f}, {5.0f, 0.005f, 0.0f}, {4.0f, 0.005f, 0.0f}};       //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{1.8f, 0.5f, 0.4f}, {1.8f, 0.5f, 0.4f}, {3.0f, 1.5f, 0.5f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{3.2f, 0.005f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float inpid_val[3][3] = {{2.85f, 3.15f, 0.65f}, {1.14f, 1.26f, 0.26f}, {1.0f, 1.0f, 0.3f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{2.8f, 1.0f, 1.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES===============================
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
-  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
-  
+  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.  
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};          //Used in LPF.
   //===========================MPU9250 Variables=============================
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
@@ -191,6 +191,8 @@ int main(void)
   //========================nRF24L01 VARIABLES==============================
   int temp_int;                                           // uint8_t
   float temp;                                             // uint8_t
+  
+  FILE* fp;
 
   /* USER CODE END 1 */
   
@@ -231,6 +233,7 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   //=========Automatic calculation of Magnetic filed bias=======
   if (Mcal_flag == 1)
@@ -242,37 +245,37 @@ int main(void)
   //===================Calibration Part=========================
   if(CaliFlag == 1)
   {    
-    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_1);
     HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
     
     MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);  
     calibrateMPU9250(&MPU9250);   
     Delayms(500);     
     TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
-    TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
+    TM_MPU9250_ReadMagASA(&MPU9250);            //Get MPU9250 Magnetic ASA data.
     AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
     MagCalibration(&MPU9250);
-    while(1){}  //Unlimited loop.
+    while(1){}                                  //Unlimited loop.
   }
   //=================Calibration Part END=======================  
   //================PWM START===================================
   if (1)
   {
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
   }
-  
+
   //  ESC_Calibration();  
     Motor_Init();  
   //  Motor_Start();
     
   //*********************************************
-    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          //
-    memset(pid_buffer,'\0',sizeof(pid_buffer));           //
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          
+    memset(pid_buffer,'\0',sizeof(pid_buffer));           
   //********************************************
   
   TM_NRF24L01_Init(15,32);  
@@ -292,9 +295,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {         
-    int aa = HAL_GetTick();     //Get time for 
+    //int aa = HAL_GetTick();     //Get time for 
     
-    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID ���� ��.
+    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID
   //========================Get MPU9250 data===========================  
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
@@ -352,9 +355,11 @@ int main(void)
     
     if (deltat >= dt)                           //Update term.(500Hz.dt=2)
     {
+      //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
+      //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 1);   //limit 16bytes when 1ms timeout.
       deltat /= 1000.0f;                        //Make millisecond to second.
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
-      Quternion2Euler(q, Euler_angle); //Get Euler angles (roll, pitch, yaw) from Quaternions.
+      Quternion2Euler(q, Euler_angle);                                                  //Get Euler angles (roll, pitch, yaw) from Quaternions.
       __LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
       //=========================Fuzzy part============================
 //      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);                  //roll
@@ -375,7 +380,7 @@ int main(void)
         __pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
       }    
       //Euler_angle[2] -= 8.2f;                                  // Declination at Seoul korea on 2020-02-04(yaw bias)            
-      //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f;       // Ensure yaw stays between 0 and 360      
+      //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f;       // Ensure yaw stays between 0 and 360     
       deltat = 0.0f;                                             //reset deltat.
     }
     //TM_MPU9250_DataReady(&MPU9250);                            //?????
@@ -419,59 +424,70 @@ int main(void)
     {
        Motor_Start();
     }
- 
-   if (HAL_GetTick() - before_while >= 6000 && HAL_GetTick() - before_while <= 400000)
-   {
-     
-     if (Controller_1 <= 5)
-         {
-           MOTOR_V1 = MIN_PULSE;
-           MOTOR_V2 = MIN_PULSE;
-           MOTOR_V3 = MIN_PULSE;
-           MOTOR_V4 = MIN_PULSE;
-         }
-     
-      if (Controller_1 > 5)    //Controller_1
-       {     
-         if (fabs(LPF_Euler_angle[0]) <= 15.0f && fabs(LPF_Euler_angle[1]) <= 15.0f)    //Restrict yaw acting Euler angle.
-         {           
-           pid.output[2] = 0.0f;
-         }         
-         MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
-         if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
-           MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
-         else if (MOTOR_V1 <= MIN_PULSE + 700)
-           MOTOR_V1 = MIN_PULSE + 700;
-   
-         MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll)  * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]);
-         if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
-           MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
-         else if (MOTOR_V2 <= MIN_PULSE + 700)
-           MOTOR_V2 = MIN_PULSE + 700;
-   
-         MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
-         if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
-           MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
-         else if (MOTOR_V3 <= MIN_PULSE + 700)
-           MOTOR_V3 = MIN_PULSE + 700;
-   
-         MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]); 
-         if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
-           MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
-         else if (MOTOR_V4 <= MIN_PULSE + 700)
-           MOTOR_V4 = MIN_PULSE + 700;          
+    
+    else if (HAL_GetTick() - before_while >= 6000)// && HAL_GetTick() - before_while <= 400000)
+    { 
+      if (Controller_1 <= 5)
+      {
+        MOTOR_V1 = MIN_PULSE;
+        MOTOR_V2 = MIN_PULSE;
+        MOTOR_V3 = MIN_PULSE;
+        MOTOR_V4 = MIN_PULSE;
+      }
+      
+      else if (Controller_1 > 5)    //Controller_1
+      {     
+        if (fabs(LPF_Euler_angle[0]) > 15.0f || fabs(LPF_Euler_angle[1]) > 15.0f)    //Restrict yaw acting Euler angle.
+        {           
+          pid.output[2] = 0.0f;
+        }         
+        
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]) + (Controller_2 * 5);
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_pitch * pid.output[1]) + (Controller_2 * 5);
+        MOTOR_V1 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]);// + (Controller_2 * 5);
+        if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+          MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
+        else if (MOTOR_V1 <= MIN_PULSE + 700)
+          MOTOR_V1 = MIN_PULSE + 700;
+      
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]) - (Controller_2 * 5);
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_pitch) * pid.output[1]) - (Controller_2 * 5);
+        MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_roll * pid.output[0]);// + (Controller_2 * 5);
+
+        if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+          MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+        else if (MOTOR_V2 <= MIN_PULSE + 700)
+          MOTOR_V2 = MIN_PULSE + 700;
+      
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]) - (Controller_2 * 5);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_pitch * pid.output[1]) - (Controller_2 * 5);
+        MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]);// + (Controller_2 * 5);
+
+        if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+          MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+        else if (MOTOR_V3 <= MIN_PULSE + 700)
+          MOTOR_V3 = MIN_PULSE + 700;
+      
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]) + (Controller_2 * 5); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) + (int)((MoterGain_pitch) * pid.output[1]) + (Controller_2 * 5); 
+        MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_roll * pid.output[0]);// + (Controller_2 * 5);
+
+        if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+          MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+        else if (MOTOR_V4 <= MIN_PULSE + 700)
+          MOTOR_V4 = MIN_PULSE + 700;          
        }
     }
     
-    Motor_Stop(400000, before_while);
     
+    //Motor_Stop(400000, before_while);    
     //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
 
 //======================BLDC Motor Part END===================================
     
 //======================NRF24L01 Receive Part=================================    
-  NRF24_Receive(&Controller_1,temp,temp_int,&pid,setting_angle);           //    
+  NRF24_Receive(&Controller_1,temp,temp_int,&pid,setting_angle,&Controller_2);          
 //=====================NRF24L01 Receive Part END==============================  
     
 //========================Data transmit part==================================
@@ -479,7 +495,6 @@ int main(void)
     {
       //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2]);
       sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
-
       //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),5);
       //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
     }
@@ -792,14 +807,69 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 9-1;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 16000-1;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim5, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
+  HAL_TIM_MspPostInit(&htim5);
 
 }
 
@@ -877,7 +947,6 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
-  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream5_IRQn interrupt configuration */
@@ -886,9 +955,6 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
-  /* DMA2_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 
 }
 

@@ -7,16 +7,19 @@
 #define MIN_PULSE 8000
 #define MAX_PULSE 15500
 
-#define MOTOR_V1 TIM2->CCR1
+//#define MOTOR_V1 TIM2->CCR1
+#define MOTOR_V1 TIM5->CCR1
 #define MOTOR_V2 TIM2->CCR2
-#define MOTOR_V3 TIM3->CCR1
-#define MOTOR_V4 TIM3->CCR2
+//#define MOTOR_V3 TIM3->CCR1
+#define MOTOR_V3 TIM2->CCR1
+//#define MOTOR_V4 TIM3->CCR2
+#define MOTOR_V4 TIM3->CCR1
 
 #define MoterGain_roll       1.0f
 #define MoterGain_pitch      1.0f
 #define MoterGain_yaw        1.0f
 
-#define MOTER_SAFTY             (2500)
+#define MOTER_SAFTY             (1500)
 
 void ESC_Calibration(void);
 void Motor_Init(void);

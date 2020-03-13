@@ -10,7 +10,8 @@
 #include <string.h>
 
 
-void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID* pid, float* setting_angle);
-void NRF24_Receive(int* Throttle,float temp, int temp_int, __PID* pid,float* setting_angle);
+void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID* pid, float* setting_angle,int* Throttle2);
+void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, int* Throttle2);
+
 
 #endif

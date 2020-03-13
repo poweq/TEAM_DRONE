@@ -1,7 +1,9 @@
 #include "pid.h"
 
-#define PID_IMAX             (65.0f)
-#define PID_IMIN              (-65.0f)
+#define PID_IMAX             (45.0f)
+#define PID_IMIN              (-45.0f)
+#define sampleFreq          (500.0f)
+
 
 extern float deltat;
 
@@ -76,7 +78,109 @@ void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float
   pid_update(pid, setting_angle[1], Euler_angle[1], angular_velocity[1], 1, deltat);
   pid_update(pid, setting_angle[2], Euler_angle[2], angular_velocity[2], 2, deltat);
 }
-#if 1 //double loop PID 
+#if 0 //double loop PID 
+void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis, float deltat)
+{  
+  //set 목표각도
+  //actual 현재각도
+  //angular_velocity 현재 각속도
+  float Kp_term, Ki_term, Kd_term;
+  float D_err = 0.0f;
+  float stabilPgain = 0.0f;
+  float stabilIgain = 0.0f;   
+    
+  switch (axis)
+  {
+  case 0: //roll
+    {      
+        pid->err[0] = set - actual;                                             //오차 = 목표치 - 현재값	
+
+        if (pid->err[0] >  PID_IMAX)
+        pid->err[0] = PID_IMAX;
+        if (pid->err[0] < PID_IMIN)
+        pid->err[0] = PID_IMIN;
+        
+        stabilPgain = pid->Kp[0] * pid->err[0];                                          //p항 = Kp * 오차
+        stabilIgain += pid->Ki[0] *pid->err[0] * (2.0f/1000.0f);
+          
+        pid->rateError[0] = stabilPgain - angular_velocity;
+
+        Kp_term = pid->iKp[0] * pid->rateError[0];                                     //p항 = KpGain * rate오차.        
+
+        pid->integral[0] += (pid->rateError[0] * (2.0f/1000.0f));                              //오차적분 = 오차적분 + (오차rate * dt).        
+        Ki_term = pid->iKi[0] * pid->integral[0];                                         //i항 = Ki * 오차적분.        
+
+        D_err = (pid->rateError[0] - pid->preRateError[0]) / (2.0f/1000.0f);             //오차미분 = (현재rate오차-이전rate오차)/dt.        
+        Kd_term = pid->iKd[0] * D_err;                                                       //d항 = Kd * rate오차미분.	
+        
+        pid->output[0] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //제어량 = Kp항 + Ki항 + Kd항
+
+        pid->preRateError[0] = pid->rateError[0];                                      //현재rate오차를 이전rate오차로.
+        
+      break;
+    }
+  case 1: //pitch
+    {
+        pid->err[1] = set - actual; //오차 = 목표치 - 현재값	
+
+        if (pid->err[1] >  PID_IMAX)
+        pid->err[1] = PID_IMAX;
+        if (pid->err[1] < PID_IMIN)
+        pid->err[1] = PID_IMIN;
+        
+        stabilPgain = pid->Kp[1] * pid->err[1];                                          //p항 = Kp * 오차
+        stabilIgain += pid->Ki[1] *pid->err[1] * (2.0f/1000.0f);
+
+        
+        pid->rateError[1] =  stabilPgain - angular_velocity;
+
+        Kp_term = pid->iKp[1] * pid->rateError[1];                                     //p항 = KpGain * rate오차.        
+
+        pid->integral[1] += (pid->rateError[1] * (2.0f/1000.0f));                              //오차적분 = 오차적분 + 오차rate * dt.        
+        Ki_term = pid->iKi[1] * pid->integral[1];                                         //i항 = Ki * 오차적분.        
+
+        D_err = (pid->rateError[1] - pid->preRateError[1]) / (2.0f/1000.0f);             //오차미분 = (현재rate오차-이전rate오차)/dt.        
+        Kd_term = pid->iKd[1] * D_err;                                                       //d항 = Kd * rate오차미분.	
+        
+        pid->output[1] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //제어량 = Kp항 + Ki항 + Kd항
+
+        pid->preRateError[1] = pid->rateError[1];                                      //현재rate오차를 이전rate오차로.
+
+        
+      break;
+    }
+  case 2:  //yaw
+    {
+        pid->err[2] = set - actual; //오차 = 목표치 - 현재값	
+
+        if (pid->err[2] >  PID_IMAX)
+        pid->err[2] = PID_IMAX;
+        if (pid->err[2] < PID_IMIN)
+        pid->err[2] = PID_IMIN;
+        
+        stabilPgain = pid->Kp[2] * pid->err[2];                                           //p항 = Kp * 오차
+        stabilIgain += pid->Ki[2] *pid->err[2] * (2.0f/1000.0f);
+
+        pid->rateError[2] = stabilPgain - angular_velocity;
+
+        Kp_term = pid->iKp[2] * pid->rateError[2];                                     //p항 = KpGain * rate오차.        
+
+        pid->integral[2] += (pid->rateError[2] * (2.0f/1000.0f));                              //오차적분 = 오차적분 + 오차rate * dt.        
+        Ki_term = pid->iKi[2] * pid->integral[2];                                         //i항 = Ki * 오차적분.        
+
+        D_err = (pid->rateError[2] - pid->preRateError[2]) / (2.0f/1000.0f);             //오차미분 = (현재rate오차-이전rate오차)/dt.        
+        Kd_term = pid->iKd[2] * D_err;                                                       //d항 = Kd * rate오차미분.	
+        
+        pid->output[2] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //제어량 = Kp항 + Ki항 + Kd항
+
+        pid->preRateError[2] = pid->rateError[2];                                      //현재rate오차를 이전rate오차로.
+
+      break;
+    }
+  }
+	
+}
+#elif 1
 void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis, float deltat)
 {  
   //set 목표각도
@@ -178,7 +282,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
   }
 	
 }
-#else
+#else 
 
 void pid_update(__PID * pid, float set, float actual,float angular_velocity, int axis, float deltat)
 {  
@@ -253,6 +357,7 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
 }
 #endif
 
+/*
 void Parsing_inPID_val(uint8_t* arr, float inpid_val[][3])
 {
     char* iR_P, * iR_I, * iR_D, * iP_P, * iP_I, * iP_D, * iY_P, * iY_I, * iY_D;
@@ -301,6 +406,59 @@ void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
     pid_val[2][0] = atof(Y_P);
     pid_val[2][1] = atof(Y_I);
     pid_val[2][2] = atof(Y_D);   
+}
+*/
+void Parsing_inPID_val(uint8_t* arr, float inpid_val[][3])
+{
+    char* input_pid_val[3][3];
+    input_pid_val[0][0] =  strtok((char*)arr, ",");
+    input_pid_val[0][1] =  strtok(NULL, ",");
+    input_pid_val[0][2] =  strtok(NULL, ",");
+      
+    for(int i=1; i<3; i++)
+    {
+        for(int j=0;j<3;j++)
+        {
+          input_pid_val[i][j] = strtok(NULL, ",");
+        }
+    }
+    
+    
+    for(int i = 0; i<3; i++)
+    {
+      for(int j=0; j<3; j++)
+      {
+        if(strcmp(input_pid_val[i][j],"0.000")!=0)
+          inpid_val[i][j] = atof(input_pid_val[i][j]);
+      }
+    }
+    
+}
+
+void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
+{
+    char* input_pid_val[3][3];
+    input_pid_val[0][0] =  strtok((char*)arr, ",");
+    input_pid_val[0][1] =  strtok(NULL, ",");
+    input_pid_val[0][2] =  strtok(NULL, ",");
+      
+    for(int i=1; i<3; i++)
+    {
+        for(int j=0;j<3;j++)
+        {
+          input_pid_val[i][j] = strtok(NULL, ",");
+        }
+    }
+    
+    
+    for(int i = 0; i<3; i++)
+    {
+      for(int j=0; j<3; j++)
+      {
+        if(strcmp(input_pid_val[i][j],"0.000")!=0)
+          pid_val[i][j] = atof(input_pid_val[i][j]);
+      }
+    }
 }
 
 void Parsing_Throttle_val(uint8_t* arr, int *Controller_1)

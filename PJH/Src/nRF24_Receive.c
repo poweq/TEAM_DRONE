@@ -3,7 +3,7 @@
 
 
 //========================nRF24L01 FUNCTION==============================
-void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  pid, float* setting_angle)
+void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  pid, float* setting_angle, int* Throttle2)
 {
   switch(value)
   {
@@ -16,6 +16,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
     case 1:
       pid->iKp[0] = temp;
       //inpid_val[0][0] = temp;
+
       printf("Roll_P[0][0] : %.3f\r\n",temp);                                 // Roll_P 값 저장
       value = '\0';
       break;
@@ -89,8 +90,10 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
       break;
       
      case 'y':
-      setting_angle[2] = (float)((int8_t)temp);
-      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint 값 저장
+      //setting_angle[2] = (float)((int8_t)temp);
+      *Throttle2 = (int)((int8_t)temp);
+
+      printf("Yaw_Set_Point : %d\r\n",*Throttle2);           // Yaw_SetPoint 값 저장
       value = '\0';
       break;
       
@@ -106,7 +109,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
   }
 }
 
-void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle)    // Controller에서 PID값 수신
+void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, int* Throttle2)    // Controller에서 PID값 수신
 {
   int value='\0';     // 컨트롤러에서 받은 key_input 값 저장 변수
   uint8_t dataIn[32]={0};                                     // Controller Data Receive Buffer
@@ -170,7 +173,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
         {
           value = dataIn[6];
           dataIn[6] = '\0';
-          temp = atof((char*)dataIn);                                       // uint8_t 형으로 수신된 Yaw SetPoint 값을 float형으로 변환하여 temp 에 저장
+          temp = atoi((char*)dataIn);                                       // uint8_t 형으로 수신된 Yaw SetPoint 값을 float형으로 변환하여 temp 에 저장
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
  
@@ -202,7 +205,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
 //          
 //        }
         
-      NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle);        //  수신된 데이터 저장 함수
+      NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle,Throttle2);        //  수신된 데이터 저장 함수
       TM_NRF24L01_PowerUpRx();
   }
 }
