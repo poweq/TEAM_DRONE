@@ -175,9 +175,9 @@ int main(void)
   //===================hanging Variables from external controll====================  
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{3.2f, 0.005f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{3.0f, 0.005f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   //float inpid_val[3][3] = {{2.85f, 3.15f, 0.65f}, {1.14f, 1.26f, 0.26f}, {1.0f, 1.0f, 0.3f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{2.8f, 1.0f, 1.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{3.0f, 2.5f, 1.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES===============================
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
@@ -192,7 +192,7 @@ int main(void)
   int temp_int;                                           // uint8_t
   float temp;                                             // uint8_t
   
-  FILE* fp;
+  //FILE* fp;
 
   /* USER CODE END 1 */
   
@@ -346,12 +346,12 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
   //====================================================  
-//    angular_velocity[0] = MPU9250.Gx / 1000.0f * deltat;           //angular velocity (degree/2ms)
-//    angular_velocity[1] = MPU9250.Gy / 1000.0f * deltat;
-//    angular_velocity[2] = MPU9250.Gz / 1000.0f * deltat;        
-    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;           //angular velocity (degree/2ms)
-    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
-    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
+    angular_velocity[0] = MPU9250.Gx / 1000.0f * deltat;           //angular velocity (degree/2ms)
+    angular_velocity[1] = MPU9250.Gy / 1000.0f * deltat;
+    angular_velocity[2] = MPU9250.Gz / 1000.0f * deltat;        
+//    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;           //angular velocity (degree/2ms)
+//    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
+//    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
     
     if (deltat >= dt)                           //Update term.(500Hz.dt=2)
     {
@@ -415,7 +415,7 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data2,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
     
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
  //====================Data print transmit UART part END===================
     
  //======================BLDC Motor Part===================================
