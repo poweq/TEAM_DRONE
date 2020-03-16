@@ -77,6 +77,72 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
       value = '\0';
       break;
       
+      // ============================== OUT PID DATA ============================== //    
+    case 'A':
+      pid->Kp[0] = temp;
+      //inpid_val[0][0] = temp;
+      printf("OUT_Roll_P : %.3f\r\n",temp);                                 // Roll_P 값 저장
+      value = '\0';
+      break;
+      
+     case 'B':
+       pid->Kp[1] = temp;
+      //inpid_val[1][0] = temp;
+      printf("OUT_Pitch_P : %.3f\r\n",temp);                               // Pitch_P 값 저장
+      value = '\0';
+      break;
+      
+     case 'C':
+       pid->iKp[2] = temp;
+      //inpid_val[2][0] = temp;
+      printf("OUT_Yaw_P : %.3f\r\n",temp);                                // Yaw_P 값 저장
+      value = '\0';
+      break;
+      
+     case 'D':
+       pid->Ki[0] = temp;
+      //inpid_val[0][1] = temp;
+      printf("OUT_Roll_I : %.3f\r\n",temp);                                 // Roll_I 값 저장
+      value = '\0';
+      break;
+      
+     case 'E':
+       pid->iKi[1] = temp;
+      //inpid_val[1][1] = temp;
+      printf("OUT_Pitch_I : %.3f\r\n",temp);                               // Pitch_I 값 저장
+      value = '\0';
+      break;
+      
+     case 'F':
+       pid->Ki[2] = temp;
+      //inpid_val[2][1] = temp;
+      printf("OUT_Yaw_I : %.3f\r\n",temp);                                 // Yaw_I 값 저장
+      value = '\0';
+      break;
+      
+     case 'G':
+       pid->Kd[0] = temp;
+      //inpid_val[0][2] = temp;
+      printf("OUT_Roll_D : %.3f\r\n",temp);                                // Roll_D 값 저장
+      value = '\0';
+      break;
+      
+     case 'H':
+       pid->Kd[1] = temp;
+      //inpid_val[1][2] = temp;
+      printf("OUT_Pitch_D : %.3f\r\n",temp);                              // Pitch_D 값 저장
+      value = '\0';
+      break;
+      
+     case 'I':
+       pid->Kd[2] = temp;
+      //inpid_val[2][2] = temp;
+      printf("OUT_Yaw_D : %.3f\r\n",temp);                               // Yaw_D 값 저장
+      value = '\0';
+      break;
+      
+   // ========================================================================= //  
+      
      case 'r':
       setting_angle[0] = (float)((int8_t)temp);
       printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint 값 저장
@@ -112,7 +178,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
 void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, int* Throttle2)    // Controller에서 PID값 수신
 {
   int value='\0';     // 컨트롤러에서 받은 key_input 값 저장 변수
-  uint8_t dataIn[32]={0};                                     // Controller Data Receive Buffer
+  uint8_t dataIn[8]={0};                                     // Controller Data Receive Buffer
 
   //printf("Receive_Data_Ready : %d\r\n",TM_NRF24L01_DataReady());
   
@@ -184,6 +250,15 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
           temp=atof((char*)dataIn);                                         // uint8_t 형으로 수신된 PID 값을 float형으로 변환하여 temp 에 저장
           //printf("\r\n dataIn_test : %.3f\r\n",temp);
         }
+        
+        else if(dataIn[6]<='I' && dataIn[6]>='A')
+        {
+          value = dataIn[6];
+          dataIn[6]='\0';
+          temp=atof((char*)dataIn);                                         // uint8_t 형으로 수신된 PID 값을 float형으로 변환하여 temp 에 저장
+          //printf("\r\n dataIn_test : %.3f\r\n",temp);
+        }
+        
         
         else if(dataIn[6]=='t')                                               // 0번 눌렀을 때 Throttle값 수신
         {

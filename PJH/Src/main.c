@@ -155,7 +155,6 @@ int main(void)
   uint32_t before_while = 0;                              //Time of Before entering while loop.
   uint16_t wait = 0;                                      //getting initiate setting_angle waiting time(3secs) 
   uint8_t wait_flag = 0;                                  //Time waiting flag.
-  uint8_t Mcal_flag = 0;                                  //User Magnetic bias flag.
  
   uint32_t UART_Now = 0;     
   uint32_t UART_Pre = 0;
@@ -170,14 +169,13 @@ int main(void)
   //====================Fuzzy Variables====================================
   //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 48;                                  //Moter Throttle.
+  int Controller_1 = 15;                                  //Moter Throttle.
   int Controller_2 = 0;                                   //Moter Yaw Throttle. 
   //===================hanging Variables from external controll====================  
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{3.5f, 0.005f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float inpid_val[3][3] = {{2.85f, 3.15f, 0.65f}, {1.14f, 1.26f, 0.26f}, {1.0f, 1.0f, 0.3f}};        //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{2.0f, 0.7f, 1.1f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{2.2f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{9.0f, 2.3f, 2.6f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES===============================
   float preGyro[3] = {0.0f, 0.0f, 0.0f};
@@ -196,7 +194,7 @@ int main(void)
   
   //FILE* fp;
 
-  /* USER CODE END 1 */
+  /* USER CODE END 1 */ 
   
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -207,16 +205,12 @@ int main(void)
   /* USER CODE BEGIN Init */
   __INIT__MPU9250(&MPU9250);
   MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);
-  if (0)
-  {
-    calibrateMPU9250(&MPU9250);
-  }
+  if (0){calibrateMPU9250(&MPU9250);}
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
-  AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
+  //AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
   pid_init(&pid, pid_val, inpid_val);
   //fuzzy_init();
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -236,16 +230,9 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   MX_TIM5_Init();
-  /* USER CODE BEGIN 2 */
-  //=========Automatic calculation of Magnetic filed bias=======
-  if (Mcal_flag == 1)
-  { 
-    MagCalibration(&MPU9250);
-    Mcal_flag ++;
-  }    
-  //======Automatic calculation of Magnetic filed bias END======
+  /* USER CODE BEGIN 2 */  
   //===================Calibration Part=========================
-  if(CaliFlag == 1)
+  if(CaliFlag == 1)    
   {    
     HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_1);
     HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
@@ -256,10 +243,10 @@ int main(void)
     calibrateMPU9250(&MPU9250);   
     Delayms(500);     
     TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
-    TM_MPU9250_ReadMagASA(&MPU9250);            //Get MPU9250 Magnetic ASA data.
     AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
+    TM_MPU9250_ReadMagASA(&MPU9250);            //Get MPU9250 Magnetic ASA data.
     MagCalibration(&MPU9250);
-    while(1){}                                  //Unlimited loop.
+    //while(1){}                                  //Unlimited loop.
   }
   //=================Calibration Part END=======================  
   //================PWM START===================================
@@ -280,8 +267,8 @@ int main(void)
     memset(pid_buffer,'\0',sizeof(pid_buffer));           
   //********************************************
   
-  TM_NRF24L01_Init(15,32);  
-  TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
+  TM_NRF24L01_Init(120,8);  
+  TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_250k, TM_NRF24L01_OutputPower_0dBm);
   TM_NRF24L01_SetMyAddress(MyAddress);
   //====================Get Biases From Flash Memory==========================
   if(1){
@@ -318,6 +305,10 @@ int main(void)
      MPU9250.Mx -= MPU9250.Magbiasx;             //callibration values.
      MPU9250.My -= MPU9250.Magbiasy;
      MPU9250.Mz -= MPU9250.Magbiasz;     
+     
+     MPU9250.Mx *= MPU9250.Magscalex;
+     MPU9250.My *= MPU9250.Magscaley;
+     MPU9250.Mz *= MPU9250.Magscalez;
 
   //=======Subtract Automatic Accelometer Gyroscope and Magnetic filed bias END=======
   //==================Init settiing angle=====================
@@ -419,8 +410,9 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
 
     //sprintf((char*)uart2_tx_data2,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
-    
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
+
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 2);
  //====================Data print transmit UART part END===================
     
  //======================BLDC Motor Part===================================
@@ -428,6 +420,7 @@ int main(void)
     if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
     {
        Motor_Start();
+    //   Motor_Throttle_Up();
     }
     
     else if (HAL_GetTick() - before_while >= 6000)// && HAL_GetTick() - before_while <= 400000)
@@ -682,7 +675,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

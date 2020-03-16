@@ -483,18 +483,18 @@ void AK8963SelfTest(TM_MPU9250_t* MPU9250, float* Self_Test_Mag)
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_CNTL, 1<<4); // Enter self test Mode.
     Delayms(10); // Wait for all registers to reset
 
-int numb = 0;
-for( int ii = 0; ii < 200; ii++) {  // get average current values of gyro and acclerometer    
-    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_ST1, &check);    
-    if (check & 0x01) {
-        TM_I2C_ReadMulti(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_XOUT_L, data, 7);
-        if (!(data[6] & 0x08)) {
-            mAvg[0] += (int16_t)(((int16_t)data[1] << 8) | data[0]);
-            mAvg[1] += (int16_t)(((int16_t)data[3] << 8) | data[2]);
-            mAvg[2] += (int16_t)(((int16_t)data[5] << 8) | data[4]); 
-            numb++;            
+    int numb = 0;
+    for( int ii = 0; ii < 200; ii++) {  // get average current values of gyro and acclerometer    
+        TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_ST1, &check);    
+        if (check & 0x01) {
+            TM_I2C_ReadMulti(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_XOUT_L, data, 7);
+            if (!(data[6] & 0x08)) {
+                mAvg[0] += (int16_t)(((int16_t)data[1] << 8) | data[0]);
+                mAvg[1] += (int16_t)(((int16_t)data[3] << 8) | data[2]);
+                mAvg[2] += (int16_t)(((int16_t)data[5] << 8) | data[4]); 
+                numb++;            
+            }
         }
-    }
     Delayms(12); 
     }
     
@@ -770,12 +770,19 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
     tempbias[4] = (int)(MPU9250->Magscaley * 1000);
     tempbias[5] = (int)(MPU9250->Magscalez * 1000);
     
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, tempbias[0]);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, tempbias[1]);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, tempbias[2]);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, tempbias[3]);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, tempbias[4]);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, tempbias[5]);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, tempbias[0]);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, tempbias[1]);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, tempbias[2]);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, tempbias[3]);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, tempbias[4]);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, tempbias[5]);
+    
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, 0x00000042);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, 0x00000118);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, 0xFFFFFE72);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, 0x00000447);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, 0x000003C2);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, 0x000003B9);
 
     HAL_Delay(30);  
     HAL_FLASH_Lock();   

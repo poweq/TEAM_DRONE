@@ -246,7 +246,7 @@ uint8_t TM_NRF24L01_Init(uint8_t channel, uint8_t payload_size) {
 	TM_NRF24L01_Struct.Channel = !channel; /* Set channel to some different value for TM_NRF24L01_SetChannel() function */
 	TM_NRF24L01_Struct.PayloadSize = payload_size;
 	TM_NRF24L01_Struct.OutPwr = TM_NRF24L01_OutputPower_0dBm;
-	TM_NRF24L01_Struct.DataRate = TM_NRF24L01_DataRate_2M;
+	TM_NRF24L01_Struct.DataRate = TM_NRF24L01_DataRate_250k;
 	
 	/* Reset nRF24L01+ to power on registers values */
 	TM_NRF24L01_SoftwareReset();
@@ -278,7 +278,7 @@ uint8_t TM_NRF24L01_Init(uint8_t channel, uint8_t payload_size) {
 	TM_NRF24L01_WriteRegister(NRF24L01_REG_SETUP_RETR, 0x4F);
 	
 	/* Dynamic length configurations: No dynamic length */
-	TM_NRF24L01_WriteRegister(NRF24L01_REG_DYNPD, (0 << NRF24L01_DPL_P0) | (0 << NRF24L01_DPL_P1) | (0 << NRF24L01_DPL_P2) | (0 << NRF24L01_DPL_P3) | (0 << NRF24L01_DPL_P4) | (0 << NRF24L01_DPL_P5));
+	TM_NRF24L01_WriteRegister(NRF24L01_REG_DYNPD, (1 << NRF24L01_DPL_P0) | (1 << NRF24L01_DPL_P1) | (0 << NRF24L01_DPL_P2) | (0 << NRF24L01_DPL_P3) | (0 << NRF24L01_DPL_P4) | (0 << NRF24L01_DPL_P5));
 	
 	/* Clear FIFOs */
 	NRF24L01_FLUSH_TX;
