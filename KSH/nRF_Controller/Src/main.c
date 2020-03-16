@@ -106,10 +106,17 @@ int8_t ADC_DATA[4];   // ADC DATA BUFFER
 // Interrupt variable
 uint8_t button_flag=0;
 
-//pid값, throttle 변수
-float Roll_P=0, Roll_I=0, Roll_D=0;
-float Pitch_P=0, Pitch_I=0, Pitch_D=0;
-float Yaw_P=0, Yaw_I=0, Yaw_D=0;
+// in pid값
+float In_Roll_P=0, In_Roll_I=0, In_Roll_D=0;
+float In_Pitch_P=0, In_Pitch_I=0, In_Pitch_D=0;
+float In_Yaw_P=0, In_Yaw_I=0, In_Yaw_D=0;
+
+// out pid값
+float Out_Roll_P=0, Out_Roll_I=0, Out_Roll_D=0;
+float Out_Pitch_P=0, Out_Pitch_I=0, Out_Pitch_D=0;
+float Out_Yaw_P=0, Out_Yaw_I=0, Out_Yaw_D=0;
+
+// throttle 변수
 float Throttle=0;
 
 //SettingPoint
@@ -131,12 +138,18 @@ void Display_UI()
    printf("  ------------------------------------------------------\r\n");
    printf("     Roll             Pitch                Yaw\r\n");
    printf("  ------------------------------------------------------\r\n");
-   printf(" [1].R_P : %.3f     [2].P_P : %.3f      [3].Y_P : %.3f\r\n",Roll_P,Pitch_P,Yaw_P);
-   printf(" [4].R_I : %.3f     [5].P_I : %.3f      [6].Y_I : %.3f\r\n",Roll_I,Pitch_I,Yaw_I);
-   printf(" [7].R_D : %.3f     [8].P_D : %.3f      [9].Y_D : %.3f\r\n",Roll_D,Pitch_D,Yaw_D);
+   printf(" [1].IN_R_P : %.3f     [2].IN_P_P : %.3f      [3].IN_Y_P : %.3f\r\n",In_Roll_P,In_Pitch_P,In_Yaw_P);
+   printf(" [4].IN_R_I : %.3f     [5].IN_P_I : %.3f      [6].IN_Y_I : %.3f\r\n",In_Roll_I,In_Pitch_I,In_Yaw_I);
+   printf(" [7].IN_R_D : %.3f     [8].IN_P_D : %.3f      [9].IN_Y_D : %.3f\r\n",In_Roll_D,In_Pitch_D,In_Yaw_D);
    printf("  ------------------------------------------------------\r\n");
+   printf(" [A].OUT_R_P : %.3f     [B].OUT_P_P : %.3f      [C].OUT_Y_P : %.3f\r\n",Out_Roll_P, Out_Pitch_P, Out_Yaw_P);
+   printf(" [D].OUT_R_I : %.3f     [E].OUT_P_I : %.3f      [F].OUT_Y_I : %.3f\r\n",Out_Roll_I, Out_Pitch_I, Out_Yaw_I);
+   printf(" [G].OUT_R_D : %.3f     [H].OUT_P_D : %.3f      [I].OUT_Y_D : %.3f\r\n",Out_Roll_D, Out_Pitch_D, Out_Yaw_D);
+   printf("  ------------------------------------------------------\r\n");
+   
    printf(" [T].Throttle : %.0f                         [x].ESCAPE\r\n",Throttle);
    printf(" [R].Set_Roll : %d    [P].Set_Pitch : %d    [Y].Set_Yaw : %d\r\n",Set_Point[0],Set_Point[1],Set_Point[2]);
+
    
 }
 
@@ -153,6 +166,19 @@ void PID_THROTTLE_Transmit(uint8_t key_input, uint8_t key_tr, float* data)
   key_tr = '\0';
 }
 
+//void Set_Point_Transmit(uint8_t key_input, uint8_t key_tr, int Set_Point)
+//{
+//  key_tr = key_input;
+//  key_input = '\0';
+//  printf("Roll_SetPoint : ");
+//  
+//  Keyboard_Debug_Set_Point(&Set_Point[0]);
+//  nRF24_Transmit_Set_Point(&Set_Point[0],key_tr);
+//  nRF24_Transmit_Status();
+//  Display_UI();
+//  key_tr ='\0';
+//}
+
 /* USER CODE END 0 */
 
 /**
@@ -163,7 +189,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   uint8_t Mode_Flag = Debug_Mode_Flag;// START DEBUG MODE
-
+  //float test_buf[32];
   /* USER CODE END 1 */
   
 
@@ -190,8 +216,8 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   
-  TM_NRF24L01_Init(15,32);
-  TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_2M, TM_NRF24L01_OutputPower_M18dBm);
+  TM_NRF24L01_Init(120,8);
+  TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_250k, TM_NRF24L01_OutputPower_0dBm);
 
   /* Set my address, 5 bytes */
   TM_NRF24L01_SetMyAddress(MyAddress);
@@ -207,6 +233,7 @@ int main(void)
   /* USER CODE END 2 */
  
  
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -223,16 +250,16 @@ int main(void)
        Print_Mode(&Mode_Flag);
      }
      
-     //Print_ADC_DEBUG();
+     Print_ADC_DEBUG();
     
-     printf("Roll : %d",ADC_DATA[1]);
-     nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
-     
-     //HAL_Delay(10);
-     
-     printf("   Th :          %d\r\n",ADC_DATA[2]);
-     nRF24_Transmit_ADC(&ADC_DATA[2],THROTTLE);
-     nRF24_Transmit_Status();
+//     printf("Roll : %d",ADC_DATA[1]);
+//     nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
+//     
+//     //HAL_Delay(10);
+//     
+//     printf("   Th :          %d\r\n",ADC_DATA[2]);
+//     nRF24_Transmit_ADC(&ADC_DATA[2],THROTTLE);
+//     nRF24_Transmit_Status();
      
      HAL_Delay(10);
     }
@@ -257,11 +284,18 @@ int main(void)
              Print_Mode(&Mode_Flag);    
           }
           HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10);
-          if(key_input == 'd' || key_input == 'D')      //디버깅 모드로 진입
+          if(key_input == 'd')      //디버깅 모드로 진입
           {
-            Display_UI();
-            nRF24_Transmit_Mode_Change(key_input);
-            //key_input='\0';
+             nRF24_Transmit_Mode_Change(key_input);
+//             TM_NRF24L01_PowerUpRx();
+//             while (!TM_NRF24L01_DataReady() && TM_DELAY_Time() < 100);
+//             TM_NRF24L01_GetData(dataIn);
+//
+//             test_buf[0] = atof((char*) dataIn);
+//             printf("%.3f\r\n",test_buf[0]);
+
+             Display_UI();
+             
             while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
             
             switch(key_input)
@@ -269,122 +303,171 @@ int main(void)
               case 't':
                  PID_THROTTLE_Transmit(key_input, key_tr, &Throttle);            // Throttle Input and Transmit
                  break;
-                  
+                 
+             // ============================== IN PID DATA ============================== //          
                case '1':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Roll_P);            //  Roll_P Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_P);            //  IN_Roll_P Input and Transmit
                   break;                 
                
                case '2':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Pitch_P);           // Pitch_P Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Pitch_P);           // IN_Pitch_P Input and Transmit
                   break;
                  
                case '3':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Yaw_P);             //  Yaw_P Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Yaw_P);             //  IN_Yaw_P Input and Transmit
                   break;
                  
                case '4':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Roll_I);              //  Roll_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_I);              //  IN_Roll_I Input and Transmit
                   break;
                  
                case '5':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Pitch_I);           //  Pitch_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Pitch_I);           //  IN_Pitch_I Input and Transmit
                   break;
                  
                case '6':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Yaw_I);             //  Yaw_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Yaw_I);             //  IN_Yaw_I Input and Transmit
                   break;
                  
                case '7':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Roll_D);            //  Roll_D Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_D);            //  IN_Roll_D Input and Transmit
                   break;
                  
                case '8':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Pitch_D);           //  Pitch_D Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Pitch_D);           //  IN_Pitch_D Input and Transmit
                   break;
                  
                case '9':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Yaw_D);             //  Yaw_D Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Yaw_D);             //  IN_Yaw_D Input and Transmit
                   break;
-                
-              case 'q':
-                key_tr = key_input;
-                key_input='\0';
                   
-                 while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))
-                 {
-                    if(count <= 1000)
-                    {
-                      nRF24_Transmit_ASCII(key_tr);
-                      nRF24_Transmit_Status();
-                       //key_tr ='\0';
-                      count++;
-                    }
-                  }
-                  count=1;
-                 key_tr='\0';
-                 break;
+              // ========================================================================= // 
+                  
+                  
+              // ============================== OUT PID DATA ============================== // 
+                  
+               case 'A':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Roll_P);            //  OUT_Roll_P Input and Transmit
+                  break;                 
+               
+               case 'B':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Pitch_P);           // OUT_Pitch_P Input and Transmit
+                  break;
                  
-              case 'r':
-                key_tr = key_input;
-                key_input = '\0';
-                printf("Roll_SetPoint : ");
-                
-                Keyboard_Debug_Set_Point(&Set_Point[0]);
-                nRF24_Transmit_Set_Point(&Set_Point[0],key_tr);
-                nRF24_Transmit_Status();
-                Display_UI();
-                key_tr ='\0';
-                break;
-                
-              case 'p':
-                key_tr = key_input;
-                key_input = '\0';
-                printf("Pitch_SetPoint : ");
-                
-                Keyboard_Debug_Set_Point(&Set_Point[1]);
-                nRF24_Transmit_Set_Point(&Set_Point[1],key_tr);
-                nRF24_Transmit_Status();
-                Display_UI();
-                key_tr ='\0';
-                break;
-                
-              case 'y':
-                key_tr = key_input;
-                key_input = '\0';
-                printf("Yaw_SetPoint : ");
-                
-                Keyboard_Debug_Set_Point(&Set_Point[2]);
-                nRF24_Transmit_Set_Point(&Set_Point[2],key_tr);
-                nRF24_Transmit_Status();
-                Display_UI();
-                key_tr ='\0';
-                break;
-                
-              case 'x':
-                key_tr = key_input;
-                key_input = '\0';
-                printf("Throttle : ");
-                
-                nRF24_Transmit_Mode_Change(key_tr);
-                nRF24_Transmit_Status();
-                key_tr='\0';
-                Throttle=0;
-                button_flag=0;
-                break;
-       
-               default:
-                printf("\r\nError Number\r\n");
-                break;
-            }
-          key_input = '\0';    
-        }
-      } 
-   else 
-   {
-     button_flag = Debug_Mode_Flag;
-   }
+               case 'C':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Yaw_P);             //  OUT_Yaw_P Input and Transmit
+                  break;
+                 
+               case 'D':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Roll_I);              //  OUT_Roll_I Input and Transmit
+                  break;
+                 
+               case 'E':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Pitch_I);           //  OUT_Pitch_I Input and Transmit
+                  break;
+                 
+               case 'F':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Yaw_I);             //  OUT_Yaw_I Input and Transmit
+                  break;
+                 
+               case 'G':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Roll_D);            //  OUT_Roll_D Input and Transmit
+                  break;
+                 
+               case 'H':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Pitch_D);           //  OUT_Pitch_D Input and Transmit
+                  break;
+                 
+               case 'I':
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Yaw_D);             //  OUT_Yaw_D Input and Transmit
+                  break;
+                  
+               // ========================================================================= //
+               
+                case 'q':
+                  key_tr = key_input;
+                  key_input='\0';
+                    
+                   while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK))
+                   {
+                      if(count <= 1000)
+                      {
+                        nRF24_Transmit_ASCII(key_tr);
+                        nRF24_Transmit_Status();
+                         //key_tr ='\0';
+                        count++;
+                      }
+                    }
+                    count=1;
+                   key_tr='\0';
+                   break;
+                 
+                // ============================== SET POINT DATA ============================== // 
+                  
+                case 'r':
+                  key_tr = key_input;
+                  key_input = '\0';
+                  printf("Roll_SetPoint : ");
+                  
+                  Keyboard_Debug_Set_Point(&Set_Point[0]);
+                  nRF24_Transmit_Set_Point(&Set_Point[0],key_tr);
+                  nRF24_Transmit_Status();
+                  Display_UI();
+                  key_tr ='\0';
+                  break;
+                  
+                case 'p':
+                  key_tr = key_input;
+                  key_input = '\0';
+                  printf("Pitch_SetPoint : ");
+                  
+                  Keyboard_Debug_Set_Point(&Set_Point[1]);
+                  nRF24_Transmit_Set_Point(&Set_Point[1],key_tr);
+                  nRF24_Transmit_Status();
+                  Display_UI();
+                  key_tr ='\0';
+                  break;
+                  
+                case 'y':
+                  key_tr = key_input;
+                  key_input = '\0';
+                  printf("Yaw_SetPoint : ");
+                  
+                  Keyboard_Debug_Set_Point(&Set_Point[2]);
+                  nRF24_Transmit_Set_Point(&Set_Point[2],key_tr);
+                  nRF24_Transmit_Status();
+                  Display_UI();
+                  key_tr ='\0';
+                  break;
+                  
+                // ========================================================================= //
+                  
+                  
+                case 'x':
+                  key_tr = key_input;
+                  key_input = '\0';
+                  printf("Throttle : ");
+                  
+                  nRF24_Transmit_Mode_Change(key_tr);
+                  nRF24_Transmit_Status();
+                  key_tr='\0';
+                  Throttle=0;
+                  button_flag=0;
+                  break;
+         
+                 default:
+                  printf("\r\nError Number\r\n");
+                  break;
+              }
+            key_input = '\0';    
+          }
+        } 
+     else 
+     {
+       button_flag = Debug_Mode_Flag;
+     }
   /* USER CODE END 3 */
- }
+}
 }
 
 /**
@@ -528,7 +611,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

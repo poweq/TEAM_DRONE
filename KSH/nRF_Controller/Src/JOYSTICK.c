@@ -13,8 +13,7 @@ void Print_Mode(uint8_t* Mode_Flag)
         HAL_UART_Transmit(&huart2,buffer_str, sizeof(buffer_str),10);
         memset(buffer_str,'\0',50);
       }
-     
-    
+
    else if(*Mode_Flag==Drive_Mode_Flag)
       {
         *Mode_Flag= Key_Mode_Flag;
@@ -40,8 +39,6 @@ void Print_ADC_DEBUG()
     HAL_UART_Transmit(&huart2,buffer_ADC, sizeof(buffer_ADC),10);
 }
 
-
-
  /*=======INPUT THROTTLE DATA==================*/
 char INPUT_THROTTLE()
 {
@@ -59,7 +56,6 @@ char INPUT_THROTTLE()
       HAL_UART_Transmit(&huart2,(uint8_t*)TH_Str_Buff, sizeof(TH_Str_Buff),10);
     }
  
-
       if(ADC_DATA[2]>55)//LEFT
     {
       sprintf((char*)TH_Str_Buff," \r\nTH : %d",count = count+10);
@@ -74,7 +70,6 @@ char INPUT_THROTTLE()
     
     return 0;
 }
-
 
  /*=======INPUT JOYSTICK DATA==================*/
 /*================= ROLL, PITCH =====================*/
