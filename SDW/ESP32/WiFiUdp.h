@@ -53,6 +53,10 @@ private:
   char * data_buffer;
   size_t data_buffer_len;
 
+  size_t* size_buffer;
+
+  int rx_len;
+
 public:
   WiFiUDP();
   ~WiFiUDP();
@@ -69,6 +73,7 @@ public:
   int beginSize();
   int beginSize(IPAddress ip, uint16_t port);
   int beginSize(const char* host, uint16_t port);
+  int endSize();
   int endSize(size_t size);
 
   int beginData();
@@ -76,12 +81,19 @@ public:
   int beginData(const char* host, uint16_t port);
   int endData();
 
+
+  size_t size_write(size_t data);
+
   size_t image_write(char);
   size_t image_write(const char* buffer, size_t size);
 
   size_t write(uint8_t);
   size_t write(const uint8_t *buffer, size_t size);
+  int StartPacket();
   int parsePacket();
+  int receviePacket();
+  int resendPacket();
+
   int available();
   int read();
   int read(unsigned char* buffer, size_t len);
