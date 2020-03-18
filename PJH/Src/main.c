@@ -162,40 +162,39 @@ int main(void)
   
   uint8_t UART_flag=0;
   uint8_t UART_sytic_flag=0;
-  //=========================UART Variables===============================
-  //====================Quaternion VARIABLES===============================
+  //=========================UART Variables=================================
+  //====================Quaternion VARIABLES================================
   float deltat = 0.0f;                                    //integration interval for filter schemes.
   float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
-  //====================Fuzzy Variables====================================
-  //float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
+  //====================Fuzzy Variables=====================================
+  //float prev_err[3];                                    //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 15;                                  //Moter Throttle.
+  int Controller_1 = 40;                                  //Moter Throttle.
   int Controller_2 = 0;                                   //Moter Yaw Throttle. 
-  //===================hanging Variables from external controll====================  
+  //================hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{2.2f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{9.0f, 2.3f, 2.6f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float inpid_val[3][3] = {{10.3f, 1.75f, 2.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{10.3f, 1.75f, 2.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
-  //====================Quaternion VARIABLES===============================
+  //====================Quaternion VARIABLES================================
   float preGyro[3] = {0.0f, 0.0f, 0.0f};
   float LPF_Gyro[3] = {0.0f, 0.0f, 0.0f};
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
-  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.  
+  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};          //Used in LPF.
-  //===========================MPU9250 Variables=============================
+  //===========================MPU9250 Variables============================
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
-  float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f}; //MPU9250 Magnetometer Self_Test.
+  float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f};            //MPU9250 Magnetometer Self_Test.
   //=====================Drone Calibration Mode Variables===================
   uint8_t CaliFlag = 0;
   //========================nRF24L01 VARIABLES==============================
   int temp_int;                                           // uint8_t
   float temp;                                             // uint8_t
   
-  //FILE* fp;
-
-  /* USER CODE END 1 */ 
-  
+  /* USER CODE END 1 */   
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -209,6 +208,7 @@ int main(void)
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
   //AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
+  //MagCalibration(&MPU9250);
   pid_init(&pid, pid_val, inpid_val);
   //fuzzy_init();
   /* USER CODE END Init */
@@ -240,13 +240,13 @@ int main(void)
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
     
     MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);  
-    calibrateMPU9250(&MPU9250);   
+    //calibrateMPU9250(&MPU9250);   
     Delayms(500);     
     TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
-    AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
     TM_MPU9250_ReadMagASA(&MPU9250);            //Get MPU9250 Magnetic ASA data.
+    AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
     MagCalibration(&MPU9250);
-    //while(1){}                                  //Unlimited loop.
+    while(1){}                                  //Unlimited loop.
   }
   //=================Calibration Part END=======================  
   //================PWM START===================================
@@ -286,7 +286,7 @@ int main(void)
   {         
     //int aa = HAL_GetTick();     //Get time for 
     
-    HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID
+    //HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID
   //========================Get MPU9250 data===========================  
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
@@ -294,19 +294,19 @@ int main(void)
   //======================Get MPU9250 data END===========================  
   //=========Subtract Automatic Accelometer Gyroscope and Magnetic filed bias========
 
-     MPU9250.Ax -= MPU9250.Accbiasx;             //callibration values.
-     MPU9250.Ay -= MPU9250.Accbiasy;
-     MPU9250.Az -= MPU9250.Accbiasz;
-
-     MPU9250.Gx -= MPU9250.Gybiasx;              //callibration values.
-     MPU9250.Gy -= MPU9250.Gybiasy;
-     MPU9250.Gz -= MPU9250.Gybiasz;  
+//     MPU9250.Ax -= MPU9250.Accbiasx;             //callibrate Accel values.
+//     MPU9250.Ay -= MPU9250.Accbiasy;
+//     MPU9250.Az -= MPU9250.Accbiasz;
+//
+//     MPU9250.Gx -= MPU9250.Gybiasx;              //callibrate Gyro values.
+//     MPU9250.Gy -= MPU9250.Gybiasy;
+//     MPU9250.Gz -= MPU9250.Gybiasz;  
      
-     MPU9250.Mx -= MPU9250.Magbiasx;             //callibration values.
+     MPU9250.Mx -= MPU9250.Magbiasx;             //callibrate Magnetic values.
      MPU9250.My -= MPU9250.Magbiasy;
      MPU9250.Mz -= MPU9250.Magbiasz;     
      
-     MPU9250.Mx *= MPU9250.Magscalex;
+     MPU9250.Mx *= MPU9250.Magscalex;            //callibrate Magnetic values.
      MPU9250.My *= MPU9250.Magscaley;
      MPU9250.Mz *= MPU9250.Magscalez;
 
@@ -331,31 +331,31 @@ int main(void)
       wait_flag ++;
     }
   //================Init settiing angle END====================
-   //====================Get delta T =======================
+  //====================Get delta T ===========================
     Now = HAL_GetTick();                //Get current time.
     deltat += (Now - lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
     lastUpdate = Now;                   //Update lastupdate time to current time.
-  //==================Get delta T END======================
+  //==================Get delta T END==========================
     //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
-  //====================================================  
+  //===========================================================
     angular_velocity[0] = MPU9250.Gx / 500.0f * deltat;                //angular velocity (degree/2ms)
     angular_velocity[1] = MPU9250.Gy / 500.0f * deltat;
-    angular_velocity[2] = MPU9250.Gz / 500.0f * deltat;        
+    angular_velocity[2] = MPU9250.Gz / 500.0f * deltat;
 //    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;                  //angular velocity (degree/2ms)
 //    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
 //    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
     
-    if (deltat >= dt)                           //Update term.(500Hz.dt=2)
+    if (deltat >= dt)                                                   //Update term.(500Hz.dt=2)
     {
       //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
-      //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 1);   //limit 16bytes when 1ms timeout.
-      deltat /= 1000.0f;                        //Make millisecond to second.
-      __LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
+      //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 1);        //limit 16bytes when 1ms timeout.
+      deltat /= 1000.0f;                                                             //Make millisecond to second.
+      //__LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
       Quternion2Euler(q, Euler_angle);                                                  //Get Euler angles (roll, pitch, yaw) from Quaternions.
-      __LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
-      //=========================Fuzzy part============================
+      //__LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
+  //=========================Fuzzy part============================
 //      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);                  //roll
 //      Create_Fuzzy_Matrix();
 //      Defuzzification(&pid_val[0][0],&pid_val[0][1],&pid_val[0][2]);                  //Fuzzy roll end.
@@ -371,7 +371,8 @@ int main(void)
       //=======================Fuzzy part END============================
       if (HAL_GetTick() - before_while >= 5500)
       {
-        __pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
+        __pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.
+        //__pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
       }    
       //Euler_angle[2] -= 8.2f;                                  // Declination at Seoul korea on 2020-02-04(yaw bias)            
       //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f;       // Ensure yaw stays between 0 and 360     
@@ -411,6 +412,7 @@ int main(void)
 
     //sprintf((char*)uart2_tx_data2,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
     //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
+    //sprintf((char*)uart2_tx_data2,"%4d %10.2f\r\n", (int)LPF_Euler_angle[0], pid.output[0]);
 
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 2);
  //====================Data print transmit UART part END===================
@@ -473,7 +475,7 @@ int main(void)
         if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
           MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
         else if (MOTOR_V4 <= MIN_PULSE + 700)
-          MOTOR_V4 = MIN_PULSE + 700;          
+          MOTOR_V4 = MIN_PULSE + 700;
        }
     }
     
@@ -481,7 +483,6 @@ int main(void)
     //Motor_Stop(400000, before_while);    
     //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
-
 //======================BLDC Motor Part END===================================
     
 //======================NRF24L01 Receive Part=================================    
