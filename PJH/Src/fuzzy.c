@@ -22,9 +22,9 @@ _Fuzzy_stru Ki_small, Ki_medismall, Ki_medium, Ki_medilarge, Ki_large;
 _Fuzzy_stru Kd_small, Kd_medismall, Kd_medium, Kd_medilarge, Kd_large;
 
 
-const float Kp_s = 2.1f, Kp_m = 2.3f, Kp_b = 2.8f, Kp_vb = 3.3f;
-const float Ki_s = 2.0f, Ki_m = 2.1f, Ki_b = 2.25f, Ki_vb = 2.4f;
-const float Kd_s = 0.4f, Kd_m = 0.5f, Kd_b = 0.6f, Kd_vb = 0.7f;
+const float Kp_s = 7.0f, Kp_m = 8.0f, Kp_b = 9.0f, Kp_vb = 10.0f;
+const float Ki_s = 0.2f, Ki_m = 0.3f, Ki_b = 0.5f, Ki_vb = 1.0f;
+const float Kd_s = 1.4f, Kd_m = 1.8f, Kd_b = 2.0f, Kd_vb = 2.2f;
 
 float Rule_Base[5][5][3] = {{{101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}, {103.0f, 12.0f, 1.0f}, {104.0f, 14.0f, 1.0f}, {102.0f, 14.0f, 3.0f}},
                             {{101.0f, 14.0f, 4.0f}, {102.0f, 13.0f, 4.0f}, {104.0f, 11.0f, 2.0f}, {103.0f, 13.0f, 2.0f}, {102.0f, 14.0f, 4.0f}},

@@ -10,79 +10,79 @@ extern float deltat;
 
 void pid_init(__PID * pid, float pid_val[][3], float inpid_val[][3])
 {	
-	pid->err[0]		= 0.0f;	
-        pid->err[1]		= 0.0f;	
-	pid->err[2]		= 0.0f;	
+    pid->err[0]		= 0.0f;	
+    pid->err[1]		= 0.0f;	
+    pid->err[2]		= 0.0f;	
 
-        pid->rateError[0]     = 0.0f;
-        pid->rateError[1]     = 0.0f;
-        pid->rateError[2]     = 0.0f;
+    pid->rateError[0]     = 0.0f;
+    pid->rateError[1]     = 0.0f;
+    pid->rateError[2]     = 0.0f;
 
-	pid->integral[0]	        = 0.0f;
-        pid->integral[1]	        = 0.0f;
-	pid->integral[2]	        = 0.0f;
+    pid->integral[0]	        = 0.0f;
+    pid->integral[1]	        = 0.0f;
+    pid->integral[2]	        = 0.0f;
 
-	pid->err_last[0]	        = 0.0f;
-        pid->err_last[1]	        = 0.0f;
-	pid->err_last[2]	        = 0.0f;
-        
-        pid->preRateError[0]    = 0.0f;
-        pid->preRateError[1]    = 0.0f;
-        pid->preRateError[2]    = 0.0f;
-        
-	pid->output[0]		= 0.0f;
-        pid->output[1]		= 0.0f;
-	pid->output[2]		= 0.0f;
-	
-	pid->Kp[0]		= pid_val[0][0];//outer Roll PID
-	pid->Ki[0]		        = pid_val[0][1];
-	pid->Kd[0]		= pid_val[0][2];
-        
-        pid->Kp[1]		= pid_val[1][0];//outer Pitch PID
-	pid->Ki[1]		        = pid_val[1][1];
-	pid->Kd[1]		= pid_val[1][2];
-        
-        pid->Kp[2]		= pid_val[2][0];//outer Yaw PID
-	pid->Ki[2]		        = pid_val[2][1];
-	pid->Kd[2]		= pid_val[2][2];
-        
-        pid->iKp[0]		= inpid_val[0][0];//inner Roll PID
-	pid->iKi[0]		= inpid_val[0][1];
-	pid->iKd[0]		= inpid_val[0][2];
-        
-        pid->iKp[1]		= inpid_val[1][0];//inner Pitch PID
-	pid->iKi[1]		= inpid_val[1][1];
-	pid->iKd[1]		= inpid_val[1][2];
-        
-        pid->iKp[2]		= inpid_val[2][0];//inner Yaw PID
-	pid->iKi[2]		= inpid_val[2][1];
-	pid->iKd[2]		= inpid_val[2][2];
+    pid->err_last[0]	        = 0.0f;
+    pid->err_last[1]	        = 0.0f;
+    pid->err_last[2]	        = 0.0f;
+
+    pid->preRateError[0]    = 0.0f;
+    pid->preRateError[1]    = 0.0f;
+    pid->preRateError[2]    = 0.0f;
+
+    pid->output[0]		= 0.0f;
+    pid->output[1]		= 0.0f;
+    pid->output[2]		= 0.0f;
+
+    pid->Kp[0]		= pid_val[0][0];//outer Roll PID
+    pid->Ki[0]		= pid_val[0][1];
+    pid->Kd[0]		= pid_val[0][2];
+
+    pid->Kp[1]		= pid_val[1][0];//outer Pitch PID
+    pid->Ki[1]		= pid_val[1][1];
+    pid->Kd[1]		= pid_val[1][2];
+
+    pid->Kp[2]		= pid_val[2][0];//outer Yaw PID
+    pid->Ki[2]		= pid_val[2][1];
+    pid->Kd[2]		= pid_val[2][2];
+
+    pid->iKp[0]		= inpid_val[0][0];//inner Roll PID
+    pid->iKi[0]		= inpid_val[0][1];
+    pid->iKd[0]		= inpid_val[0][2];
+
+    pid->iKp[1]		= inpid_val[1][0];//inner Pitch PID
+    pid->iKi[1]		= inpid_val[1][1];
+    pid->iKd[1]		= inpid_val[1][2];
+
+    pid->iKp[2]		= inpid_val[2][0];//inner Yaw PID
+    pid->iKi[2]		= inpid_val[2][1];
+    pid->iKd[2]		= inpid_val[2][2];
 }
 void pid_gain_update(__PID * pid, float pid_val[][3], float inpid_val[][3])
 {
-        pid->Kp[0]		= pid_val[0][0];//outer Roll PID
-	pid->Ki[0]		        = pid_val[0][1];
-	pid->Kd[0]		= pid_val[0][2];
-        
-        pid->Kp[1]		= pid_val[1][0];//outer Pitch PID
-	pid->Ki[1]		        = pid_val[1][1];
-	pid->Kd[1]		= pid_val[1][2];
-        
-        pid->Kp[2]		= pid_val[2][0];//outer Yaw PID
-	pid->Ki[2]		        = pid_val[2][1];
-	pid->Kd[2]		= pid_val[2][2];
-        
-        pid->iKp[0]		= inpid_val[0][0];//inner Roll PID
-	pid->iKi[0]		= inpid_val[0][1];
-	pid->iKd[0]		= inpid_val[0][2];
-        
-        pid->iKp[1]		= inpid_val[1][0];//inner Pitch PID
-	pid->iKi[1]		= inpid_val[1][1];
-	pid->iKd[1]		= inpid_val[1][2];
-        
-        pid->iKp[2]		= inpid_val[2][0];//inner Yaw PID
-	pid->iKi[2]		= inpid_val[2][1];
-	pid->iKd[2]		= inpid_val[2][2];
+    pid->Kp[0]		= pid_val[0][0];//outer Roll PID
+    pid->Ki[0]		= pid_val[0][1];
+    pid->Kd[0]		= pid_val[0][2];
+
+    pid->Kp[1]		= pid_val[1][0];//outer Pitch PID
+    pid->Ki[1]		= pid_val[1][1];
+    pid->Kd[1]		= pid_val[1][2];
+
+    pid->Kp[2]		= pid_val[2][0];//outer Yaw PID
+    pid->Ki[2]		= pid_val[2][1];
+    pid->Kd[2]		= pid_val[2][2];
+
+    pid->iKp[0]		= inpid_val[0][0];//inner Roll PID
+    pid->iKi[0]		= inpid_val[0][1];
+    pid->iKd[0]		= inpid_val[0][2];
+
+    pid->iKp[1]		= inpid_val[1][0];//inner Pitch PID
+    pid->iKi[1]		= inpid_val[1][1];
+    pid->iKd[1]		= inpid_val[1][2];
+
+    pid->iKp[2]		= inpid_val[2][0];//inner Yaw PID
+    pid->iKi[2]		= inpid_val[2][1];
+    pid->iKd[2]		= inpid_val[2][2];
 }
 
 void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float * angular_velocity, float deltat)

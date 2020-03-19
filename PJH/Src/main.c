@@ -174,10 +174,8 @@ int main(void)
   //================hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float pid_val[3][3] = {{2.63f, 0.2f, 0.0f}, {2.63f, 0.2f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float inpid_val[3][3] = {{10.3f, 1.75f, 2.3f}, {2.8f, 0.2f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{2.63f, 0.2f, 0.0f}, {2.63f, 0.2f, 0.0f}, {2.5f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {5.0f, 0.0f, 1.0f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES================================
   float preGyro[3] = {0.0f, 0.0f, 0.0f};
@@ -204,11 +202,11 @@ int main(void)
   /* USER CODE BEGIN Init */
   __INIT__MPU9250(&MPU9250);
   MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);
-  if (0){calibrateMPU9250(&MPU9250);}
+  if (0){
+    calibrateMPU9250(&MPU9250);
+  }
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
-  //AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
-  //MagCalibration(&MPU9250);
   pid_init(&pid, pid_val, inpid_val);
   //fuzzy_init();
   /* USER CODE END Init */
@@ -240,13 +238,13 @@ int main(void)
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
     
     MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);  
-    //calibrateMPU9250(&MPU9250);   
-    Delayms(500);     
+    calibrateMPU9250(&MPU9250);   
+    Delayms(1000);     
     TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
     TM_MPU9250_ReadMagASA(&MPU9250);            //Get MPU9250 Magnetic ASA data.
     AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
     MagCalibration(&MPU9250);
-    while(1){}                                  //Unlimited loop.
+    //while(1){}                                  //Unlimited loop.
   }
   //=================Calibration Part END=======================  
   //================PWM START===================================
@@ -284,15 +282,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {         
-    //int aa = HAL_GetTick();     //Get time for 
-    
+    //int aa = HAL_GetTick();     //Get time.    
     //HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID
   //========================Get MPU9250 data===========================  
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
     TM_MPU9250_ReadMag(&MPU9250);       //get Magnetic data.
   //======================Get MPU9250 data END===========================  
-  //=========Subtract Automatic Accelometer Gyroscope and Magnetic filed bias========
+  //===Subtract Automatic Accelometer Gyroscope and Magnetic filed bias===
 
      MPU9250.Ax -= MPU9250.Accbiasx;             //callibrate Accel values.
      MPU9250.Ay -= MPU9250.Accbiasy;
@@ -339,84 +336,53 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
   //===========================================================
-    angular_velocity[0] = MPU9250.Gx / 500.0f * deltat;                //angular velocity (degree/2ms)
+    angular_velocity[0] = MPU9250.Gx / 500.0f * deltat;                //angular velocity (degree/2ms(*2))
     angular_velocity[1] = MPU9250.Gy / 500.0f * deltat;
-    angular_velocity[2] = MPU9250.Gz / 500.0f * deltat;
-//    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;                  //angular velocity (degree/2ms)
-//    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
-//    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
-    
+    angular_velocity[2] = MPU9250.Gz / 500.0f * deltat;    
     if (deltat >= dt)                                                   //Update term.(500Hz.dt=2)
     {
-      //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
-      //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 1);        //limit 16bytes when 1ms timeout.
       deltat /= 1000.0f;                                                             //Make millisecond to second.
-      //__LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
+      __LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
       Quternion2Euler(q, Euler_angle);                                                  //Get Euler angles (roll, pitch, yaw) from Quaternions.
-      //__LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
-      //Euler_angle[1] += 0.0f;
+      __LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
   //=========================Fuzzy part============================
 //      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);                  //roll
 //      Create_Fuzzy_Matrix();
-//      Defuzzification(&pid_val[0][0],&pid_val[0][1],&pid_val[0][2]);                  //Fuzzy roll end.
+//      Defuzzification(&inpid_val[0][0],&inpid_val[0][1],&inpid_val[0][2]);                  //Fuzzy roll end.
 //      
 //      Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);                  //pitch
 //      Create_Fuzzy_Matrix();
-//      Defuzzification(&pid_val[1][0],&pid_val[1][1],&pid_val[1][2]);                  //Fuzzy pitch end.
+//      Defuzzification(&inpid_val[1][0],&inpid_val[1][1],&inpid_val[1][2]);                  //Fuzzy pitch end.
 //      
 //      Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);                  //yaw
 //      Create_Fuzzy_Matrix();
-//      Defuzzification(&pid_val[2][0],&pid_val[2][1],&pid_val[2][2]);                  //Fuzzy yaw end.     
+//      Defuzzification(&inpid_val[2][0],&inpid_val[2][1],&inpid_val[2][2]);                  //Fuzzy yaw end.     
 //      pid_gain_update(&pid, pid_val, inpid_val);                                      //From Fuzzy the PID gain value is changed.
-      //=======================Fuzzy part END============================
+  //=======================Fuzzy part END============================
       if (HAL_GetTick() - before_while >= 5500)
       {
-        __pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.
-        //__pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
+        //__pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.
+        __pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
       }    
-      //Euler_angle[2] -= 8.2f;                                  // Declination at Seoul korea on 2020-02-04(yaw bias)            
-      //if(Euler_angle[2] < 0) Euler_angle[2]   += 360.0f;       // Ensure yaw stays between 0 and 360     
+      //if(Euler_angle[2] < 0) Euler_angle[2] += 360.0f;         // Ensure yaw stays between 0 and 360     
       deltat = 0.0f;                                             //reset deltat.
     }
-    //TM_MPU9250_DataReady(&MPU9250);                            //?????
 //=====================Data print transmit UART part===============        
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
     //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, LPF_Gyro[0],LPF_Gyro[1], LPF_Gyro[2]);
-    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f \r\n", MPU9250.Mx, MPU9250.My ,MPU9250.Mz);
-    //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", (int)MPU9250.Mx_Raw, (int)MPU9250.My_Raw , (int)MPU9250.Mz_Raw);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2], Self_Test[3], Self_Test[4], Self_Test[5]);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f\r\n", Self_Test_Mag[0], Self_Test_Mag[1], Self_Test_Mag[2]);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz, MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz);
     //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz, MPU9250.Magscalex, MPU9250.Magscaley, MPU9250.Magscalez);
-    //sprintf((char*)uart2_tx_data2,"%d  %d  %d\r\n", MPU9250.Mx_Raw, MPU9250.My_Raw, MPU9250.Mz_Raw);    
-    
-    //sprintf((char*)uart2_tx_data2,"%d\r\n", data32);
-    //sprintf((char*)uart2_tx_data2," ASAx = %.2f \t ASAy = %.2f \t ASAz = %.2f\r\n",MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
-    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);
-    
-    //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid_val[0][0],pid_val[0][1],pid_val[0][2],pid_val[1][0],pid_val[1][1],pid_val[1][2],pid_val[2][0],pid_val[2][1],pid_val[2][2]);
-    //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.Kp[0],pid.Ki[0],pid.Kd[0],pid.Kp[1],pid.Ki[1],pid.Kd[1],pid.Kp[2],pid.Ki[2],pid.Kd[2]);
-    //sprintf((char*)uart2_tx_data2,"%10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f  %10.4f\r\n", pid.iKp[0],pid.iKi[0],pid.iKd[0],pid.iKp[1],pid.iKi[1],pid.iKd[1],pid.iKp[2],pid.iKi[2],pid.iKd[2]);
-
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], Magbias[0], Magbias[1], Magbias[2]);
+    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);   
 
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
-   
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
-
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n", setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
-   
-    //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
-
-    //sprintf((char*)uart2_tx_data2,"%10.5f  %10.5f  %10.5f\r\n",  angular_velocity[0], angular_velocity[1], angular_velocity[2]);
     //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
-    //sprintf((char*)uart2_tx_data2,"%4d %10.2f\r\n", (int)LPF_Euler_angle[0], pid.output[0]);
-
+    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
  //====================Data print transmit UART part END===================
     
@@ -480,9 +446,7 @@ int main(void)
         else if (MOTOR_V4 <= MIN_PULSE + 700)
           MOTOR_V4 = MIN_PULSE + 700;
        }
-    }
-    
-    
+    }  
     //Motor_Stop(400000, before_while);    
     //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
