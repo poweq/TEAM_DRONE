@@ -1,7 +1,8 @@
 #include "pid.h"
+#include "utils.h"
 
-#define PID_IMAX             (45.0f)
-#define PID_IMIN              (-45.0f)
+#define PID_IMAX             (60.0f)
+#define PID_IMIN              (-60.0f)
 #define sampleFreq          (500.0f)
 
 
@@ -105,12 +106,9 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
   {
   case 0: //roll
     {      
-        pid->err[0] = set - actual;                                             //오차 = 목표치 - 현재값	
+        pid->err[0] = set - actual;                                                            //오차 = 목표치 - 현재값	
 
-        if (pid->err[0] >  PID_IMAX)
-        pid->err[0] = PID_IMAX;
-        if (pid->err[0] < PID_IMIN)
-        pid->err[0] = PID_IMIN;
+        pid->err[0] = constrain(pid->err[0], PID_IMIN, PID_IMAX);
         
         stabilPgain = pid->Kp[0] * pid->err[0];                                          //p항 = Kp * 오차
         stabilIgain += pid->Ki[0] *pid->err[0] * deltat;
@@ -122,6 +120,8 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->integral[0] += (pid->rateError[0] * deltat);                              //오차적분 = 오차적분 + (오차rate * dt).        
         Ki_term = pid->iKi[0] * pid->integral[0];                                         //i항 = Ki * 오차적분.        
 
+        Ki_term = constrain(Ki_term, -1000, 1000);
+        
         D_err = (pid->rateError[0] - pid->preRateError[0]) / deltat;             //오차미분 = (현재rate오차-이전rate오차)/dt.        
         Kd_term = pid->iKd[0] * D_err;                                                       //d항 = Kd * rate오차미분.	
         
@@ -133,12 +133,9 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
     }
   case 1: //pitch
     {
-        pid->err[1] = set - actual; //오차 = 목표치 - 현재값	
+        pid->err[1] = set - actual;                                                             //오차 = 목표치 - 현재값	
 
-        if (pid->err[1] >  PID_IMAX)
-        pid->err[1] = PID_IMAX;
-        if (pid->err[1] < PID_IMIN)
-        pid->err[1] = PID_IMIN;
+        pid->err[1] = constrain(pid->err[1], PID_IMIN, PID_IMAX);
         
         stabilPgain = pid->Kp[1] * pid->err[1];                                          //p항 = Kp * 오차
         stabilIgain += pid->Ki[1] *pid->err[1] * deltat;
@@ -151,6 +148,8 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->integral[1] += (pid->rateError[1] * deltat);                              //오차적분 = 오차적분 + 오차rate * dt.        
         Ki_term = pid->iKi[1] * pid->integral[1];                                         //i항 = Ki * 오차적분.        
 
+        Ki_term = constrain(Ki_term, -1000, 1000);
+        
         D_err = (pid->rateError[1] - pid->preRateError[1]) / deltat;             //오차미분 = (현재rate오차-이전rate오차)/dt.        
         Kd_term = pid->iKd[1] * D_err;                                                       //d항 = Kd * rate오차미분.	
         
@@ -163,12 +162,14 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
     }
   case 2:  //yaw
     {
-        pid->err[2] = set - actual; //오차 = 목표치 - 현재값	
+        pid->err[2] = set - actual;                                                             //오차 = 목표치 - 현재값	
+        
+        if (pid->err[2] < -180)                                                                  //correct angle jump ( ex: 180 -> -180)
+          pid->err[2] = pid->err[2] + 360;
+        else if (pid->err[2] > 180)
+          pid->err[2] = pid->err[2] - 360;
 
-        if (pid->err[2] >  PID_IMAX)
-        pid->err[2] = PID_IMAX;
-        if (pid->err[2] < PID_IMIN)
-        pid->err[2] = PID_IMIN;
+        pid->err[2] = constrain(pid->err[2], PID_IMIN, PID_IMAX);
         
         stabilPgain = pid->Kp[2] * pid->err[2];                                           //p항 = Kp * 오차
         stabilIgain += pid->Ki[2] *pid->err[2] * deltat;
@@ -180,6 +181,8 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->integral[2] += (pid->rateError[2] * deltat);                              //오차적분 = 오차적분 + 오차rate * dt.        
         Ki_term = pid->iKi[2] * pid->integral[2];                                         //i항 = Ki * 오차적분.        
 
+        Ki_term = constrain(Ki_term, -1000, 1000);
+        
         D_err = (pid->rateError[2] - pid->preRateError[2]) / deltat;             //오차미분 = (현재rate오차-이전rate오차)/dt.        
         Kd_term = pid->iKd[2] * D_err;                                                       //d항 = Kd * rate오차미분.	
         
@@ -203,10 +206,9 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
   case 0: //roll
     {
         pid->err[0] = set - actual; //오차 = 목표치 - 현재값	
-        if (pid->err[0] >  PID_IMAX)
-          pid->err[0] = PID_IMAX;
-        if (pid->err[0] < PID_IMIN)
-          pid->err[0] = PID_IMIN;
+        
+        pid->err[0] = constrain(pid->err[0], PID_IMIN, PID_IMAX);
+       
         Kp_term = pid->Kp[0] * pid->err[0]; //p항 = Kp * 오차
         
         pid->integral[0] += pid->err[0] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -222,10 +224,9 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
   case 1: //pitch
     {
         pid->err[1] = set - actual; //오차 = 목표치 - 현재값	
-        if (pid->err[1] >  PID_IMAX)
-          pid->err[1] = PID_IMAX;
-        if (pid->err[1] < PID_IMIN)
-          pid->err[1] = PID_IMIN;
+        
+        pid->err[1] = constrain(pid->err[1], PID_IMIN, PID_IMAX);
+        
         Kp_term = pid->Kp[1] * pid->err[1]; //p항 = Kp * 오차
         
         pid->integral[1] += pid->err[1] * deltat;//오차적분 = 오차적분 + 오차 * dt
@@ -247,10 +248,8 @@ void pid_update(__PID * pid, float set, float actual,float angular_velocity, int
         else if (pid->err[2] > 180)
           pid->err[2] = pid->err[2] - 360;
         
-        if (pid->err[2] >  PID_IMAX)
-          pid->err[2] = PID_IMAX;
-        if (pid->err[2] < PID_IMIN)
-          pid->err[2] = PID_IMIN;
+        pid->err[2] = constrain(pid->err[2], PID_IMIN, PID_IMAX);
+        
         Kp_term = pid->Kp[2] * pid->err[2]; //p항 = Kp * 오차
         
         pid->integral[2] += pid->err[2] * deltat;//오차적분 = 오차적분 + 오차 * dt

@@ -169,15 +169,15 @@ int main(void)
   //====================Fuzzy Variables=====================================
   //float prev_err[3];                                    //Prev_Setting_point - Euler_angle.
   //========================================================================
-  int Controller_1 = 40;                                  //Moter Throttle.
+  int Controller_1 = 20;                                  //Moter Throttle.
   int Controller_2 = 0;                                   //Moter Yaw Throttle. 
   //================hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
   //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float inpid_val[3][3] = {{10.3f, 1.75f, 2.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{10.3f, 1.75f, 2.3f}, {2.85f, 0.5f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{2.63f, 0.2f, 0.0f}, {2.63f, 0.2f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float inpid_val[3][3] = {{10.3f, 1.75f, 2.3f}, {2.8f, 0.2f, 1.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES================================
   float preGyro[3] = {0.0f, 0.0f, 0.0f};
@@ -294,13 +294,13 @@ int main(void)
   //======================Get MPU9250 data END===========================  
   //=========Subtract Automatic Accelometer Gyroscope and Magnetic filed bias========
 
-//     MPU9250.Ax -= MPU9250.Accbiasx;             //callibrate Accel values.
-//     MPU9250.Ay -= MPU9250.Accbiasy;
-//     MPU9250.Az -= MPU9250.Accbiasz;
-//
-//     MPU9250.Gx -= MPU9250.Gybiasx;              //callibrate Gyro values.
-//     MPU9250.Gy -= MPU9250.Gybiasy;
-//     MPU9250.Gz -= MPU9250.Gybiasz;  
+     MPU9250.Ax -= MPU9250.Accbiasx;             //callibrate Accel values.
+     MPU9250.Ay -= MPU9250.Accbiasy;
+     MPU9250.Az -= MPU9250.Accbiasz;
+
+     MPU9250.Gx -= MPU9250.Gybiasx;              //callibrate Gyro values.
+     MPU9250.Gy -= MPU9250.Gybiasy;
+     MPU9250.Gz -= MPU9250.Gybiasz;  
      
      MPU9250.Mx -= MPU9250.Magbiasx;             //callibrate Magnetic values.
      MPU9250.My -= MPU9250.Magbiasy;
@@ -355,6 +355,7 @@ int main(void)
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
       Quternion2Euler(q, Euler_angle);                                                  //Get Euler angles (roll, pitch, yaw) from Quaternions.
       //__LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
+      //Euler_angle[1] += 0.0f;
   //=========================Fuzzy part============================
 //      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);                  //roll
 //      Create_Fuzzy_Matrix();
@@ -406,6 +407,8 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
    
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
+    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
+
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n", setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
    
     //sprintf((char*)uart2_tx_data2,"%4d  %4d  %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
@@ -414,7 +417,7 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
     //sprintf((char*)uart2_tx_data2,"%4d %10.2f\r\n", (int)LPF_Euler_angle[0], pid.output[0]);
 
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 2);
+    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
  //====================Data print transmit UART part END===================
     
  //======================BLDC Motor Part===================================
