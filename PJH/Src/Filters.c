@@ -1,4 +1,4 @@
-#include "LPF.h"
+#include "Filters.h"
 
 #define tau        0.001f
 #define tau2       0.001f
