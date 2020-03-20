@@ -3,7 +3,7 @@
 
 
 //========================nRF24L01 FUNCTION==============================
-void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  pid, float* setting_angle, int* Throttle2)
+void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  pid, float* setting_angle, float Euler_angle_yaw)
 {
   switch(value)
   {
@@ -156,10 +156,9 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
       break;
       
      case 'y':
-      //setting_angle[2] = (float)((int8_t)temp);
-      *Throttle2 = (int)((int8_t)temp);
+      setting_angle[2] = Euler_angle_yaw + (float)((int8_t)temp);
 
-      printf("Yaw_Set_Point : %d\r\n",*Throttle2);           // Yaw_SetPoint 값 저장
+      printf("Yaw_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint 값 저장
       value = '\0';
       break;
       
@@ -175,7 +174,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
   }
 }
 
-void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, int* Throttle2)    // Controller에서 PID값 수신
+void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, float Euler_angle_yaw)    // Controller에서 PID값 수신
 {
   int value='\0';     // 컨트롤러에서 받은 key_input 값 저장 변수
   uint8_t dataIn[8]={0};                                     // Controller Data Receive Buffer
@@ -280,7 +279,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
 //          
 //        }
         
-      NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle,Throttle2);        //  수신된 데이터 저장 함수
+      NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle,Euler_angle_yaw);        //  수신된 데이터 저장 함수
       TM_NRF24L01_PowerUpRx();
   }
 }

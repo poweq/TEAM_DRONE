@@ -1,7 +1,7 @@
 #include "LPF.h"
 
 #define tau        0.01f
-#define tau2       0.0001f
+#define tau2       0.01f
     
 void __LPF(float * LPF_Euler_angle, float * Euler_angle, float * preEuler_angle, float deltat)
 {
@@ -16,11 +16,13 @@ void __LPF(float * LPF_Euler_angle, float * Euler_angle, float * preEuler_angle,
 
 void __LPFGyro(float * LPF_Gyro, TM_MPU9250_t* MPU9250, float * preGyro, float deltat)
 {
-    LPF_Gyro[0] = (tau * preGyro[0] + deltat * MPU9250->Gx) / (tau + deltat);
-    LPF_Gyro[1] = (tau * preGyro[1] + deltat * MPU9250->Gy) / (tau + deltat);
-    LPF_Gyro[2] = (tau * preGyro[2] + deltat * MPU9250->Gz) / (tau + deltat);
+    LPF_Gyro[0] = (tau2 * preGyro[0] + deltat * MPU9250->Gx) / (tau2 + deltat);
+    LPF_Gyro[1] = (tau2 * preGyro[1] + deltat * MPU9250->Gy) / (tau2 + deltat);
+    LPF_Gyro[2] = (tau2 * preGyro[2] + deltat * MPU9250->Gz) / (tau2 + deltat);
     
     preGyro[0] = LPF_Gyro[0];
     preGyro[1] = LPF_Gyro[1];
     preGyro[2] = LPF_Gyro[2];
 }
+
+//y = tau/(tau + dt) * pre_y + tau/(tau  + dt) * (x - pre_x) //HPF

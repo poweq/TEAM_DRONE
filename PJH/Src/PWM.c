@@ -63,21 +63,21 @@ void Motor_Drive(int Throttle, float *PID)
 //      pid.output[2] = 0.0f;
 //    }         
     
-    //MOTOR_V1 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]) + (Controller_2 * 5);
-    //MOTOR_V1 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_pitch * pid.output[1]) + (Controller_2 * 5);
-    MOTOR_V1 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+    //MOTOR_V1 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
+    //MOTOR_V1 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_pitch * pid.output[1]);
+    MOTOR_V1 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * PID[0]);
   
-    //MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]) - (Controller_2 * 5);
-    //MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_pitch) * pid.output[1]) - (Controller_2 * 5);
-    MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+    //MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
+    //MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_pitch) * pid.output[1]);
+    MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_roll * PID[0]);
   
-    //MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]) - (Controller_2 * 5);
-    //MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_pitch * pid.output[1]) - (Controller_2 * 5);
-    MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+    //MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
+    //MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_pitch * pid.output[1]);
+    MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * PID[0]);
   
-    //MOTOR_V4 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]) + (Controller_2 * 5); 
-    //MOTOR_V4 = MIN_PULSE + (Throttle * 65) + (int)((MoterGain_pitch) * pid.output[1]) + (Controller_2 * 5); 
-    MOTOR_V4 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+    //MOTOR_V4 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]); 
+    //MOTOR_V4 = MIN_PULSE + (Throttle * 65) + (int)((MoterGain_pitch) * pid.output[1]); 
+    MOTOR_V4 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_roll * PID[0]);
 
     
     if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
