@@ -174,8 +174,10 @@ int main(void)
   //================hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{2.63f, 0.2f, 0.0f}, {2.63f, 0.2f, 0.0f}, {2.5f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {5.0f, 0.0f, 1.0f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+   //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{2.63f, 0.2f, 0.0f}, {2.63f, 0.2f, 0.0f}, {2.0f, 0.005f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {1.0f, 0.5f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{11.5f, 0.28f, 2.848f}, {8.0f, 0.3f, 2.0f}, {1.0f, 0.5f, 0.3f}};
   float angular_velocity[3];                              //For double loop PID.
   //====================Quaternion VARIABLES================================
   float preGyro[3] = {0.0f, 0.0f, 0.0f};
@@ -391,11 +393,12 @@ int main(void)
     if(HAL_GetTick() - before_while >= 5000 && HAL_GetTick() - before_while < 6000)
     {
        Motor_Start();
-    //   Motor_Throttle_Up();
     }
     
     else if (HAL_GetTick() - before_while >= 6000)// && HAL_GetTick() - before_while <= 400000)
     { 
+      //Motor_Drive(Controller_1, pid.output);
+
       if (Controller_1 <= 5)
       {
         MOTOR_V1 = MIN_PULSE;

@@ -46,3 +46,58 @@ void Motor_Stop(int count, uint32_t before_while)
   }
 }
 
+void Motor_Drive(int Throttle, float *PID)
+{
+  if (Throttle <= 5)
+  {
+    MOTOR_V1 = MIN_PULSE;
+    MOTOR_V2 = MIN_PULSE;
+    MOTOR_V3 = MIN_PULSE;
+    MOTOR_V4 = MIN_PULSE;
+  }
+  
+  else if (Throttle > 5)    //Controller_1
+  {     
+//    if (fabs(LPF_Euler_angle[0]) > 15.0f || fabs(LPF_Euler_angle[1]) > 15.0f)    //Restrict yaw acting Euler angle.
+//    {           
+//      pid.output[2] = 0.0f;
+//    }         
+    
+    //MOTOR_V1 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]) + (Controller_2 * 5);
+    //MOTOR_V1 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_pitch * pid.output[1]) + (Controller_2 * 5);
+    MOTOR_V1 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+  
+    //MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]) - (Controller_2 * 5);
+    //MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_pitch) * pid.output[1]) - (Controller_2 * 5);
+    MOTOR_V2 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+  
+    //MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]) - (Controller_2 * 5);
+    //MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_pitch * pid.output[1]) - (Controller_2 * 5);
+    MOTOR_V3 = MIN_PULSE + (Throttle * 65) + (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+  
+    //MOTOR_V4 = MIN_PULSE + (Throttle * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]) + (Controller_2 * 5); 
+    //MOTOR_V4 = MIN_PULSE + (Throttle * 65) + (int)((MoterGain_pitch) * pid.output[1]) + (Controller_2 * 5); 
+    MOTOR_V4 = MIN_PULSE + (Throttle * 65) - (int)(MoterGain_roll * PID[0]);// + (Controller_2 * 5);
+
+    
+    if (MOTOR_V1 >= MAX_PULSE - MOTER_SAFTY)
+      MOTOR_V1 = MAX_PULSE -  MOTER_SAFTY;
+    else if (MOTOR_V1 <= MIN_PULSE + 700)
+      MOTOR_V1 = MIN_PULSE + 700;
+    
+    if (MOTOR_V2 >= MAX_PULSE - MOTER_SAFTY)
+      MOTOR_V2 = MAX_PULSE - MOTER_SAFTY;
+    else if (MOTOR_V2 <= MIN_PULSE + 700)
+      MOTOR_V2 = MIN_PULSE + 700;
+    
+    if (MOTOR_V3 >= MAX_PULSE - MOTER_SAFTY)
+      MOTOR_V3 = MAX_PULSE - MOTER_SAFTY;
+    else if (MOTOR_V3 <= MIN_PULSE + 700)
+      MOTOR_V3 = MIN_PULSE + 700;
+    
+    if (MOTOR_V4 >= MAX_PULSE - MOTER_SAFTY)
+      MOTOR_V4 = MAX_PULSE - MOTER_SAFTY;
+    else if (MOTOR_V4 <= MIN_PULSE + 700)
+      MOTOR_V4 = MIN_PULSE + 700;
+   }
+}

@@ -26,4 +26,7 @@ void Motor_Init(void);
 void Motor_Start(void);
 void Motor_Stop(int count, uint32_t before_while);
 
+void Motor_Drive(int Throttle, float *PID);
+//void Motor_Drive(int Throttle, float Roll_PID, Pitch_PID, Yaw_PID);
+
 #endif
