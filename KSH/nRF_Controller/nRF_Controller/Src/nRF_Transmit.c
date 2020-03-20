@@ -41,6 +41,7 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
   printf("\r\nbuffer : %c",buffer[6]);
   memset(buffer,'\0',7); // C_buff 메모리 초기화  
 }
+
 // =============ADC DATA TRANSMIT============= //
 
 void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)                
@@ -65,15 +66,13 @@ void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)
         No_Connection++;
         TM_NRF24L01_Transmit((uint8_t*)buffer);
         //nRF24_Transmit_Status();
-        if(No_Connection >= 1000)
+        if(No_Connection >= 300)
         {
-          printf("No Connection!\r\n");
+          //printf("No Connection!\r\n");
           break;
         }
       }
-  }
-  
-  while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
+  }while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
   
 }
 
@@ -98,9 +97,9 @@ void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
         No_Connection++;
         TM_NRF24L01_Transmit((uint8_t*)buffer);
         //nRF24_Transmit_Status();
-        if(No_Connection >= 1000)
+        if(No_Connection >= 300)
         {
-          printf("No Connection!\r\n");
+          //printf("No Connection!\r\n");
           break;
         }
       }
@@ -145,21 +144,20 @@ void nRF24_Transmit_Mode_Change(uint8_t adr_value)
   do {
   /* Get transmission status */
       transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-      if(!(transmissionStatus == TM_NRF24L01_Transmit_Status_Ok))
-      {
-        No_Connection++;
-        TM_NRF24L01_Transmit((uint8_t*)buffer);
-        //nRF24_Transmit_Status();
-        if(No_Connection >= 1000)
-        {
-          //printf("No Connection!\r\n");
-          break;
-        }
-      }
-  }
-  
-  while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
+//      if(!(transmissionStatus == TM_NRF24L01_Transmit_Status_Ok))
+//      {
+//        No_Connection++;
+//        TM_NRF24L01_Transmit((uint8_t*)buffer);
+//        //nRF24_Transmit_Status();
+//        if(No_Connection >= 1000)
+//        {
+//          //printf("No Connection!\r\n");
+//          break;
+//        }
+//      }
+  } while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
   memset(buffer,'\0',7); // C_buff 메모리 초기화
+  
 }
 
 // ==================TRANSMIT STATUS CHECK================= //

@@ -44,6 +44,13 @@
 /* USER CODE BEGIN PD */
 #define Roll_Set_Point                       'r'
 #define THROTTLE                            't'
+#define Pitch_Set_Point                      'p'
+#define Yaw_Set_Point                       'y'
+    
+#define _Pitch                                    0    
+#define _Roll                                      1
+#define _Yaw                                      3
+#define _Throttle                                  2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -81,7 +88,7 @@ uint8_t MyAddress[] = {
 	0xE7,
 	0xE7,
 	0xE7,
-	0x75
+	0xE7
 };
 
 /* Receiver address */
@@ -90,11 +97,11 @@ uint8_t TxAddress[] = {
 	0x7E,
 	0x7E,
 	0x7E,
-	0x57
+	0x7E
 };
 
 // nRF 통신 변수//
-uint8_t  dataIn[8];            //  TRANSMIT DATA BUFFER
+uint8_t dataIn[8];            //  TRANSMIT DATA BUFFER
 
 //디버깅 모드 변수//
 uint8_t key_input=0;
@@ -150,7 +157,6 @@ void Display_UI()
    printf(" [T].Throttle : %.0f                         [x].ESCAPE\r\n",Throttle);
    printf(" [R].Set_Roll : %d    [P].Set_Pitch : %d    [Y].Set_Yaw : %d\r\n",Set_Point[0],Set_Point[1],Set_Point[2]);
 
-   
 }
 
 void PID_THROTTLE_Transmit(uint8_t key_input, uint8_t key_tr, float* data)
@@ -163,7 +169,6 @@ void PID_THROTTLE_Transmit(uint8_t key_input, uint8_t key_tr, float* data)
   
   nRF24_Transmit(data,key_tr);
   nRF24_Transmit_Status();
-  //Display_UI();
   key_tr = '\0';
 }
 
@@ -218,7 +223,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   
-  TM_NRF24L01_Init(15,8);
+  TM_NRF24L01_Init(120,8);
   TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_250k, TM_NRF24L01_OutputPower_0dBm);
 
   /* Set my address, 5 bytes */
@@ -252,18 +257,22 @@ int main(void)
        Print_Mode(&Mode_Flag);
      }
      
-     Print_ADC_DEBUG();
-    
-//     printf("Roll : %d",ADC_DATA[1]);
-//     nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
-//     
-//     //HAL_Delay(10);
-//     
-//     printf("   Th :          %d\r\n",ADC_DATA[2]);
-//     nRF24_Transmit_ADC(&ADC_DATA[2],THROTTLE);
-//     nRF24_Transmit_Status();
+     //Print_ADC_DEBUG();
      
-     HAL_Delay(10);
+     printf("Roll : %d",ADC_DATA[1]);
+     nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
+     
+     printf("   Th : %d",ADC_DATA[2]);
+     nRF24_Transmit_ADC(&ADC_DATA[2],THROTTLE);   
+     
+     printf("   Pitch : %d",ADC_DATA[0]);
+     nRF24_Transmit_ADC(&ADC_DATA[0],Pitch_Set_Point);
+     
+     printf("   Yaw :  %d",ADC_DATA[3]);
+     nRF24_Transmit_ADC(&ADC_DATA[3],Yaw_Set_Point);
+     
+     printf("\r\n");
+     //HAL_Delay(10);
     }
    
    /*========================DEBUG MODE===================*/
@@ -291,20 +300,21 @@ int main(void)
             exit_flag=0;
             while(exit_flag ==0)
             {
+             
               nRF24_Transmit_Mode_Change(key_input);
+              
              //nRF24_Transmit_Status();
 //             TM_NRF24L01_PowerUpRx();
-//             //while (!TM_NRF24L01_DataReady() && TM_DELAY_Time() < 100);
-//
-//              printf("%d\r\n",TM_NRF24L01_DataReady());
-//              TM_NRF24L01_GetData(dataIn);
-//
-//               //*test_buf = atof((char*) dataIn);
-//               //printf("%.3f\r\n",test_buf[0]);
-//               printf("%s\r\n",dataIn);
-//               *dataIn='\0';
-             
-
+//             
+//             while (!TM_NRF24L01_DataReady() && TM_DELAY_Time() < 100);
+//             
+//             
+//             TM_NRF24L01_GetData(dataIn);
+//              //*test_buf = atof((char*) dataIn);
+//              //printf("%.3f\r\n",test_buf[0]);
+//             printf("dataIn : %s\r\n",dataIn);
+//             memset(dataIn,'\0',8);
+                        
              Display_UI();
              
             while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
@@ -369,7 +379,6 @@ int main(void)
              // ============================== IN PID DATA ============================== //          
                case '1':
                   PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_P);            //  IN_Roll_P Input and Transmit
-                  //key_input='d';
                   break;                 
                
                case '2':
@@ -381,19 +390,19 @@ int main(void)
                   break;
                  
                case '4':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_I);              //  IN_Roll_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_I);               //  IN_Roll_I Input and Transmit
                   break;
                  
                case '5':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Pitch_I);           //  IN_Pitch_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Pitch_I);             //  IN_Pitch_I Input and Transmit
                   break;
                  
                case '6':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Yaw_I);             //  IN_Yaw_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Yaw_I);              //  IN_Yaw_I Input and Transmit
                   break;
                  
                case '7':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_D);            //  IN_Roll_D Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &In_Roll_D);             //  IN_Roll_D Input and Transmit
                   break;
                  
                case '8':
@@ -426,15 +435,15 @@ int main(void)
                   break;
                  
                case 'E':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Pitch_I);           //  OUT_Pitch_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Pitch_I);            //  OUT_Pitch_I Input and Transmit
                   break;
                  
                case 'F':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Yaw_I);             //  OUT_Yaw_I Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Yaw_I);              //  OUT_Yaw_I Input and Transmit
                   break;
                  
                case 'G':
-                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Roll_D);            //  OUT_Roll_D Input and Transmit
+                  PID_THROTTLE_Transmit(key_input, key_tr, &Out_Roll_D);             //  OUT_Roll_D Input and Transmit
                   break;
                  
                case 'H':
@@ -475,7 +484,7 @@ int main(void)
                   Keyboard_Debug_Set_Point(&Set_Point[0]);
                   nRF24_Transmit_Set_Point(&Set_Point[0],key_tr);
                   nRF24_Transmit_Status();
-                  //Display_UI();
+                  
                   key_tr ='\0';
                   break;
                   
@@ -487,7 +496,7 @@ int main(void)
                   Keyboard_Debug_Set_Point(&Set_Point[1]);
                   nRF24_Transmit_Set_Point(&Set_Point[1],key_tr);
                   nRF24_Transmit_Status();
-                  //Display_UI();
+                  
                   key_tr ='\0';
                   break;
                   
@@ -499,7 +508,7 @@ int main(void)
                   Keyboard_Debug_Set_Point(&Set_Point[2]);
                   nRF24_Transmit_Set_Point(&Set_Point[2],key_tr);
                   nRF24_Transmit_Status();
-                  //Display_UI();
+                  
                   key_tr ='\0';
                   break;
                   
@@ -770,14 +779,48 @@ static void MX_GPIO_Init(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
    static uint8_t adc_count;
-  
-   if(adc_count ==2) //   
+   int temp;
+   if(adc_count == _Throttle) //   
    {
-      ADC_DATA[adc_count] =((( HAL_ADC_GetValue(hadc)/41)-100)*(-1));
+      ADC_DATA[adc_count] =(( HAL_ADC_GetValue(hadc)/41)-100)*(-1);
+      //ADC_DATA[adc_count] =HAL_ADC_GetValue(hadc);
    }
-   else
+   else if(adc_count == _Roll)
    {
-      ADC_DATA[adc_count] =(((HAL_ADC_GetValue(hadc)/41)-50) *(-1));  
+     
+     temp = (( HAL_ADC_GetValue(hadc)/58)-35);
+     if(temp <= 1 && temp >= -1)
+     {
+       temp=0;
+     }
+     
+      ADC_DATA[adc_count] = temp;
+   }
+   
+   else if(adc_count == _Yaw)
+   {
+     temp = (( HAL_ADC_GetValue(hadc)/58)-35)*(-1);
+     if(temp < 2  && temp > -2)
+     {
+       temp=0;
+     }
+     
+      ADC_DATA[adc_count] = temp;
+     //printf("%d, %d, %d"ADC)
+      //ADC_DATA[adc_count] =HAL_ADC_GetValue(hadc);
+   }
+   
+   else                                                                                 // Pitch
+   {
+     temp = (( HAL_ADC_GetValue(hadc)/58)-35)*(-1);
+     if(temp <= 1 && temp >= -1)
+     {
+       temp=0;
+     }
+     
+      ADC_DATA[adc_count] = temp;
+     //printf("%d, %d, %d"ADC)
+      //ADC_DATA[adc_count] =HAL_ADC_GetValue(hadc);
    }
    adc_count++;
 
