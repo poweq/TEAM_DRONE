@@ -5,6 +5,7 @@
 
 void __LPF(float * LPF_Euler_angle, float * Euler_angle, float * preEuler_angle, float deltat);
 void __LPFGyro(float * LPF_Gyro, TM_MPU9250_t* MPU9250, float * preGyro, float deltat);
+void __HPF(float * y, float* x, float * pre_y, float pre_x, float deltat);
 
 
 #endif
