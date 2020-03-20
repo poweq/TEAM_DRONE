@@ -5,33 +5,24 @@
 #define ZE_err          0.0f
 #define PS_err          20.0f
 #define PB_err          45.0f
-#define DNB_derr        -30.0f
-#define DNS_derr        -15.0f
+#define DNB_derr        -25.0f
+#define DNS_derr        -10.0f
 #define DZE_derr        0.0f
-#define DPS_derr        15.0f
-#define DPB_derr        30.0f
+#define DPS_derr        10.0f
+#define DPB_derr        25.0f
 
 _Fuzzy_stru Fuzzy_Matrix[5][5];
 
 float NB, NS, ZE, PS, PB;
 float DNB, DNS, DZE, DPS, DPB;
-//float Kp, Ki, Kd, out, err_sum, error, d_err, prev_err;
 
 _Fuzzy_stru Kp_small, Kp_medismall, Kp_medium, Kp_medilarge, Kp_large;
 _Fuzzy_stru Ki_small, Ki_medismall, Ki_medium, Ki_medilarge, Ki_large;
 _Fuzzy_stru Kd_small, Kd_medismall, Kd_medium, Kd_medilarge, Kd_large;
 
-
 const float Kp_s[3] = {9.0f, 9.0f, 3.0f}, Kp_m[3] = {10.0f, 10.0f, 3.5f}, Kp_b[3] = {11.0f, 11.0f, 4.0f}, Kp_vb[3] = {12.0f, 12.0f, 4.5f};
 const float Ki_s[3] = {0.23f, 0.23f, 0.0f}, Ki_m[3] = {0.27f, 0.27f, 0.0f}, Ki_b[3] = {0.29f, 0.29f, 0.0f}, Ki_vb[3] = {0.35f, 0.35f, 0.0f};
 const float Kd_s[3] = {2.4f, 2.4f, 1.0f}, Kd_m[3] = {3.0f, 3.0f, 1.2f}, Kd_b[3] = {3.399f, 3.399f, 1.4f}, Kd_vb[3] = {3.5f, 3.5f, 1.6f};
-
-float Rule_Base[5][5][3] = {{{101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}, {103.0f, 12.0f, 1.0f}, {104.0f, 14.0f, 1.0f}, {102.0f, 14.0f, 3.0f}},
-                            {{101.0f, 14.0f, 4.0f}, {102.0f, 13.0f, 4.0f}, {104.0f, 11.0f, 2.0f}, {103.0f, 13.0f, 2.0f}, {102.0f, 14.0f, 4.0f}},
-                            {{101.0f, 13.0f, 4.0f}, {102.0f, 12.0f, 3.0f}, {104.0f, 11.0f, 2.0f}, {102.0f, 12.0f, 3.0f}, {101.0f, 13.0f, 4.0f}},
-                            {{102.0f, 14.0f, 4.0f}, {103.0f, 13.0f, 2.0f}, {104.0f, 11.0f, 2.0f}, {102.0f, 13.0f, 4.0f}, {101.0f, 14.0f, 4.0f}},
-                            {{102.0f, 14.0f, 3.0f}, {104.0f, 14.0f, 1.0f}, {103.0f, 12.0f, 1.0f}, {101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}}};
-
 
 void fuzzy_init() {
     int i, j, k, t;
@@ -41,7 +32,11 @@ void fuzzy_init() {
 
     for (t = 0; t<3; t++)       //roll, pitch, yaw
     {
-      
+      float Rule_Base[5][5][3] = {{{101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}, {103.0f, 12.0f, 1.0f}, {104.0f, 14.0f, 1.0f}, {102.0f, 14.0f, 3.0f}},
+                            {{101.0f, 14.0f, 4.0f}, {102.0f, 13.0f, 4.0f}, {104.0f, 11.0f, 2.0f}, {103.0f, 13.0f, 2.0f}, {102.0f, 14.0f, 4.0f}},
+                            {{101.0f, 13.0f, 4.0f}, {102.0f, 12.0f, 3.0f}, {104.0f, 11.0f, 2.0f}, {102.0f, 12.0f, 3.0f}, {101.0f, 13.0f, 4.0f}},
+                            {{102.0f, 14.0f, 4.0f}, {103.0f, 13.0f, 2.0f}, {104.0f, 11.0f, 2.0f}, {102.0f, 13.0f, 4.0f}, {101.0f, 14.0f, 4.0f}},
+                            {{102.0f, 14.0f, 3.0f}, {104.0f, 14.0f, 1.0f}, {103.0f, 12.0f, 1.0f}, {101.0f, 14.0f, 4.0f}, {101.0f, 14.0f, 4.0f}}};      
     for (i= 0; i<5; i++)
     {
       for (j=0;j<5;j++)
