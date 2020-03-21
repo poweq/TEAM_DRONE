@@ -25,9 +25,9 @@ void __LPFGyro(float * LPF_Gyro, TM_MPU9250_t* MPU9250, float * preGyro, float d
     preGyro[2] = LPF_Gyro[2];
 }
 
-void __HPF(float * y, float* x, float * pre_y, float pre_x, float deltat)
-{
-    y = tau/(tau + deltat) * pre_y + tau/(tau + deltat) * (x - pre_x);
-    pre_y = y;
-    pre_x = x;
-}
+//void __HPF(float * y, float* x, float * pre_y, float pre_x, float deltat)
+//{
+//    y = tau/(tau + deltat) * pre_y + tau/(tau + deltat) * (x - pre_x);
+//    pre_y = y;
+//    pre_x = x;
+//}

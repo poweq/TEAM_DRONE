@@ -58,7 +58,7 @@ void Motor_Drive(int Throttle, float *PID)
   
   else if (Throttle > 5)    //Controller_1
   {     
-//    if (fabs(LPF_Euler_angle[0]) > 15.0f || fabs(LPF_Euler_angle[1]) > 15.0f)    //Restrict yaw acting Euler angle.
+//    if (fabs(Euler_angle[0]) > 15.0f || fabs(Euler_angle[1]) > 15.0f)    //Restrict yaw acting Euler angle.
 //    {           
 //      pid.output[2] = 0.0f;
 //    }         
