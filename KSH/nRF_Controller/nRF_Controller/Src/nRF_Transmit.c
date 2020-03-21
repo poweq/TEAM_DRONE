@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 TM_NRF24L01_Transmit_Status_t transmissionStatus;
-uint8_t buffer[8];
+uint8_t buffer[8];                                              // Transmit data buffer
 extern int count;
 
 //  =============PID DATA TRANSMIT============= //

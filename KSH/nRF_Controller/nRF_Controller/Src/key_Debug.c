@@ -44,11 +44,14 @@ void Keyboard_Debug(float* temp,uint8_t key_flag)
             {
               C_count=0;
             }
+            
+            
           }
            *temp = atof((char*)C_buff);
             key_input ='\0';
             break;
          }
+        
         key_flag = '\0';
       }
       
@@ -74,10 +77,10 @@ void Keyboard_Debug(float* temp,uint8_t key_flag)
        key_flag = '\0';
      }
       
-      else if(key_flag=='t')                            // key_input값이 t 를 받았을때
+      else if(key_flag=='t' || key_flag == 'T')                            // key_input값이 t 를 받았을때
       {
         while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
-        if(key_input == 't')
+        if(key_input == 't' || key_flag == 'T')
        {
          
          if(C_count<2)   // 2글자 이하만 입력 받음
