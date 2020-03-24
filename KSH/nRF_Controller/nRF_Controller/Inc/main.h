@@ -73,6 +73,12 @@ void Error_Handler(void);
 #define CSNpin_GPIO_Port GPIOA
 #define CEpin_Pin GPIO_PIN_6
 #define CEpin_GPIO_Port GPIOA
+#define button2_Pin GPIO_PIN_10
+#define button2_GPIO_Port GPIOC
+#define button2_EXTI_IRQn EXTI15_10_IRQn
+#define button3_Pin GPIO_PIN_12
+#define button3_GPIO_Port GPIOC
+#define button3_EXTI_IRQn EXTI15_10_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
