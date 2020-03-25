@@ -9,7 +9,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
   {
     case 't':
       *Throttle = temp_int;
-      printf("Throttle : %d\r\n",temp_int);                                      // 쓰로틀 값 저장
+      //printf("Throttle : %d\r\n",temp_int);                                      // 쓰로틀 값 저장
       value = '\0';
       break;
       
@@ -145,20 +145,20 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
       
      case 'r':
       setting_angle[0] = (float)((int8_t)temp);
-      printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint 값 저장
+      //printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint 값 저장
       value = '\0';
       break;
        
      case 'p':
       setting_angle[1] = (float)((int8_t)temp);
-      printf("Pitch_Set_Point : %.0f\r\n",setting_angle[1]);           // Pitch_SetPoint 값 저장
+      //printf("Pitch_Set_Point : %.0f\r\n",setting_angle[1]);           // Pitch_SetPoint 값 저장
       value = '\0';
       break;
       
      case 'y':
       setting_angle[2] = Euler_angle_yaw + (float)((int8_t)temp);
 
-      printf("Yaw_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint 값 저장
+      //printf("Yaw_Set_Point : %.0f\r\n",setting_angle[2]);           // Yaw_SetPoint 값 저장
       value = '\0';
       break;
       

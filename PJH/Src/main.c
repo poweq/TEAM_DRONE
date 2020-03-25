@@ -28,7 +28,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-//#include "fuzzy.h"
 #include "stm32f4xx_hal.h"
 #include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
@@ -71,7 +70,7 @@ TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
@@ -98,7 +97,7 @@ static void MX_TIM5_Init(void);
 //========================GLOBAL VARIABLES=========================
 //=================================================================
 //======================UART variables=============================
-uint8_t uart1_tx_to_MFC[100];                             //Trandmit variable.
+uint8_t uart1_tx_to_MFC[20];                             //Trandmit variable.
 uint8_t uart1_tx_to_MFC2[100];                           //Trandmit variable.
 uint8_t uart2_tx_data2[255];
 uint8_t uart2_tx_data[255];
@@ -106,6 +105,16 @@ uint8_t uart2_tx_data[255];
 uint8_t pid_buffer[71];
 int num = 0;
 uint8_t data;
+
+//static uint8_t tim_flag;
+
+float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.  
+
+
+uint16_t txLen = 0;
+
+volatile __IO uint8_t  DMAFlag = 0;
+volatile __IO uint8_t  DMAFlag2 = 0;
 //=======================INIT Variables=============================
 //=======================MPU9250 variables==========================
 //==================================================================
@@ -149,7 +158,7 @@ int main(void)
   //=======================INIT Variables=============================
   TM_MPU9250_t    MPU9250;                                //MPU9250 Sensor structure.
   __PID           pid;                                    //PID Controll structure.
-  //=====================Flag and Time flag=================================    
+  //=====================Flags and Time_flags=================================    
   uint32_t Now = 0;                                       //Used to calculate integration interval.
   uint32_t lastUpdate = 0;                                //Used to calculate integration interval.
   uint32_t before_while = 0;                              //Time of Before entering while loop.
@@ -166,25 +175,16 @@ int main(void)
   //====================Quaternion VARIABLES================================
   float deltat = 0.0f;                                    //integration interval for filter schemes.
   float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
-  //====================Fuzzy Variables=====================================
-  
-  float prev_err[3];                                    //Prev_Setting_point - Euler_angle.
-  //========================================================================
-  int Controller_1 = 20;                                  //Moter Throttle.
-  //================hanging Variables from external controll================
-  float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
-  float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.3f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float pid_val[3][3] = {{3.0f, 0.2f, 0.0f}, {3.0f, 0.2f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {4.0f, 0.0f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{10.0f, 0.28f, 3.4f}, {9.0f, 0.32f, 3.41f}, {4.5f, 0.0f, 0.3f}};
-  float angular_velocity[3];                              //For double loop PID.
-  //====================Quaternion VARIABLES================================
-  float preGyro[3] = {0.0f, 0.0f, 0.0f};
-  float LPF_Gyro[3] = {0.0f, 0.0f, 0.0f};
-  float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.
+  //float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.  
+  //====================Fuzzy Variables=====================================  
+  float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
+  //==========================PWM Variables=================================
+  int Controller_1 = 15;                                  //Moter Throttle.
+  //===========================FILTER's Variables===========================
   float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};           //Used in LPF.
   float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};          //Used in LPF.
+  float preGyro[3] = {0.0f, 0.0f, 0.0f};                  //Used in GyroLPF.
+  float LPF_Gyro[3] = {0.0f, 0.0f, 0.0f};                 //Used in GyroLPF.
   //===========================MPU9250 Variables============================
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; //MPU9250 Accell and Gyro Self_Test.
   float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f};            //MPU9250 Magnetometer Self_Test.
@@ -193,8 +193,15 @@ int main(void)
   //========================nRF24L01 VARIABLES==============================
   int temp_int;                                           // uint8_t
   float temp;                                             // uint8_t
-  
-  /* USER CODE END 1 */   
+  //================Hanging Variables from external controll================
+  float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
+  float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
+  //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.3f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{3.0f, 0.2f, 0.0f}, {2.0f, 0.2f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {4.0f, 0.0f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{10.0f, 0.28f, 3.4f}, {9.0f, 0.32f, 3.41f}, {3.5f, 0.0f, 0.3f}};
+  float angular_velocity[3];                              //For double loop PID.
+  /* USER CODE END 1 */  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -204,9 +211,7 @@ int main(void)
   /* USER CODE BEGIN Init */
   __INIT__MPU9250(&MPU9250);
   MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);
-  if (0){
-    calibrateMPU9250(&MPU9250);
-  }
+  //calibrateMPU9250(&MPU9250);   
   TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
   TM_MPU9250_ReadMagASA(&MPU9250);      //Get MPU9250 Magnetic ASA data.
   pid_init(&pid, pid_val, inpid_val);
@@ -230,7 +235,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   MX_TIM5_Init();
-  /* USER CODE BEGIN 2 */  
+  /* USER CODE BEGIN 2 */
   //===================Calibration Part=========================
   if(CaliFlag == 1)    
   {    
@@ -258,13 +263,13 @@ int main(void)
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   }
 
-  //  ESC_Calibration();  
+    //ESC_Calibration();  
     Motor_Init();  
   //  Motor_Start();
 
   //*********************************************
-    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          
-    memset(pid_buffer,'\0',sizeof(pid_buffer));           
+    //__HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);          
+    //memset(pid_buffer,'\0',sizeof(pid_buffer));           
   //********************************************
   
   TM_NRF24L01_Init(120,8);  
@@ -276,21 +281,26 @@ int main(void)
   }
   //===================Get Biases From Flash Memory END=======================  
   before_while = HAL_GetTick(); //Get time of before while loop.
-  lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.
-  
+  lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.  
+  /* Test */
+  //HAL_TIM_Base_Start_IT(&htim2);
+  //HAL_UART_Receive_IT(&huart1, &data, 1);
+    DMAFlag = 1;
+    DMAFlag2 = 1;
   /* USER CODE END 2 */
+ 
+ 
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {         
+  {        
     //int aa = HAL_GetTick();     //Get time.    
-    //HAL_UART_Receive_IT(&huart1, &data, 1);             //PID PPID
-  //========================Get MPU9250 data===========================  
+  //========================Get MPU9250 data==============================
     TM_MPU9250_ReadAcce(&MPU9250);      //get Accel data.
     TM_MPU9250_ReadGyro(&MPU9250);      //get Gyro data.
     TM_MPU9250_ReadMag(&MPU9250);       //get Magnetic data.
-  //======================Get MPU9250 data END===========================  
+  //======================Get MPU9250 data END============================
   //===Subtract Automatic Accelometer Gyroscope and Magnetic filed bias===
 
      MPU9250.Ax -= MPU9250.Accbiasx;             //callibrate Accel values.
@@ -309,7 +319,7 @@ int main(void)
      MPU9250.My *= MPU9250.Magscaley;
      MPU9250.Mz *= MPU9250.Magscalez;
 
-  //=======Subtract Automatic Accelometer Gyroscope and Magnetic filed bias END=======
+  //====Subtract Automatic Accelometer Gyroscope and Magnetic filed bias END====
   //==================Init settiing angle=====================
     if (wait_flag < init_angle_average)
     {
@@ -330,19 +340,20 @@ int main(void)
       wait_flag ++;
     }
   //================Init settiing angle END====================
-  //====================Get delta T ===========================
+  //====================Get delta_t============================
     Now = HAL_GetTick();                //Get current time.
-    deltat += (Now - lastUpdate);       //Set integration time by time elapsed since last filter update (milliseconds).
+    deltat += (Now - lastUpdate);       //Set integration time by time elapsed since+ last filter update (milliseconds).
     lastUpdate = Now;                   //Update lastupdate time to current time.
   //==================Get delta T END==========================
     //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
   //===========================================================
-    angular_velocity[0] = MPU9250.Gx / 500.0f * deltat;                //angular velocity (degree/2ms(*2))
-    angular_velocity[1] = MPU9250.Gy / 500.0f * deltat;
-    angular_velocity[2] = MPU9250.Gz / 500.0f * deltat;    
+    angular_velocity[0] = MPU9250.Gx / 500.0f * dt;                        //angular velocity (degree/2ms(*2))
+    angular_velocity[1] = MPU9250.Gy / 500.0f * dt;
+    angular_velocity[2] = MPU9250.Gz / 500.0f * dt;    
     if (deltat >= dt)                                                   //Update term.(500Hz.dt=2)
     {
+      printf("%f\r\n",deltat);
       deltat /= 1000.0f;                                                             //Make millisecond to second.
       //__LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
@@ -385,6 +396,7 @@ int main(void)
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
     //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
     //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
+    //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
     
     //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
  //====================Data print transmit UART part END===================
@@ -421,52 +433,43 @@ int main(void)
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) - (int)(MoterGain_pitch * pid.output[1]);
         MOTOR_V1 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_pitch * pid.output[1]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]);
-      
+        if (MOTOR_V1 >= MAX_PULSE)// - MOTER_SAFTY)
+          MOTOR_V1 = MAX_PULSE;// -  MOTER_SAFTY;
+        else if (MOTOR_V1 <= MIN_PULSE + 700)
+          MOTOR_V1 = MIN_PULSE + 700;
+        
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) - (int)((MoterGain_pitch) * pid.output[1]);
         MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_pitch) * pid.output[1]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_roll * pid.output[0]);
-    
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
-        MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_pitch * pid.output[1]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]);
- 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_yaw * pid.output[2]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]); 
-        MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) + (int)((MoterGain_pitch) * pid.output[1]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_roll * pid.output[0]);
-
-        if (MOTOR_V1 >= MAX_PULSE)// - MOTER_SAFTY)
-          MOTOR_V1 = MAX_PULSE;// -  MOTER_SAFTY;
-        else if (MOTOR_V1 <= MIN_PULSE + 700)
-          MOTOR_V1 = MIN_PULSE + 700;
-        
         if (MOTOR_V2 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V2 = MAX_PULSE;// - MOTER_SAFTY;
         else if (MOTOR_V2 <= MIN_PULSE + 700)
           MOTOR_V2 = MIN_PULSE + 700;
         
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_yaw * pid.output[2]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]) + (int)(MoterGain_pitch * pid.output[1]);
+        MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_pitch * pid.output[1]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_roll * pid.output[0]);
         if (MOTOR_V3 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V3 = MAX_PULSE;// - MOTER_SAFTY;
         else if (MOTOR_V3 <= MIN_PULSE + 700)
           MOTOR_V3 = MIN_PULSE + 700;
         
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) + (int)(MoterGain_yaw * pid.output[2]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)((MoterGain_roll) * pid.output[0]) + (int)((MoterGain_pitch) * pid.output[1]); 
+        MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) + (int)((MoterGain_pitch) * pid.output[1]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 65) - (int)(MoterGain_roll * pid.output[0]);
         if (MOTOR_V4 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V4 = MAX_PULSE;// - MOTER_SAFTY;
         else if (MOTOR_V4 <= MIN_PULSE + 700)
           MOTOR_V4 = MIN_PULSE + 700;
        }
-    }  
-    
-    //Motor_Stop(400000, before_while);    
-    //sprintf((char*)uart2_tx_data2,"%10d  %10d  %10d  %10d\r\n",  MOTOR_V1, MOTOR_V2, MOTOR_V3, MOTOR_V4);
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
-    
+    }    
 //======================BLDC Motor Part END===================================
     
 //======================NRF24L01 Receive Part=================================    
@@ -474,13 +477,34 @@ int main(void)
 //=====================NRF24L01 Receive Part END==============================  
     
 //========================Data transmit part==================================
-    if(UART_flag ==0)
+  
+  //UART_flag++;
+    if(UART_flag ==0 )
     {
       //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2]);
-      //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
-      //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),5);
+      //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+      //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+
+      //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),2);
       //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
+      //HAL_UART_Transmit_DMA(&huart1, uart1_tx_to_MFC, 15);
+      //HAL_UART_Transmit_DMA(&huart2, uart1_tx_to_MFC, 15);
     }
+
+    if(DMAFlag2)
+    {     
+      DMAFlag2 = 0;
+      //sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+      HAL_UART_Transmit_DMA(&huart1, uart1_tx_to_MFC, sizeof(uart1_tx_to_MFC));
+
+    }
+    if(DMAFlag)
+    {     
+      DMAFlag = 0;
+      sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+      //HAL_UART_Transmit_DMA(&huart2, uart1_tx_to_MFC, sizeof(uart1_tx_to_MFC));
+    }
+      
 //*********************************************************************************
   
     if(num>=70)
@@ -930,14 +954,15 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA1_Stream6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA2_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 
 }
 
@@ -970,6 +995,77 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+////  static uint32_t count1 = 0;
+////  count1++;
+////  if((count1 % 100)==0)
+////  {
+//  if(htim->Instance == htim2.Instance)
+//  {
+//    //printf("ss\r\n");
+//    tim_flag = 1;
+//  }
+//  //}
+//  /* NOTE : This function should not be modified, when the callback is needed,
+//            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
+//   */
+//}
+//void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
+//{
+//  //memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+//  sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+//}
+
+//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+//{
+//  if ((huart->Instance) == (huart2.Instance))
+//  {
+//   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+//   DMAFlag = 1;
+//  }
+//  
+//  if ((huart->Instance) == (huart1.Instance))
+//  {
+//   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+//         sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+//
+//   DMAFlag2 = 1;
+//  }    
+//}
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if ((huart->Instance) == (huart2.Instance))
+  {
+   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+   DMAFlag = 1;
+  }
+  
+  if ((huart->Instance) == (huart1.Instance))
+  {
+   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+   DMAFlag2 = 1;
+  }    
+}
+
+void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
+{
+  if ((huart->Instance) == (huart2.Instance))
+  {
+   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+   //DMAFlag = 1;
+  }
+  
+  if ((huart->Instance) == (huart1.Instance))
+  {
+   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
+   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+   //DMAFlag2 = 1;
+  }    
+}
 /* USER CODE END 4 */
 
 /**
