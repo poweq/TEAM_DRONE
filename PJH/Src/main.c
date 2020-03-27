@@ -23,8 +23,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -68,11 +68,6 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
 
-UART_HandleTypeDef huart1;
-UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart1_tx;
-DMA_HandleTypeDef hdma_usart2_tx;
-
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -89,6 +84,8 @@ static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
+void UART1_TX_string(char* str);
+void UART2_TX_string(char* str);
 
 /* USER CODE END PFP */
 
@@ -97,24 +94,17 @@ static void MX_TIM5_Init(void);
 //========================GLOBAL VARIABLES=========================
 //=================================================================
 //======================UART variables=============================
-uint8_t uart1_tx_to_MFC[20];                             //Trandmit variable.
-uint8_t uart1_tx_to_MFC2[100];                           //Trandmit variable.
-uint8_t uart2_tx_data2[255];
+uint8_t Tx_buffer[50];                                   //Transmit buffer.
+//uint8_t Rx_buffer[50];                                   //Receive buffer.
+uint8_t uart1_tx_to_MFC[100];                           //Transmit buffer.
 uint8_t uart2_tx_data[255];
+uint8_t data;
 
 uint8_t pid_buffer[71];
 int num = 0;
-uint8_t data;
 
-//static uint8_t tim_flag;
-
-float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.  
-
-
-uint16_t txLen = 0;
-
-volatile __IO uint8_t  DMAFlag = 0;
-volatile __IO uint8_t  DMAFlag2 = 0;
+volatile __IO uint8_t  DMA_Rx_Flag = 0;
+volatile __IO uint8_t  DMA_Tx_Flag = 0;
 //=======================INIT Variables=============================
 //=======================MPU9250 variables==========================
 //==================================================================
@@ -139,11 +129,12 @@ uint8_t MyAddress[] = {                                 // Controller
 //========================================================================
 
 //==================printf FUNCTION====================
-int fputc(int ch ,FILE *f)
-{
- HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
- return ch;
-}
+//int fputc(int ch ,FILE *f)
+//{
+//  UART2_TX_string((char *)ch);
+//  //HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
+//  return ch;
+//}
 //=====================================================
 
 /* USER CODE END 0 */
@@ -175,7 +166,7 @@ int main(void)
   //====================Quaternion VARIABLES================================
   float deltat = 0.0f;                                    //integration interval for filter schemes.
   float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                  // vector to hold quaternion.
-  //float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.  
+  float Euler_angle[3] = {0.0f, 0.0f, 0.0f};              //roll pitch yaw.  
   //====================Fuzzy Variables=====================================  
   float prev_err[3];                                      //Prev_Setting_point - Euler_angle.
   //==========================PWM Variables=================================
@@ -196,12 +187,13 @@ int main(void)
   //================Hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  //float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {3.0f, 0.005f, 0.0f}, {2.3f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float pid_val[3][3] = {{3.0f, 0.2f, 0.0f}, {2.0f, 0.2f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {4.0f, 0.0f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{10.0f, 0.28f, 3.4f}, {9.0f, 0.32f, 3.41f}, {3.5f, 0.0f, 0.3f}};
+  float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {2.5f, 0.2f, 0.0f}, {2.3f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float pid_val[3][3] = {{3.0f, 0.2f, 0.0f}, {2.0f, 0.2f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {4.0f, 0.0f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float inpid_val[3][3] = {{10.0f, 0.28f, 3.4f}, {9.0f, 0.32f, 3.41f}, {3.5f, 0.0f, 0.3f}};
   float angular_velocity[3];                              //For double loop PID.
-  /* USER CODE END 1 */  
+  /* USER CODE END 1 */
+  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -237,7 +229,7 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   //===================Calibration Part=========================
-  if(CaliFlag == 1)    
+  if(CaliFlag == 1)    //1 is unable.
   {    
     HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_1);
     HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
@@ -245,8 +237,8 @@ int main(void)
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
     
     MPU9250SelfTest(&MPU9250, &Self_Test[0],TM_MPU9250_Device_0);  
-    calibrateMPU9250(&MPU9250);   
-    Delayms(1000);     
+    //calibrateMPU9250(&MPU9250);   
+    Delayms(500);     
     TM_MPU9250_Init(&MPU9250, TM_MPU9250_Device_0);
     TM_MPU9250_ReadMagASA(&MPU9250);            //Get MPU9250 Magnetic ASA data.
     AK8963SelfTest(&MPU9250, &Self_Test_Mag[0]);
@@ -282,14 +274,11 @@ int main(void)
   //===================Get Biases From Flash Memory END=======================  
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.  
-  /* Test */
-  //HAL_TIM_Base_Start_IT(&htim2);
-  //HAL_UART_Receive_IT(&huart1, &data, 1);
-    DMAFlag = 1;
-    DMAFlag2 = 1;
+  
+  LL_USART_EnableIT_RXNE(USART1);
+  LL_USART_EnableIT_RXNE(USART2);
+  
   /* USER CODE END 2 */
- 
- 
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -313,7 +302,7 @@ int main(void)
      
      MPU9250.Mx -= MPU9250.Magbiasx;             //callibrate Magnetic values.
      MPU9250.My -= MPU9250.Magbiasy;
-     MPU9250.Mz -= MPU9250.Magbiasz;
+     MPU9250.Mz -= MPU9250.Magbiasz;   
      
      MPU9250.Mx *= MPU9250.Magscalex;            //callibrate Magnetic values.
      MPU9250.My *= MPU9250.Magscaley;
@@ -345,15 +334,12 @@ int main(void)
     deltat += (Now - lastUpdate);       //Set integration time by time elapsed since+ last filter update (milliseconds).
     lastUpdate = Now;                   //Update lastupdate time to current time.
   //==================Get delta T END==========================
-    //sprintf((char*)uart2_tx_data2,"%10.5f\r\n",deltat);    
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
   //===========================================================
     angular_velocity[0] = MPU9250.Gx / 500.0f * dt;                        //angular velocity (degree/2ms(*2))
     angular_velocity[1] = MPU9250.Gy / 500.0f * dt;
     angular_velocity[2] = MPU9250.Gz / 500.0f * dt;    
     if (deltat >= dt)                                                   //Update term.(500Hz.dt=2)
     {
-      printf("%f\r\n",deltat);
       deltat /= 1000.0f;                                                             //Make millisecond to second.
       //__LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
@@ -382,23 +368,26 @@ int main(void)
       deltat = 0.0f;                                             //reset deltat.
     }
 //=====================Data print transmit UART part===============        
-    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f \r\n",  \
+      MPU9250.Mx, MPU9250.My, MPU9250.Mz);
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, LPF_Gyro[0],LPF_Gyro[1], LPF_Gyro[2]);
-    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2], Self_Test[3], Self_Test[4], Self_Test[5]);
-    //sprintf((char*)uart2_tx_data2,"%f  %f  %f\r\n", Self_Test_Mag[0], Self_Test_Mag[1], Self_Test_Mag[2]);
-    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f  %f  %f  %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz, MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz);
-    //sprintf((char*)uart2_tx_data2,"%f  %f  %f  %f  %f  %f\r\n", MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz, MPU9250.Magscalex, MPU9250.Magscaley, MPU9250.Magscalez);
-    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);   
-    //sprintf((char*)uart2_tx_data2,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\r\n", pid.iKp[0], pid.iKi[0], pid.iKd[0], pid.iKp[1], pid.iKi[1], pid.iKd[1],pid.iKp[2], pid.iKi[2], pid.iKd[2]);   
+    //sprintf((char*)uart2_tx_data,"%f  %f  %f  %f  %f  %f\r\n", Self_Test[0], Self_Test[1], Self_Test[2], Self_Test[3], Self_Test[4], Self_Test[5]);
+    //sprintf((char*)uart2_tx_data,"%f  %f  %f\r\n", Self_Test_Mag[0], Self_Test_Mag[1], Self_Test_Mag[2]);
+    //sprintf((char*)uart2_tx_data,"%f %f %f %f %f %f %f %f %f\r\n", MPU9250.Accbiasx, MPU9250.Accbiasy, MPU9250.Accbiasz, MPU9250.Gybiasx, MPU9250.Gybiasy, MPU9250.Gybiasz, MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz);
+    //sprintf((char*)uart2_tx_data,"%f %f %f %f %f %f\r\n", MPU9250.Magbiasx, MPU9250.Magbiasy, MPU9250.Magbiasz, MPU9250.Magscalex, MPU9250.Magscaley, MPU9250.Magscalez);
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f\r\n", q[0], q[1], q[2], q[3]);   
+    //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\r\n", pid.iKp[0], pid.iKi[0], pid.iKd[0], pid.iKp[1], pid.iKi[1], pid.iKd[1],pid.iKp[2], pid.iKi[2], pid.iKd[2]);   
 
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
-    //sprintf((char*)uart2_tx_data2,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
-    //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
-    //sprintf((char*)uart2_tx_data2,"%4d %4d %4d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+    //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);
+    //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
+    //sprintf((char*)uart2_tx_data,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
+    //sprintf((char*)uart2_tx_data,"%4d %4d %4d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
     
-    //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 10);
+    //UART2_TX_string((char *)uart2_tx_data);
+    
  //====================Data print transmit UART part END===================
     
  //======================BLDC Motor Part===================================
@@ -478,35 +467,24 @@ int main(void)
     
 //========================Data transmit part==================================
   
-  //UART_flag++;
-    if(UART_flag ==0 )
-    {
-      //sprintf((char*)uart1_tx_to_MFC,"%.2f,%.2f,%.2f", LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2]);
-      //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-      //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-
-      //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC ,sizeof(uart1_tx_to_MFC),2);
-      //HAL_UART_Transmit(&huart2,uart2_tx_data2 ,sizeof(uart2_tx_data2), 5);
-      //HAL_UART_Transmit_DMA(&huart1, uart1_tx_to_MFC, 15);
-      //HAL_UART_Transmit_DMA(&huart2, uart1_tx_to_MFC, 15);
-    }
-
-    if(DMAFlag2)
+//    if(UART_flag ==0 )
+//    {      
+//      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+//      UART1_TX_string((char *)Tx_buffer);
+//      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+//      UART2_TX_string((char *)Tx_buffer);
+//    }
+    //DMA_Tx_Flag++;
+    if(DMA_Tx_Flag == 0)
     {     
-      DMAFlag2 = 0;
-      //sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-      HAL_UART_Transmit_DMA(&huart1, uart1_tx_to_MFC, sizeof(uart1_tx_to_MFC));
+      DMA_Tx_Flag = 0;
+      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+      UART1_TX_string((char *)Tx_buffer);       // stm32 to esp32 USART part(USART1).
+      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+      UART2_TX_string((char *)Tx_buffer);       // stm32 to PC serial part(USART2).
+    }
 
-    }
-    if(DMAFlag)
-    {     
-      DMAFlag = 0;
-      sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-      //HAL_UART_Transmit_DMA(&huart2, uart1_tx_to_MFC, sizeof(uart1_tx_to_MFC));
-    }
-      
-//*********************************************************************************
-  
+//===========================outPID inPID change part==============================  
     if(num>=70)
     {
       UART_flag=1;
@@ -519,50 +497,46 @@ int main(void)
       UART_Now = HAL_GetTick();               //Get current time.
       UART_deltat += (UART_Now - UART_Pre);       //Set integration time by time elapsed since last filter update (milliseconds).
       UART_Pre = UART_Now;
-      //UART_lastUpdate = UART_Now;                   //Update lastupdate time to current time.
       if (UART_deltat >= 10)
       {
-          //HAL_UART_Transmit(&huart2,pid_buffer,sizeof(pid_buffer), 10);
           if (strstr((char*)pid_buffer,"B") != NULL)               //Outer PID.
           {
             Parsing_PID_val(pid_buffer, pid_val);
-            sprintf((char*)uart1_tx_to_MFC2,"PPP%6.3fPPI%6.3fPPD%6.3fPRRP%6.3fRRI%6.3fRRD%6.3fRYYP%6.3fYYI%6.3fYYD%6.3fY\r\n", pid_val[1][0], pid_val[1][1], pid_val[1][2], pid_val[0][0], pid_val[0][1], pid_val[0][2], pid_val[2][0], pid_val[2][1], pid_val[2][2]);
+            sprintf((char*)uart1_tx_to_MFC,"PPP%6.3fPPI%6.3fPPD%6.3fPRRP%6.3fRRI%6.3fRRD%6.3fRYYP%6.3fYYI%6.3fYYD%6.3fY\r\n", pid_val[1][0], pid_val[1][1], pid_val[1][2], pid_val[0][0], pid_val[0][1], pid_val[0][2], pid_val[2][0], pid_val[2][1], pid_val[2][2]);
             pid_gain_update(&pid, pid_val, inpid_val);
-            //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
-            //HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             memset(pid_buffer,'\0',sizeof(pid_buffer));
-            memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
+            memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
             num = 0;
           }
           else if (strstr((char*)pid_buffer,"A") != NULL)          //Inner PID.
           {
             Parsing_inPID_val(pid_buffer, inpid_val);
-            sprintf((char*)uart1_tx_to_MFC2,"PP%6.3fPI%6.3fPD%6.3fPRP%6.3fRI%6.3fRD%6.3fRYP%6.3fYI%6.3fYD%6.3fY\r\n", inpid_val[1][0], inpid_val[1][1], inpid_val[1][2], inpid_val[0][0], inpid_val[0][1], inpid_val[0][2], inpid_val[2][0], inpid_val[2][1], inpid_val[2][2]);
+            sprintf((char*)uart1_tx_to_MFC,"PP%6.3fPI%6.3fPD%6.3fPRP%6.3fRI%6.3fRD%6.3fRYP%6.3fYI%6.3fYD%6.3fY\r\n", inpid_val[1][0], inpid_val[1][1], inpid_val[1][2], inpid_val[0][0], inpid_val[0][1], inpid_val[0][2], inpid_val[2][0], inpid_val[2][1], inpid_val[2][2]);
             pid_gain_update(&pid, pid_val, inpid_val);
             //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             //HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             memset(pid_buffer,'\0',sizeof(pid_buffer));
-            memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
+            memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
             num = 0;
           }
           else if (strstr((char*)pid_buffer,"C") != NULL)          //Throttle.
           {
             Parsing_Throttle_val(pid_buffer, &Controller_1);
-            sprintf((char*)uart1_tx_to_MFC2,"T%6.3f\r\n", (float)Controller_1);
+            sprintf((char*)uart1_tx_to_MFC,"T%6.3f\r\n", (float)Controller_1);
             //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             //HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             memset(pid_buffer,'\0',sizeof(pid_buffer));
-            memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
+            memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
             num = 0;
           }
           else if (strstr((char*)pid_buffer,"D") != NULL)          //Setting Point.
           {
             Parsing_SettingPoint_val(pid_buffer, setting_angle);
-            sprintf((char*)uart1_tx_to_MFC2,"S%6.3fP%6.3fR%6.3fY\r\n", setting_angle[0], setting_angle[1], setting_angle[2]);
+            sprintf((char*)uart1_tx_to_MFC,"S%6.3fP%6.3fR%6.3fY\r\n", setting_angle[0], setting_angle[1], setting_angle[2]);
             //HAL_UART_Transmit(&huart1,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             //HAL_UART_Transmit(&huart2,uart1_tx_to_MFC2,sizeof(uart1_tx_to_MFC2), 10);
             memset(pid_buffer,'\0',sizeof(pid_buffer));
-            memset(uart1_tx_to_MFC2,'\0',sizeof(uart1_tx_to_MFC2));
+            memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
             num = 0;
            }
       UART_flag=0;
@@ -570,12 +544,9 @@ int main(void)
       UART_deltat = 0;
       }
     }
-//========================Data transmit part END=============================
+//=================Data transmit part END==================
     
 //=====================TIme Check==========================
-    //int bb = HAL_GetTick();
-    //sprintf((char*)uart2_tx_data,"%d\r\n",  cc);    
-    //HAL_UART_Transmit(&huart2,uart2_tx_data ,sizeof(uart2_tx_data), 3);
 //=====================TIme Check END======================
     /* USER CODE END WHILE */
 
@@ -892,21 +863,92 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 0 */
 
+  LL_USART_InitTypeDef USART_InitStruct = {0};
+
+  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* Peripheral clock enable */
+  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
+  
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+  /**USART1 GPIO Configuration  
+  PA10   ------> USART1_RX
+  PB6   ------> USART1_TX 
+  */
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_10;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
+  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
+  LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
+  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
+  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* USART1 DMA Init */
+  
+  /* USART1_RX Init */
+  LL_DMA_SetChannelSelection(DMA2, LL_DMA_STREAM_2, LL_DMA_CHANNEL_4);
+
+  LL_DMA_SetDataTransferDirection(DMA2, LL_DMA_STREAM_2, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+
+  LL_DMA_SetStreamPriorityLevel(DMA2, LL_DMA_STREAM_2, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA2, LL_DMA_STREAM_2, LL_DMA_MODE_NORMAL);
+
+  LL_DMA_SetPeriphIncMode(DMA2, LL_DMA_STREAM_2, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA2, LL_DMA_STREAM_2, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA2, LL_DMA_STREAM_2, LL_DMA_PDATAALIGN_BYTE);
+
+  LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_2, LL_DMA_MDATAALIGN_BYTE);
+
+  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_2);
+
+  /* USART1_TX Init */
+  LL_DMA_SetChannelSelection(DMA2, LL_DMA_STREAM_7, LL_DMA_CHANNEL_4);
+
+  LL_DMA_SetDataTransferDirection(DMA2, LL_DMA_STREAM_7, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+
+  LL_DMA_SetStreamPriorityLevel(DMA2, LL_DMA_STREAM_7, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA2, LL_DMA_STREAM_7, LL_DMA_MODE_NORMAL);
+
+  LL_DMA_SetPeriphIncMode(DMA2, LL_DMA_STREAM_7, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA2, LL_DMA_STREAM_7, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA2, LL_DMA_STREAM_7, LL_DMA_PDATAALIGN_BYTE);
+
+  LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_7, LL_DMA_MDATAALIGN_BYTE);
+
+  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_7);
+
+  /* USART1 interrupt Init */
+  NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(USART1_IRQn);
+
   /* USER CODE BEGIN USART1_Init 1 */
 
   /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  USART_InitStruct.BaudRate = 115200;
+  USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
+  USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
+  USART_InitStruct.Parity = LL_USART_PARITY_NONE;
+  USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
+  USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
+  USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
+  LL_USART_Init(USART1, &USART_InitStruct);
+  LL_USART_ConfigAsyncMode(USART1);
+  LL_USART_Enable(USART1);
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
@@ -925,21 +967,83 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 0 */
 
+  LL_USART_InitTypeDef USART_InitStruct = {0};
+
+  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
+  
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
+  /**USART2 GPIO Configuration  
+  PA2   ------> USART2_TX
+  PA3   ------> USART2_RX 
+  */
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_2|LL_GPIO_PIN_3;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
+  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
+  LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* USART2 DMA Init */
+  
+  /* USART2_RX Init */
+  LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_5, LL_DMA_CHANNEL_4);
+
+  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_STREAM_5, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+
+  LL_DMA_SetStreamPriorityLevel(DMA1, LL_DMA_STREAM_5, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA1, LL_DMA_STREAM_5, LL_DMA_MODE_NORMAL);
+
+  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_STREAM_5, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_STREAM_5, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA1, LL_DMA_STREAM_5, LL_DMA_PDATAALIGN_BYTE);
+
+  LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_5, LL_DMA_MDATAALIGN_BYTE);
+
+  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_5);
+
+  /* USART2_TX Init */
+  LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_6, LL_DMA_CHANNEL_4);
+
+  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_STREAM_6, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+
+  LL_DMA_SetStreamPriorityLevel(DMA1, LL_DMA_STREAM_6, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA1, LL_DMA_STREAM_6, LL_DMA_MODE_NORMAL);
+
+  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_STREAM_6, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_STREAM_6, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA1, LL_DMA_STREAM_6, LL_DMA_PDATAALIGN_BYTE);
+
+  LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_6, LL_DMA_MDATAALIGN_BYTE);
+
+  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_6);
+
+  /* USART2 interrupt Init */
+  NVIC_SetPriority(USART2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(USART2_IRQn);
+
   /* USER CODE BEGIN USART2_Init 1 */
 
   /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  USART_InitStruct.BaudRate = 115200;
+  USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
+  USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
+  USART_InitStruct.Parity = LL_USART_PARITY_NONE;
+  USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
+  USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
+  USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
+  LL_USART_Init(USART2, &USART_InitStruct);
+  LL_USART_ConfigAsyncMode(USART2);
+  LL_USART_Enable(USART2);
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
@@ -952,17 +1056,24 @@ static void MX_USART2_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
 
+  /* Init with LL driver */
   /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-  __HAL_RCC_DMA2_CLK_ENABLE();
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
 
   /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  NVIC_SetPriority(DMA1_Stream5_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA1_Stream6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  NVIC_SetPriority(DMA1_Stream6_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  NVIC_SetPriority(DMA2_Stream2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(DMA2_Stream2_IRQn);
   /* DMA2_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
+  NVIC_SetPriority(DMA2_Stream7_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 
 }
 
@@ -995,77 +1106,27 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-////  static uint32_t count1 = 0;
-////  count1++;
-////  if((count1 % 100)==0)
-////  {
-//  if(htim->Instance == htim2.Instance)
-//  {
-//    //printf("ss\r\n");
-//    tim_flag = 1;
-//  }
-//  //}
-//  /* NOTE : This function should not be modified, when the callback is needed,
-//            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
-//   */
-//}
-//void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
-//{
-//  //memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-//  sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-//}
-
-//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-//{
-//  if ((huart->Instance) == (huart2.Instance))
-//  {
-//   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-//   DMAFlag = 1;
-//  }
-//  
-//  if ((huart->Instance) == (huart1.Instance))
-//  {
-//   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-//         sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-//
-//   DMAFlag2 = 1;
-//  }    
-//}
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if ((huart->Instance) == (huart2.Instance))
-  {
-   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-   DMAFlag = 1;
-  }
-  
-  if ((huart->Instance) == (huart1.Instance))
-  {
-   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-   DMAFlag2 = 1;
-  }    
+void USART_Rx_Callback(USART_TypeDef *USARTx){
+  data = (USARTx->DR & 0x1ff);
+//  data = LL_USART_ReceiveData8(USARTx);
 }
 
-void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
-{
-  if ((huart->Instance) == (huart2.Instance))
-  {
-   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-   //DMAFlag = 1;
+void UART1_TX_string(char* str){
+  while(*str){
+    while(!LL_USART_IsActiveFlag_TXE(USART1));
+    LL_USART_TransmitData8(USART1, *str);
+    str++;
   }
-  
-  if ((huart->Instance) == (huart1.Instance))
-  {
-   memset(uart1_tx_to_MFC,'\0',sizeof(uart1_tx_to_MFC));
-   sprintf((char*)uart1_tx_to_MFC,"%4d,%4d,%4d", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-   //DMAFlag2 = 1;
-  }    
 }
+
+void UART2_TX_string(char* str){
+  while(*str){
+    while(!LL_USART_IsActiveFlag_TXE(USART2));
+    LL_USART_TransmitData8(USART2, *str);
+    str++;
+  }
+}
+
 /* USER CODE END 4 */
 
 /**
