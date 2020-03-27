@@ -10,6 +10,7 @@ extern int count;
 void nRF24_Transmit(float* temp, uint8_t adr_value)                     
 {
   int No_Connection=0;
+  memset(buffer,'\0',8); // C_buff 메모리 초기화 
   sprintf((char*)buffer,"%.3f",*temp);
     /* Reset time, start counting microseconds */
   TM_DELAY_SetTime(0); 
@@ -27,8 +28,8 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
       if(!(transmissionStatus == TM_NRF24L01_Transmit_Status_Ok))
       {
         TM_NRF24L01_Transmit((uint8_t*)buffer);
-        //nRF24_Transmit_Status();
-        if(No_Connection >= 100)
+        nRF24_Transmit_Status();
+        if(No_Connection >= 1000)
         {
           //printf("No Connection!\r\n");
           No_Connection=0;
@@ -39,7 +40,7 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
       }
   }while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
   printf("\r\nbuffer : %c",buffer[6]);
-  memset(buffer,'\0',7); // C_buff 메모리 초기화  
+  temp = '\0';
 }
 
 // =============ADC DATA TRANSMIT============= //
@@ -47,7 +48,7 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
 void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)                
 {
   int No_Connection=0;
-  memset(buffer,'\0',7); // C_buff 메모리 초기화 
+  memset(buffer,'\0',8); // C_buff 메모리 초기화 
   sprintf((char*)buffer,"%d",*temp);
   
     /* Reset time, start counting microseconds */
@@ -66,7 +67,7 @@ void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)
       {
         TM_NRF24L01_Transmit((uint8_t*)buffer);
         //nRF24_Transmit_Status();
-        if(No_Connection >= 100)
+        if(No_Connection >= 10)
         {
           //printf("No Connection!\r\n");
           No_Connection=0;
@@ -76,14 +77,16 @@ void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)
           No_Connection++;
       }
   }while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-  
+  temp = '\0';
 }
 
 //  =============SETPOINT DATA TRANSMIT============= //
 void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
 {
   int No_Connection=0;
+  memset(buffer,'\0',8); // C_buff 메모리 초기화
   sprintf((char*)buffer,"%d",*temp);
+  
     /* Reset time, start counting microseconds */
   TM_DELAY_SetTime(0);
   buffer[6] = (uint8_t)adr_value;
@@ -110,14 +113,14 @@ void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
           No_Connection++;
       }
   }while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-  memset(buffer,'\0',7); // C_buff 메모리 초기화
+  temp = '\0';
 }
 
 // =============== TRANSMIT 'q' FOR QICK TEST ===============//
 void nRF24_Transmit_ASCII(uint8_t adr_value)
 {
   int No_Connection=0;
-  memset(buffer,'\0',7); // C_buff 메모리 초기화    
+  memset(buffer,'\0',8); // C_buff 메모리 초기화   
   TM_DELAY_SetTime(0);
   buffer[6] = (uint8_t)adr_value;
   TM_NRF24L01_Transmit((uint8_t*)buffer);
@@ -139,6 +142,7 @@ void nRF24_Transmit_ASCII(uint8_t adr_value)
 // =============MODE CHANGE KEY DATA TRANSMIT============= //
 void nRF24_Transmit_Mode_Change(uint8_t adr_value)
 {
+  memset(buffer,'\0',8); // C_buff 메모리 초기화
   TM_DELAY_SetTime(0);
   buffer[6]=adr_value;
   TM_NRF24L01_Transmit((uint8_t*)buffer);
@@ -158,7 +162,7 @@ void nRF24_Transmit_Mode_Change(uint8_t adr_value)
 //        }
 //      }
   } while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
-  memset(buffer,'\0',7); // C_buff 메모리 초기화
+  
   
 }
 

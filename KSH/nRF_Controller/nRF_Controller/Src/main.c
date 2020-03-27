@@ -52,8 +52,8 @@
 #define _Roll                                      1
 #define _Yaw                                      3
 #define _Throttle                                  2
-#define EXTI_PIN_PC12                         4096
-#define EXTI_PIN_PC10                         1024
+#define EXTI_PIN_PC12                        4096
+#define EXTI_PIN_PC10                        1024
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -193,6 +193,7 @@ int main(void)
   //uint8_t test_buf;
   uint8_t exit_flag=0;
   uint8_t Lcd_buffer[15];
+
   /* USER CODE END 1 */
   
 
