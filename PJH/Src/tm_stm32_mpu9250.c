@@ -546,12 +546,13 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     // get stable time source
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, PWR_MGMT_1, 0x01);  // Auto select clock source to be PLL gyroscope reference if ready else.
     Delayms(200); 
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, PWR_MGMT_2, 0x00); // accel xyz and gyro xyz are on.
 
     // Configure Gyro and Thermometer
-    // Disable FSYNC and set thermometer and gyro bandwidth to 41 and 42 Hz, respectively; 
+    // Disable FSYNC and set thermometer and gyro bandwidth to 41 and 42 Hz, respectively.
     // minimum delay time for this setting is 5.9 ms, which means sensor fusion update rates cannot
     // be higher than 1 / 0.0059 = 170 Hz
-    // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both
+    // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both.
     // With the MPU9250, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, CONFIG, 0x03);  
 
@@ -561,37 +562,46 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
 
     // Set gyroscope full scale range
     // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
-    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, GYRO_CONFIG, &data); // get current GYRO_CONFIG register value
+    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, GYRO_CONFIG, &data); // get current GYRO_CONFIG register value.
     // c = c & ~0xE0; // Clear self-test bits [7:5] 
-    data &= ~0x02; // Clear Fchoice bits [1:0] 
-    data &= ~0x18; // Clear AFS bits [4:3]
-    data |= 0x01 << 3; // Set full scale range for the gyro
+    data &= ~0x03; // Clear Fchoice bits [1:0] .
+    data &= ~0x18; // Clear AFS bits [4:3].
+    data |= 0x01 << 3; // Set full scale range for the gyro (01 = +500 dps).
+    data &= ~0x03; // Set FCHOICE-b bits 0 0 [1:0].
     // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
-    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, GYRO_CONFIG, data); // Write new GYRO_CONFIG value to register
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, GYRO_CONFIG, data); // Write new GYRO_CONFIG value to register.
 
     // Set accelerometer full-scale range configuration
-    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG, &data); // get current ACCEL_CONFIG register value
+    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG, &data); // get current ACCEL_CONFIG register value.
     // c = c & ~0xE0; // Clear self-test bits [7:5] 
-    data &= ~0x18;  // Clear AFS bits [4:3]
-    data |= 0x01 << 3; // Set full scale range for the accelerometer 
-    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG, data); // Write new ACCEL_CONFIG register value
+    data &= ~0x18;  // Clear AFS bits [4:3].
+    data |= 0x01 << 3; // Set full scale range for the accelerometer (4 g). 
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG, data); // Write new ACCEL_CONFIG register value.
 
     // Set accelerometer sample rate configuration
     // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
     // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
-    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG2, &data); // get current ACCEL_CONFIG2 register value
-    data &= ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])  
-    data |= 0x03;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
+    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG2, &data); // get current ACCEL_CONFIG2 register value/
+    data &= ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0]).
+    data |= 0x03;  // Set accelerometer rate to 1 kHz Delays 4.88 ms and 3dB bandwidth to 44.8 Hz.
+    //data |= 0x00 << 3; // Set accel_fchoice_b to 0.
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG2, data); // Write new ACCEL_CONFIG2 register value
     // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates, 
     // but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
+    
+    TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, I2C_MST_CTRL, &data); // get current ACCEL_CONFIG register value.
+    data & ~0x0D; //Clear [3:0] bits.
+    data |= 0x0D; //Set [3:0] bits to 1101 (8MHz clock divide 20 then become a 400kHz).
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, I2C_MST_CTRL, data); // Set I2C_MST_CLK [3:0] .
 
-    // Configure Interrupts and Bypass Enable
+    // Configure Interrupts and Bypass Enable.
     // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
     // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips 
-    // can join the I2C bus and all can be controlled by the Arduino as master
+    // can join the I2C bus and all can be controlled by the Arduino as master.
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, INT_PIN_CFG, 0x22);
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, INT_ENABLE, 0x01);
+    
+
     
     /* Check if device connected */
     if (TM_I2C_IsDeviceConnected(MPU9250_I2C, MPU9250->I2C_Addr_Mag) != TM_I2C_Result_Ok) {
@@ -606,8 +616,8 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     Delayms(10);
     // Configure the magnetometer for continuous read and highest resolution
     // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
-    // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_CNTL, 1 << 4 | 2); // Set magnetometer data resolution and sample ODR
+    // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates.
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_CNTL, (0x01 << 4) | 0x06); // Set magnetometer data resolution and sample ODR (16bit output and 0110 for 100 Hz).
     Delayms(10);
     
     /* Calculate multiplicators */
@@ -637,6 +647,7 @@ void TM_MPU9250_ReadAcce(TM_MPU9250_t* MPU9250) {
 
 void TM_MPU9250_ReadGyro(TM_MPU9250_t* MPU9250) {
     uint8_t data[6];
+    /* Read gyroscope data */
     TM_I2C_ReadMulti(MPU9250_I2C, MPU9250->I2C_Addr, GYRO_XOUT_H, data, 6);
     
     MPU9250->Gx_Raw = ((int16_t)data[0] << 8) | data[1];
@@ -707,7 +718,7 @@ void TM_MPU9250_ReadMagASA(TM_MPU9250_t* MPU9250) {
         
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_CNTL, 0x00); // Power down magnetometer
     Delayms(10); // Wait for all registers to reset 
-    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_CNTL, 0x01<<4 | 0x06);
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr_Mag, AK8963_CNTL, (0x01 << 4) | 0x06);
     Delayms(10); // Wait for all registers to reset 
 }
 
@@ -777,19 +788,19 @@ void MagCalibration(TM_MPU9250_t* MPU9250)
     tempbias[4] = (int)(MPU9250->Magscaley * 1000);
     tempbias[5] = (int)(MPU9250->Magscalez * 1000);
     
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, tempbias[0]);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, tempbias[1]);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, tempbias[2]);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, tempbias[3]);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, tempbias[4]);
-//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, tempbias[5]); 
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, tempbias[0]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, tempbias[1]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, tempbias[2]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, tempbias[3]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, tempbias[4]);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, tempbias[5]); 
     
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, 0x00000067);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, 0x000000F9);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, 0xFFFFFE6C);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, 0x000003FA);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, 0x000003DA);
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, 0x000003E3); 
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040000, 0x00000067);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040004, 0x000000F9);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040008, 0xFFFFFE6C);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x0804000C, 0x000003FA);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040010, 0x000003DA);
+//    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, 0x08040014, 0x000003E3); 
 
     HAL_Delay(30);  
     HAL_FLASH_Lock();   

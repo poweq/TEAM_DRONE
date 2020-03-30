@@ -142,7 +142,7 @@ uint8_t MyAddress[] = {                                 // Controller
 int fputc(int ch ,FILE *f)
 {
   //UART2_TX_string((char *)ch);
-  HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
+  //HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
   return ch;
 }
 //=====================================================
