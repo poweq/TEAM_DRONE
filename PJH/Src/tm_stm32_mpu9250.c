@@ -544,7 +544,7 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     Delayms(100); // Wait for all registers to reset.
 
     // get stable time source
-    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, PWR_MGMT_1, 0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, PWR_MGMT_1, 0x01);  // Auto select clock source to be PLL gyroscope reference if ready else.
     Delayms(200); 
 
     // Configure Gyro and Thermometer

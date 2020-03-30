@@ -68,6 +68,13 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
 
+UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -86,7 +93,8 @@ static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 void UART1_TX_string(char* str);
 void UART2_TX_string(char* str);
-
+//void STM32f4_USART2_Init(void);
+//void System_information(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -102,7 +110,9 @@ uint8_t data;
 
 uint8_t pid_buffer[71];
 int num = 0;
-
+//ADD YSH
+uint8_t TIM_INT =0;
+//
 volatile __IO uint8_t  DMA_Rx_Flag = 0;
 volatile __IO uint8_t  DMA_Tx_Flag = 0;
 //=======================INIT Variables=============================
@@ -129,12 +139,12 @@ uint8_t MyAddress[] = {                                 // Controller
 //========================================================================
 
 //==================printf FUNCTION====================
-//int fputc(int ch ,FILE *f)
-//{
-//  UART2_TX_string((char *)ch);
-//  //HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
-//  return ch;
-//}
+int fputc(int ch ,FILE *f)
+{
+  //UART2_TX_string((char *)ch);
+  HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
+  return ch;
+}
 //=====================================================
 
 /* USER CODE END 0 */
@@ -187,9 +197,9 @@ int main(void)
   //================Hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};            //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {2.5f, 0.2f, 0.0f}, {2.3f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  //float pid_val[3][3] = {{3.0f, 0.2f, 0.0f}, {2.0f, 0.2f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {8.0f, 0.3f, 2.0f}, {4.0f, 0.0f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{2.5f, 0.2f, 0.0f}, {1.08f, 0.5f, 0.0f}, {2.3f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  //float pid_val[3][3] = {{3.0f, 0.2f, 0.0f}, {1.1f, 0.5f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{8.0f, 0.3f, 2.0f}, {24.815f, 0.75f, 4.11f}, {4.0f, 0.0f, 0.3f}};              //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   //float inpid_val[3][3] = {{10.0f, 0.28f, 3.4f}, {9.0f, 0.32f, 3.41f}, {3.5f, 0.0f, 0.3f}};
   float angular_velocity[3];                              //For double loop PID.
   /* USER CODE END 1 */
@@ -228,6 +238,13 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
+  
+  //ADD YSH
+  printf("hello\r\n");
+  HAL_TIM_Base_Start_IT(&htim2);
+  //
+    //System_information();
+//STM32f4_USART2_Init();
   //===================Calibration Part=========================
   if(CaliFlag == 1)    //1 is unable.
   {    
@@ -275,10 +292,12 @@ int main(void)
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.  
   
-  LL_USART_EnableIT_RXNE(USART1);
-  LL_USART_EnableIT_RXNE(USART2);
+  //LL_USART_EnableIT_RXNE(USART1);
+  //LL_USART_EnableIT_RXNE(USART2);
   
   /* USER CODE END 2 */
+ 
+ 
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -338,6 +357,7 @@ int main(void)
     angular_velocity[0] = MPU9250.Gx / 500.0f * dt;                        //angular velocity (degree/2ms(*2))
     angular_velocity[1] = MPU9250.Gy / 500.0f * dt;
     angular_velocity[2] = MPU9250.Gz / 500.0f * dt;    
+    
     if (deltat >= dt)                                                   //Update term.(500Hz.dt=2)
     {
       deltat /= 1000.0f;                                                             //Make millisecond to second.
@@ -361,12 +381,13 @@ int main(void)
   //=======================Fuzzy part END============================
       if (HAL_GetTick() - before_while >= 5500)
       {
-        __pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.
+        __pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.       
         //__pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);         //PID value update.
       }    
       //if(Euler_angle[2] < 0) Euler_angle[2] += 360.0f;         // Ensure yaw stays between 0 and 360     
       deltat = 0.0f;                                             //reset deltat.
     }
+/*-----------------------------------------------------------------------------------------------*/
 //=====================Data print transmit UART part===============        
     //sprintf((char*)uart2_tx_data,"%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f \r\n",  \
       MPU9250.Ax, MPU9250.Ay ,MPU9250.Az, MPU9250.Gx, MPU9250.Gy, MPU9250.Gz, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
@@ -475,13 +496,15 @@ int main(void)
 //      UART2_TX_string((char *)Tx_buffer);
 //    }
     //DMA_Tx_Flag++;
+  
+  
     if(DMA_Tx_Flag == 0)
     {     
-      DMA_Tx_Flag = 0;
-      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-      UART1_TX_string((char *)Tx_buffer);       // stm32 to esp32 USART part(USART1).
-      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-      UART2_TX_string((char *)Tx_buffer);       // stm32 to PC serial part(USART2).
+//      DMA_Tx_Flag = 0;
+//      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+//      UART1_TX_string((char *)Tx_buffer);       // stm32 to esp32 USART part(USART1).
+//      sprintf((char*)Tx_buffer, "%4d,%4d,%4d,\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
+//      UART2_TX_string((char *)Tx_buffer);       // stm32 to PC serial part(USART2).
     }
 
 //===========================outPID inPID change part==============================  
@@ -863,92 +886,21 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 0 */
 
-  LL_USART_InitTypeDef USART_InitStruct = {0};
-
-  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
-  
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
-  /**USART1 GPIO Configuration  
-  PA10   ------> USART1_RX
-  PB6   ------> USART1_TX 
-  */
-  GPIO_InitStruct.Pin = LL_GPIO_PIN_10;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
-  LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
-  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /* USART1 DMA Init */
-  
-  /* USART1_RX Init */
-  LL_DMA_SetChannelSelection(DMA2, LL_DMA_STREAM_2, LL_DMA_CHANNEL_4);
-
-  LL_DMA_SetDataTransferDirection(DMA2, LL_DMA_STREAM_2, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
-
-  LL_DMA_SetStreamPriorityLevel(DMA2, LL_DMA_STREAM_2, LL_DMA_PRIORITY_LOW);
-
-  LL_DMA_SetMode(DMA2, LL_DMA_STREAM_2, LL_DMA_MODE_NORMAL);
-
-  LL_DMA_SetPeriphIncMode(DMA2, LL_DMA_STREAM_2, LL_DMA_PERIPH_NOINCREMENT);
-
-  LL_DMA_SetMemoryIncMode(DMA2, LL_DMA_STREAM_2, LL_DMA_MEMORY_INCREMENT);
-
-  LL_DMA_SetPeriphSize(DMA2, LL_DMA_STREAM_2, LL_DMA_PDATAALIGN_BYTE);
-
-  LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_2, LL_DMA_MDATAALIGN_BYTE);
-
-  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_2);
-
-  /* USART1_TX Init */
-  LL_DMA_SetChannelSelection(DMA2, LL_DMA_STREAM_7, LL_DMA_CHANNEL_4);
-
-  LL_DMA_SetDataTransferDirection(DMA2, LL_DMA_STREAM_7, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-
-  LL_DMA_SetStreamPriorityLevel(DMA2, LL_DMA_STREAM_7, LL_DMA_PRIORITY_LOW);
-
-  LL_DMA_SetMode(DMA2, LL_DMA_STREAM_7, LL_DMA_MODE_NORMAL);
-
-  LL_DMA_SetPeriphIncMode(DMA2, LL_DMA_STREAM_7, LL_DMA_PERIPH_NOINCREMENT);
-
-  LL_DMA_SetMemoryIncMode(DMA2, LL_DMA_STREAM_7, LL_DMA_MEMORY_INCREMENT);
-
-  LL_DMA_SetPeriphSize(DMA2, LL_DMA_STREAM_7, LL_DMA_PDATAALIGN_BYTE);
-
-  LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_7, LL_DMA_MDATAALIGN_BYTE);
-
-  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_7);
-
-  /* USART1 interrupt Init */
-  NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(USART1_IRQn);
-
   /* USER CODE BEGIN USART1_Init 1 */
 
   /* USER CODE END USART1_Init 1 */
-  USART_InitStruct.BaudRate = 115200;
-  USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
-  USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
-  USART_InitStruct.Parity = LL_USART_PARITY_NONE;
-  USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
-  USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
-  USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
-  LL_USART_Init(USART1, &USART_InitStruct);
-  LL_USART_ConfigAsyncMode(USART1);
-  LL_USART_Enable(USART1);
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
@@ -967,83 +919,21 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 0 */
 
-  LL_USART_InitTypeDef USART_InitStruct = {0};
-
-  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
-  
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-  /**USART2 GPIO Configuration  
-  PA2   ------> USART2_TX
-  PA3   ------> USART2_RX 
-  */
-  GPIO_InitStruct.Pin = LL_GPIO_PIN_2|LL_GPIO_PIN_3;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
-  LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /* USART2 DMA Init */
-  
-  /* USART2_RX Init */
-  LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_5, LL_DMA_CHANNEL_4);
-
-  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_STREAM_5, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
-
-  LL_DMA_SetStreamPriorityLevel(DMA1, LL_DMA_STREAM_5, LL_DMA_PRIORITY_LOW);
-
-  LL_DMA_SetMode(DMA1, LL_DMA_STREAM_5, LL_DMA_MODE_NORMAL);
-
-  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_STREAM_5, LL_DMA_PERIPH_NOINCREMENT);
-
-  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_STREAM_5, LL_DMA_MEMORY_INCREMENT);
-
-  LL_DMA_SetPeriphSize(DMA1, LL_DMA_STREAM_5, LL_DMA_PDATAALIGN_BYTE);
-
-  LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_5, LL_DMA_MDATAALIGN_BYTE);
-
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_5);
-
-  /* USART2_TX Init */
-  LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_6, LL_DMA_CHANNEL_4);
-
-  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_STREAM_6, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-
-  LL_DMA_SetStreamPriorityLevel(DMA1, LL_DMA_STREAM_6, LL_DMA_PRIORITY_LOW);
-
-  LL_DMA_SetMode(DMA1, LL_DMA_STREAM_6, LL_DMA_MODE_NORMAL);
-
-  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_STREAM_6, LL_DMA_PERIPH_NOINCREMENT);
-
-  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_STREAM_6, LL_DMA_MEMORY_INCREMENT);
-
-  LL_DMA_SetPeriphSize(DMA1, LL_DMA_STREAM_6, LL_DMA_PDATAALIGN_BYTE);
-
-  LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_6, LL_DMA_MDATAALIGN_BYTE);
-
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_6);
-
-  /* USART2 interrupt Init */
-  NVIC_SetPriority(USART2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(USART2_IRQn);
-
   /* USER CODE BEGIN USART2_Init 1 */
 
   /* USER CODE END USART2_Init 1 */
-  USART_InitStruct.BaudRate = 115200;
-  USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
-  USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
-  USART_InitStruct.Parity = LL_USART_PARITY_NONE;
-  USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
-  USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
-  USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
-  LL_USART_Init(USART2, &USART_InitStruct);
-  LL_USART_ConfigAsyncMode(USART2);
-  LL_USART_Enable(USART2);
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
@@ -1056,24 +946,23 @@ static void MX_USART2_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
 
-  /* Init with LL driver */
   /* DMA controller clock enable */
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+  __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream5_IRQn interrupt configuration */
-  NVIC_SetPriority(DMA1_Stream5_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA1_Stream6_IRQn interrupt configuration */
-  NVIC_SetPriority(DMA1_Stream6_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
-  NVIC_SetPriority(DMA2_Stream2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
   /* DMA2_Stream7_IRQn interrupt configuration */
-  NVIC_SetPriority(DMA2_Stream7_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(DMA2_Stream7_IRQn);
+  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 
 }
 
@@ -1106,6 +995,24 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  //static uint8_t TIM_COUNT;
+  if(htim->Instance==htim2.Instance)
+  {
+    
+    TIM_INT=1;
+  }
+  
+  /* Prevent unused argument(s) compilation warning */
+ 
+
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
+   */
+}
+
 void USART_Rx_Callback(USART_TypeDef *USARTx){
   data = (USARTx->DR & 0x1ff);
 //  data = LL_USART_ReceiveData8(USARTx);
@@ -1126,6 +1033,92 @@ void UART2_TX_string(char* str){
     str++;
   }
 }
+
+//void STM32f4_USART2_Init(void)
+//{
+//	UartHandle.Instance        = USART2;
+//
+//	UartHandle.Init.BaudRate     = 115200;
+//	UartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
+//	UartHandle.Init.StopBits     = UART_STOPBITS_1;
+//	UartHandle.Init.Parity       = UART_PARITY_NONE;
+//	UartHandle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+//	UartHandle.Init.Mode         = UART_MODE_TX_RX;
+//	UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+//
+//	HAL_UART_MspInit(&UartHandle);
+//
+//	if(HAL_UART_DeInit(&UartHandle) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}  
+//	if(HAL_UART_Init(&UartHandle) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//
+//	//if(HAL_UART_Transmit(&UartHandle, (uint8_t*)aTxBufferUart, sizeof(aTxBufferUart), 5000)!= HAL_OK)
+//	//{
+//	//	Error_Handler();   
+//	//}
+//
+//	Dprintf("STM32f4_USART2_Init \n\r");
+//
+//}
+
+//void System_information(void)
+//{
+//	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+//#if 0
+//	char buff[200];
+//
+//	Dprintf("DEVICE ID:%ld[0x%x], DEVICE REVISION ID:%ld[0x%x], flash size:0x%x\n\r", HAL_GetDEVID(), HAL_GetDEVID(), HAL_GetREVID(), HAL_GetREVID(), ID_GetFlashSize());
+//
+//	/* Format unique ID in 32-bit read mode */
+//	sprintf(buff, "Unique ID in 32-bit read mode: 0x%08X 0x%08X 0x%08X\n\r",
+//		ID_GetUnique32(0),	/* LSB */
+//		ID_GetUnique32(1),
+//		ID_GetUnique32(2)	/* MSB */
+//		);
+//	Dprintf("%s",buff);
+//	/* Format unique ID in 16-bit read mode */
+//	sprintf(buff, "Unique ID in 16-bit read mode: 0x%04X 0x%04X 0x%04X 0x%04X 0x%04X 0x%04X\n\r",
+//		ID_GetUnique16(0),	/* LSB */
+//		ID_GetUnique16(1),
+//		ID_GetUnique16(2),
+//		ID_GetUnique16(3),
+//		ID_GetUnique16(4),
+//		ID_GetUnique16(5)	/* MSB */
+//		);
+//	Dprintf("%s",buff);
+//	/* Format unique ID in 8-bit read mode */
+//	sprintf(buff, "Unique ID in 8-bit read mode: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n\r",
+//		ID_GetUnique8(0),	/* LSB */
+//		ID_GetUnique8(1),
+//		ID_GetUnique8(2),
+//		ID_GetUnique8(3),
+//		ID_GetUnique8(4),
+//		ID_GetUnique8(5),
+//		ID_GetUnique8(6),
+//		ID_GetUnique8(7),
+//		ID_GetUnique8(8),
+//		ID_GetUnique8(9),
+//		ID_GetUnique8(10),
+//		ID_GetUnique8(11)	/* MSB */
+//		);
+//	Dprintf("%s",buff);
+//#endif
+//
+//	/* Get the Oscillators configuration according to the internal RCC registers */
+//	HAL_RCC_GetOscConfig(&RCC_OscInitStruct);
+//
+//	//Dprintf("StartUpCounter:%d", StartUpCounter);
+//	/* Get frequency value */
+//	Dprintf("SYSCLK:%d, HCLK:%d, PCLK1:%d, PCLK2:%d\n\r",
+//			HAL_RCC_GetSysClockFreq(), HAL_RCC_GetHCLKFreq(), HAL_RCC_GetPCLK1Freq(), HAL_RCC_GetPCLK2Freq());
+//
+//}
+
 
 /* USER CODE END 4 */
 
