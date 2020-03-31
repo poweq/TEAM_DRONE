@@ -20,9 +20,9 @@ _Fuzzy_stru Kp_small, Kp_medismall, Kp_medium, Kp_medilarge, Kp_large;
 _Fuzzy_stru Ki_small, Ki_medismall, Ki_medium, Ki_medilarge, Ki_large;
 _Fuzzy_stru Kd_small, Kd_medismall, Kd_medium, Kd_medilarge, Kd_large;
 
-const float Kp_s[3] = {9.0f, 9.0f, 3.0f}, Kp_m[3] = {10.0f, 10.0f, 3.5f}, Kp_b[3] = {11.0f, 11.0f, 4.0f}, Kp_vb[3] = {12.0f, 12.0f, 4.5f};
-const float Ki_s[3] = {0.23f, 0.23f, 0.0f}, Ki_m[3] = {0.27f, 0.27f, 0.0f}, Ki_b[3] = {0.29f, 0.29f, 0.0f}, Ki_vb[3] = {0.35f, 0.35f, 0.0f};
-const float Kd_s[3] = {2.4f, 2.4f, 1.0f}, Kd_m[3] = {3.0f, 3.0f, 1.2f}, Kd_b[3] = {3.399f, 3.399f, 1.4f}, Kd_vb[3] = {3.5f, 3.5f, 1.6f};
+const float Kp_s[3] = {8.0f, 8.0f, 5.0f}, Kp_m[3] = {10.0f, 10.0f, 5.5f}, Kp_b[3] = {12.0f, 12.0f, 6.5f}, Kp_vb[3] = {14.0f, 14.0f, 7.0f};
+const float Ki_s[3] = {0.5f, 0.5f, 0.0f}, Ki_m[3] = {0.7f, 0.7f, 0.0f}, Ki_b[3] = {1.0f, 1.0f, 0.0f}, Ki_vb[3] = {1.2f, 1.2f, 0.0f};
+const float Kd_s[3] = {1.3f, 1.3f, 0.3f}, Kd_m[3] = {1.5f, 1.5f, 0.4f}, Kd_b[3] = {1.7f, 1.7f, 0.5f}, Kd_vb[3] = {1.8f, 1.8f, 0.6f};
 
 void fuzzy_init() {
     int i, j, k, t;

@@ -554,7 +554,8 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     // be higher than 1 / 0.0059 = 170 Hz
     // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both.
     // With the MPU9250, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
-    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, CONFIG, 0x03);  
+    //TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, CONFIG, 0x03);  
+    TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, CONFIG, 0x04);  
 
     // Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, SMPLRT_DIV, 0x01);  // Use a (200 Hz 0x04)->(500 Hz 0x01) rate; a rate consistent with the filter update rate 
@@ -583,7 +584,8 @@ TM_MPU9250_Result_t TM_MPU9250_Init(TM_MPU9250_t* MPU9250, TM_MPU9250_Device_t d
     // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
     TM_I2C_Read(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG2, &data); // get current ACCEL_CONFIG2 register value/
     data &= ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0]).
-    data |= 0x03;  // Set accelerometer rate to 1 kHz Delays 4.88 ms and 3dB bandwidth to 44.8 Hz.
+    //data |= 0x03;  // Set accelerometer rate to 1 kHz Delays 4.88 ms and 3dB bandwidth to 44.8 Hz.
+    data |= 0x04;  // Set accelerometer rate to 1 kHz Delays 4.88 ms and 3dB bandwidth to 44.8 Hz.
     //data |= 0x00 << 3; // Set accel_fchoice_b to 0.
     TM_I2C_Write(MPU9250_I2C, MPU9250->I2C_Addr, ACCEL_CONFIG2, data); // Write new ACCEL_CONFIG2 register value
     // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates, 

@@ -19,7 +19,7 @@
 #define MoterGain_pitch      1.0f
 #define MoterGain_yaw        1.0f
 
-#define MOTER_SAFTY             (1500)
+#define MOTER_SAFTY             (1000)
 
 void ESC_Calibration(void);
 void Motor_Init(void);
