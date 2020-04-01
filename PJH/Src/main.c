@@ -104,12 +104,8 @@ uint8_t uart2_tx_data[255];
 uint8_t data;
 int count = 0;
 
-//int num = 0;
-//ADD YSH
-//uint8_t TIM_INT =0;s
-
-volatile __IO uint8_t  DMA_Rx_Flag = 0;
-volatile __IO uint8_t  DMA_Tx_Flag = 0;
+//volatile __IO uint8_t  DMA_Rx_Flag = 0;
+//volatile __IO uint8_t  DMA_Tx_Flag = 0;
 //==============================INIT Variables==================================
 //=============================MPU9250 variables================================
 //==============================================================================
@@ -134,12 +130,12 @@ uint8_t MyAddress[] = {                                                         
 //==============================================================================
 
 //================================printf FUNCTION===============================
-int fputc(int ch ,FILE *f)
-{
-  //UART2_TX_string((char *)ch);
-  //HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
-  return ch;
-}
+//int fputc(int ch ,FILE *f)
+//{
+//  //UART2_TX_string((char *)ch);
+//  //HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
+//  return ch;
+//}
 //==============================================================================
 
 /* USER CODE END 0 */
@@ -160,32 +156,30 @@ int main(void)
   uint32_t before_while = 0;                                                    //Time of Before entering while loop.
   uint16_t wait = 0;                                                            //getting initiate setting_angle waiting time.
   uint8_t wait_flag = 0;                                                        //Time waiting flag.
- 
-  uint32_t UART_Now = 0;     
-  uint32_t UART_Pre = 0;
-  uint32_t UART_deltat = 0;
-  
-  uint8_t UART_flag=0;
-  uint8_t UART_sytic_flag=0;
+   
+//  uint8_t UART1_flag=0;
   //=============================UART Variables=================================
   //========================Quaternion VARIABLES================================
   float deltat = 0.0f;                                                          //integration interval for filter schemes.
   float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};                                        //vector to hold quaternion.
+  float q2[4] = {1.0f, 0.0f, 0.0f, 0.0f};                                       //vector to hold quaternion.
   float Euler_angle[3] = {0.0f, 0.0f, 0.0f};                                    //roll pitch yaw.  
+  float Euler_angle2[3] = {0.0f, 0.0f, 0.0f};                                   //roll pitch yaw.  
+  float Euler_angle_Union[3] = {0.0f, 0.0f, 0.0f};                              //roll pitch yaw.  
   //=============================Fuzzy Variables================================  
   float prev_err[3];                                                            //Prev_Setting_point - Euler_angle.
   //==============================PWM Variables=================================
   int Controller_1 = 15;                                                        //Moter Throttle.
   //==============================FILTER's Variables============================
-  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};                                 //Used in LPF.
-  float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};                                //Used in LPF.
-  float preGyro[3] = {0.0f, 0.0f, 0.0f};                                        //Used in GyroLPF.
-  float LPF_Gyro[3] = {0.0f, 0.0f, 0.0f};                                       //Used in GyroLPF.
+//  float preEuler_angle[3] = {0.0f, 0.0f, 0.0f};                                 //Used in LPF.
+//  float LPF_Euler_angle[3] = {0.0f, 0.0f, 0.0f};                                //Used in LPF.
+//  float preGyro[3] = {0.0f, 0.0f, 0.0f};                                        //Used in GyroLPF.
+//  float LPF_Gyro[3] = {0.0f, 0.0f, 0.0f};                                       //Used in GyroLPF.
   //=============================MPU9250 Variables==============================
   float Self_Test[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};                    //MPU9250 Accell and Gyro Self_Test.
   float Self_Test_Mag[3] = {0.0f, 0.0f, 0.0f};                                  //MPU9250 Magnetometer Self_Test.
   //========================Drone Calibration Mode Variables====================
-  uint8_t CaliFlag = 0;
+  uint8_t CaliFlag = 1;
   //============================nRF24L01 VARIABLES==============================
   int temp_int;                                                                 //uint8_t
   float temp;                                                                   //uint8_t
@@ -233,7 +227,7 @@ int main(void)
 //System_information();
 //STM32f4_USART2_Init();
   //=============================Calibration Part===============================
-  if(CaliFlag == 1)    //1 is unable.
+  if(CaliFlag == 0)    //0 is disable.
   {    
     HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_1);
     HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
@@ -343,26 +337,44 @@ int main(void)
       deltat /= 1000.0f;                                                        //Make millisecond to second.
       //__LPFGyro(LPF_Gyro, &MPU9250, preGyro, deltat);
       MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
-      //MahonyQuaternionUpdate(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, MPU9250.My, MPU9250.Mx, -MPU9250.Mz, q, deltat);
+      MahonyAHRSupdateIMU2(MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Gx*PI/180.0f, MPU9250.Gy*PI/180.0f, MPU9250.Gz*PI/180.0f, q2, deltat);
       Quternion2Euler(q, Euler_angle);                                          //Get Euler angles (roll, pitch, yaw) from Quaternions.
+      Quternion2Euler(q2, Euler_angle2);                                        //Get Euler angles (roll, pitch, yaw) from Quaternions.
       //__LPF(LPF_Euler_angle, Euler_angle, preEuler_angle, deltat);
+      Euler_angle_Union[0] = Euler_angle2[0];
+      Euler_angle_Union[1] = Euler_angle2[1];
+      Euler_angle_Union[2] = Euler_angle[2];
   //===================================Fuzzy part===============================
-      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);            //Fuzzy roll part.
+//      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);            //Fuzzy roll part.
+//      Create_Fuzzy_Matrix(0);
+//      Defuzzification(&inpid_val[0][0],&inpid_val[0][1],&inpid_val[0][2], 0);   //Fuzzy roll end.
+//      
+//      Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);            //Fuyzzy pitch part.
+//      Create_Fuzzy_Matrix(1);
+//      Defuzzification(&inpid_val[1][0],&inpid_val[1][1],&inpid_val[1][2], 1);   //Fuzzy pitch end.
+//      
+//      Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);            //Fuzzy yaw part.
+//      Create_Fuzzy_Matrix(2);
+//      Defuzzification(&inpid_val[2][0],&inpid_val[2][1],&inpid_val[2][2], 2);   //Fuzzy yaw end.     
+//      pid_gain_update(&pid, pid_val, inpid_val);                                //From Fuzzy the PID gain value is changed.
+//      
+      Fuzzification(setting_angle[0], Euler_angle_Union[0], &prev_err[0]);      //Fuzzy roll part.
       Create_Fuzzy_Matrix(0);
       Defuzzification(&inpid_val[0][0],&inpid_val[0][1],&inpid_val[0][2], 0);   //Fuzzy roll end.
       
-      Fuzzification(setting_angle[1], Euler_angle[1], &prev_err[1]);            //Fuyzzy pitch part.
+      Fuzzification(setting_angle[1], Euler_angle_Union[1], &prev_err[1]);      //Fuyzzy pitch part.
       Create_Fuzzy_Matrix(1);
       Defuzzification(&inpid_val[1][0],&inpid_val[1][1],&inpid_val[1][2], 1);   //Fuzzy pitch end.
       
-      Fuzzification(setting_angle[2], Euler_angle[2], &prev_err[2]);            //Fuzzy yaw part.
+      Fuzzification(setting_angle[2], Euler_angle_Union[2], &prev_err[2]);      //Fuzzy yaw part.
       Create_Fuzzy_Matrix(2);
       Defuzzification(&inpid_val[2][0],&inpid_val[2][1],&inpid_val[2][2], 2);   //Fuzzy yaw end.     
       pid_gain_update(&pid, pid_val, inpid_val);                                //From Fuzzy the PID gain value is changed.
   //================================Fuzzy part END==============================
       if (HAL_GetTick() - before_while >= 5500)
       {
-        __pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.       
+        __pid_update(&pid, setting_angle, Euler_angle_Union, angular_velocity, deltat);         //PID value update.       
+        //__pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.       
         //__pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);   //PID value update.
       }    
       //if(Euler_angle[2] < 0) Euler_angle[2] += 360.0f;                        // Ensure yaw stays between 0 and 360     
@@ -386,11 +398,13 @@ int main(void)
     //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  LPF_Euler_angle[0], LPF_Euler_angle[1], LPF_Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[0],pid.output[1], pid.output[2]);   
     //sprintf((char*)uart2_tx_data,"%4d %4d %4d\r\n", (int)LPF_Euler_angle[0], (int)LPF_Euler_angle[1], (int)LPF_Euler_angle[2]);
     //sprintf((char*)uart2_tx_data,"%4d %4d %4d\r\n", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);
-    sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[2]);   
+    //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2], pid.output[2]);   
     //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2]);   
-    //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d,\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);   
+    //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2]);   
+    //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d     %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2], (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
+    sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
 
-    //UART2_TX_string((char *)uart2_tx_data);
+    UART2_TX_string((char *)uart2_tx_data);
     
  //=========================Data print transmit UART part END===================
     
@@ -412,9 +426,9 @@ int main(void)
         MOTOR_V4 = MIN_PULSE;
       }
       
-      else if (Controller_1 > 5)    //Controller_1
+      else if (Controller_1 > 5)                                                //Controller_1
       {     
-        if (fabs(Euler_angle[0]) > 15.0f || fabs(Euler_angle[1]) > 15.0f)       //Restrict yaw acting Euler angle.
+        if (fabs(Euler_angle_Union[0]) > 15.0f || fabs(Euler_angle_Union[1]) > 15.0f)       //Restrict yaw acting Euler angle.
         {           
           pid.output[2] = 0.0f;
         }
@@ -472,7 +486,8 @@ int main(void)
     
 //==========================Data transmit part==================================
 //==========================Euler_angle_chart_part==============================  
-    sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);   
+    sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
+    //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);   
     //UART1_TX_string((char *)uart1_tx_to_MFC);
 //===========================outPID inPID change part===========================  
 //     if(count == 8)
