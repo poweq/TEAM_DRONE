@@ -81,7 +81,7 @@ void fuzzy_init() {
 }//t
 }
 
-//fuzzification
+//==================================fuzzification===============================
 void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
 {
   float error = setting_angle - Euler_angle;
@@ -136,7 +136,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
         PS = 0.0f;
         PB = 1.0f;
     }
-//---------d_err-----------------------------------------------
+//==========================d_err part==========================================
     if (d_err <= DNB_derr)
     {
         DNB = 1.0f;
@@ -188,7 +188,7 @@ void Fuzzification(float setting_angle, float Euler_angle, float *prev_err)
     *prev_err = error;
 }
 
-//creation of the fuzzy matrix
+//=======================creation of the fuzzy matrix===========================
 void Create_Fuzzy_Matrix(uint8_t flag)
 {  
     Fuzzy_Matrix[0][0].Fuzzy_Val[flag] = min(NB, DNB);
@@ -222,7 +222,7 @@ void Create_Fuzzy_Matrix(uint8_t flag)
     Fuzzy_Matrix[4][4].Fuzzy_Val[flag] = min(PB, DPB);
 }
 
-//This part gives us the physical values for the coefficients
+//=======This part gives us the physical values for the coefficients============
 void Defuzzification(float *Kp, float *Ki, float *Kd, uint8_t flag) {
   _Fuzzy_stru Kp_small_flagarr[4] = {Fuzzy_Matrix[0][0], Fuzzy_Matrix[0][1], Fuzzy_Matrix[1][0], Fuzzy_Matrix[1][1]};
   _Fuzzy_stru Kp_medismall_flagarr[6] = {Fuzzy_Matrix[0][2], Fuzzy_Matrix[0][3], Fuzzy_Matrix[1][2], Fuzzy_Matrix[2][0], Fuzzy_Matrix[2][1], Fuzzy_Matrix[3][0]};
@@ -230,7 +230,7 @@ void Defuzzification(float *Kp, float *Ki, float *Kd, uint8_t flag) {
   _Fuzzy_stru Kp_medilarge_flagarr[6] = {Fuzzy_Matrix[4][2], Fuzzy_Matrix[4][1], Fuzzy_Matrix[3][2], Fuzzy_Matrix[2][4], Fuzzy_Matrix[2][3], Fuzzy_Matrix[1][4]};
   _Fuzzy_stru Kp_large_flagarr[4] = {Fuzzy_Matrix[4][4], Fuzzy_Matrix[4][3], Fuzzy_Matrix[3][4], Fuzzy_Matrix[3][3]};
      
-  Find_Maxarr(Kp_small_flagarr, 4, 1, flag); //Find_Maxarr(array name, number of array element, K_value sequence, roll_pitch_yaw flag).
+  Find_Maxarr(Kp_small_flagarr, 4, 1, flag);                                    //Find_Maxarr(array name, number of array element, K_value sequence, roll_pitch_yaw flag).
   Find_Maxarr(Kp_medismall_flagarr, 6, 2, flag);
   Find_Maxarr(Kp_medium_flagarr, 5, 3, flag);
   Find_Maxarr(Kp_medilarge_flagarr, 6, 4, flag);

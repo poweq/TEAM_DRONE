@@ -3,25 +3,25 @@
 
 #include "Quaternion.h"
 
-#define twoKp      (2.0f * 10.0f)        // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
-#define twoKi      (2.0f * 0.002f)
-#define PI         (3.141592f)
-#define sampleFreq      (500.0f)
+#define twoKp            (2.0f * 10.0f)                                         // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+#define twoKi            (2.0f * 0.002f)
+#define PI               (3.141592f)
+#define sampleFreq       (500.0f)
 
 // Variable definitions
-float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;			// quaternion of sensor frame relative to auxiliary frame
-float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;	// integral error terms scaled by Ki
+float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;			        // quaternion of sensor frame relative to auxiliary frame
+float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;	        // integral error terms scaled by Ki
 float eInt[3] = {0,0,0};
-//=====================================================================================================
+//==============================================================================
 // MahonyAHRS.c
-//=====================================================================================================
+//==============================================================================
 // Madgwick's implementation of Mayhony's AHRS algorithm.
 // See: http://www.x-io.co.uk/node/8#open_source_ahrs_and_imu_algorithms
 //
 // Date			Author			Notes
 // 29/09/2011	SOH Madgwick    Initial release
 // 02/10/2011	SOH Madgwick	Optimised for reduced CPU load
-//====================================================================================================
+//==============================================================================
 // AHRS algorithm update
 
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz, float* q, float deltat) {
@@ -136,8 +136,8 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
         q[3] = q3;
 }
 
-//---------------------------------------------------------------------------------------------------
-// IMU algorithm update
+//==============================================================================
+//=======IMU algorithm update======================================================
 
 void MahonyAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float gz, float* q, float deltat) {
 	float recipNorm;
@@ -216,8 +216,8 @@ void MahonyAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float
         q[3] = q3;
 }
 
-// Fast inverse square-root
-// See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
+//=======Fast inverse square-root===============================================
+//=======See: http://en.wikipedia.org/wiki/Fast_inverse_square_root=============
 float invSqrt(float x) {
 	float halfx = 0.5f * x;
 	float y = x;
@@ -249,8 +249,8 @@ void Quternion2Euler(float *q, float *Euler_angle)
 
 
 
- // Similar to Madgwick scheme but uses proportional and integral filtering on the error between estimated reference vectors and
- // measured ones. 
+ //=======Similar to Madgwick scheme but uses proportional and integral filtering on the error between estimated reference vectors and
+ //=======measured ones=========================================================
             void MahonyQuaternionUpdate2(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz, float* q, float deltat)
         {
             float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
