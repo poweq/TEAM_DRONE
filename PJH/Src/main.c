@@ -280,8 +280,8 @@ int main(void)
   before_while = HAL_GetTick(); //Get time of before while loop.
   lastUpdate = before_while;    //First time of lastUpdate using for gain the deltat.  
   
-  //LL_USART_EnableIT_RXNE(USART1);
-  //LL_USART_EnableIT_RXNE(USART2);
+  LL_USART_EnableIT_RXNE(USART1);
+  LL_USART_EnableIT_RXNE(USART2);
   
   /* USER CODE END 2 */
 
