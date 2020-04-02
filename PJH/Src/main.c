@@ -404,11 +404,8 @@ int main(void)
     //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d     %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2], (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
-<<<<<<< HEAD
    // sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
-=======
     sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
->>>>>>> 592906ae1662c8973892a45ed8bd5b0634f382a5
 
     UART2_TX_string((char *)uart2_tx_data);
     
