@@ -1,6 +1,6 @@
 #include "main.h"
 #include "nRF24_Receive.h"
-#include "stm32f4xx_hal.h"
+
 
 //========================nRF24L01 FUNCTION==============================
 void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  pid, float* setting_angle, float Euler_angle_yaw)
@@ -220,9 +220,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
 
 void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, float Euler_angle_yaw)    // Controller에서 PID값 수신
 {
-  static uint32_t first ;
-   static uint8_t con_flag;
-   
+  
   int value='\0';     // 컨트롤러에서 받은 key_input 값 저장 변수
   uint8_t dataIn[8]={0};                                     // Controller Data Receive Buffer
 
@@ -231,7 +229,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
   if(TM_NRF24L01_DataReady())
   {
    // printf("Receive_Data_Ok : %d\r\n",TM_NRF24L01_DataReady());
-       con_flag=0;
+       
       TM_NRF24L01_GetData(dataIn);
       
         if(dataIn[7]=='q'||dataIn[7]=='Q')      // q 눌렀을 때 퀵 테스트
@@ -328,27 +326,6 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
         
       NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle,Euler_angle_yaw);        //  수신된 데이터 저장 함수
       TM_NRF24L01_PowerUpRx();
-  }
-  else 
-  {   
-    
-    if (con_flag == 0)
-    {
-      first = HAL_GetTick();
-      con_flag = 1;
-    }
-    
-    if(HAL_GetTick() - first >= 2000)
-    {    
-      //UART2_TX_string("no connection \r\n ");      
-      setting_angle[0] = 0;
-      setting_angle[1] = 0;
-      *Throttle = 73;
-      if(HAL_GetTick() - first >= 22000)
-      {
-        *Throttle = 10;
-      }
-    }
   }
 }
 //===================================================
