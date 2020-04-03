@@ -100,7 +100,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
   float Kp_term, Ki_term, Kd_term;
   float D_err = 0.0f;
   float stabilPgain = 0.0f;
-  float stabilIgain = 0.0f;   
+  static float stabilIgain[3] = 0.0f;   
     
   switch (axis)
   {
@@ -111,7 +111,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->err[0] = constrain(pid->err[0], PID_IMIN, PID_IMAX);
         
         stabilPgain = pid->Kp[0] * pid->err[0];                                          //p항 = Kp * 오차
-        stabilIgain += pid->Ki[0] *pid->err[0] * deltat;
+        stabilIgain[0] += pid->Ki[0] *pid->err[0] * deltat;
           
         pid->rateError[0] = stabilPgain - angular_velocity;
 
@@ -125,7 +125,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         D_err = (pid->rateError[0] - pid->preRateError[0]) / deltat;             //오차미분 = (현재rate오차-이전rate오차)/dt.        
         Kd_term = pid->iKd[0] * D_err;                                                       //d항 = Kd * rate오차미분.	
         
-        pid->output[0] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //제어량 = Kp항 + Ki항 + Kd항
+        pid->output[0] = Kp_term + Ki_term + Kd_term + stabilIgain[0];                               //제어량 = Kp항 + Ki항 + Kd항
 
         pid->preRateError[0] = pid->rateError[0];                                      //현재rate오차를 이전rate오차로.
         
@@ -138,7 +138,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->err[1] = constrain(pid->err[1], PID_IMIN, PID_IMAX);
         
         stabilPgain = pid->Kp[1] * pid->err[1];                                          //p항 = Kp * 오차
-        stabilIgain += pid->Ki[1] *pid->err[1] * deltat;
+        stabilIgain[1] += pid->Ki[1] *pid->err[1] * deltat;
 
         
         pid->rateError[1] =  stabilPgain - angular_velocity;
@@ -153,7 +153,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         D_err = (pid->rateError[1] - pid->preRateError[1]) / deltat;             //오차미분 = (현재rate오차-이전rate오차)/dt.        
         Kd_term = pid->iKd[1] * D_err;                                                       //d항 = Kd * rate오차미분.	
         
-        pid->output[1] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //제어량 = Kp항 + Ki항 + Kd항
+        pid->output[1] = Kp_term + Ki_term + Kd_term + stabilIgain[1];                               //제어량 = Kp항 + Ki항 + Kd항
 
         pid->preRateError[1] = pid->rateError[1];                                      //현재rate오차를 이전rate오차로.
 
@@ -172,7 +172,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->err[2] = constrain(pid->err[2], PID_IMIN, PID_IMAX);
         
         stabilPgain = pid->Kp[2] * pid->err[2];                                           //p항 = Kp * 오차
-        stabilIgain += pid->Ki[2] *pid->err[2] * deltat;
+        stabilIgain[2] += pid->Ki[2] *pid->err[2] * deltat;
 
         pid->rateError[2] = stabilPgain - angular_velocity;
 
@@ -186,7 +186,7 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         D_err = (pid->rateError[2] - pid->preRateError[2]) / deltat;             //오차미분 = (현재rate오차-이전rate오차)/dt.        
         Kd_term = pid->iKd[2] * D_err;                                                       //d항 = Kd * rate오차미분.	
         
-        pid->output[2] = Kp_term + Ki_term + Kd_term + stabilIgain;                               //제어량 = Kp항 + Ki항 + Kd항
+        pid->output[2] = Kp_term + Ki_term + Kd_term + stabilIgain[2];                               //제어량 = Kp항 + Ki항 + Kd항
 
         pid->preRateError[2] = pid->rateError[2];                                      //현재rate오차를 이전rate오차로.
 
