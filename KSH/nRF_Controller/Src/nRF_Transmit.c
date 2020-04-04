@@ -28,7 +28,7 @@ void nRF24_Transmit(float* temp, uint8_t adr_value)
       {
         TM_NRF24L01_Transmit((uint8_t*)buffer);
         nRF24_Transmit_Status();
-        if(No_Connection >= 1000)
+        if(No_Connection >= 5)
         {
           //printf("No Connection!\r\n");
           No_Connection=0;
@@ -66,7 +66,7 @@ void nRF24_Transmit_ADC(int8_t* temp, uint8_t adr_value)
       {
         TM_NRF24L01_Transmit((uint8_t*)buffer);
         //nRF24_Transmit_Status();
-        if(No_Connection >= 10)
+        if(No_Connection >= 5)
         {
           //printf("No Connection!\r\n");
           No_Connection=0;
@@ -89,6 +89,7 @@ void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
     /* Reset time, start counting microseconds */
   TM_DELAY_SetTime(0);
   buffer[7] = (uint8_t)adr_value;
+  
   /* Transmit data, goes automatically to TX mode */
   TM_NRF24L01_Transmit((uint8_t*)buffer);
   
@@ -102,7 +103,7 @@ void nRF24_Transmit_Set_Point(int* temp, uint8_t adr_value)
         
         TM_NRF24L01_Transmit((uint8_t*)buffer);
         nRF24_Transmit_Status();
-        if(No_Connection >= 300)
+        if(No_Connection >= 5)
         {
           //printf("No Connection!\r\n");
           break;

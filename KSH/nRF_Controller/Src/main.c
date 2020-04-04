@@ -52,8 +52,8 @@
 #define _Roll                                      1
 #define _Yaw                                      3
 #define _Throttle                                  2
-#define EXTI_PIN_PC12                        4096
-#define EXTI_PIN_PC10                        1024
+#define EXTI_PIN_PC12                        4096                       // External Interrupt Pin 12
+#define EXTI_PIN_PC10                        1024                       // External Interrupt Pin 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -305,18 +305,6 @@ int main(void)
 
     }
    
-//   else if(button_flag2 == 1)
-//   {
-//     printf("pc10 ok\r\n");
-//     button_flag2 = 0;
-//   }
-   
-//   else if(button_flag3 == 1)
-//   {
-//     printf("pc12 ok\r\n");
-//     button_flag3 = 0;
-//   }
-   
    /*========================DEBUG MODE===================*/
     
   else if(button_flag == Debug_Mode_Flag)
@@ -352,20 +340,8 @@ int main(void)
             while(exit_flag ==0)
             {
              
-              nRF24_Transmit_Mode_Change(key_input);
+             nRF24_Transmit_Mode_Change(key_input);
               
-             //nRF24_Transmit_Status();
-//             TM_NRF24L01_PowerUpRx();
-//             
-//             while (!TM_NRF24L01_DataReady() && TM_DELAY_Time() < 100);
-//             
-//             
-//             TM_NRF24L01_GetData(dataIn);
-//              //*test_buf = atof((char*) dataIn);
-//              //printf("%.3f\r\n",test_buf[0]);
-//             printf("dataIn : %s\r\n",dataIn);
-//             memset(dataIn,'\0',8);
-                        
              Display_UI();
              
             while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
