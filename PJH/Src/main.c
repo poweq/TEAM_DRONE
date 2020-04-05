@@ -29,7 +29,6 @@
 #include <stdlib.h>
 
 #include "stm32f4xx_hal.h"
-#include "tm_stm32_mpu9250.h"
 #include "Quaternion.h"
 #include "pid.h"
 #include "PWM.h"
@@ -37,6 +36,7 @@
 #include "fuzzy.h"
 #include "STM32F4_FLASH_MEMORY.h"
 #include "nRF24_Receive.h"
+#include "tm_stm32_mpu9250.h"
 #include "tm_stm32_nrf24l01.h"
 #include "tm_stm32_delay.h"
 
@@ -77,18 +77,16 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_TIM3_Init(void);
-static void MX_USART2_UART_Init(void);
-static void MX_TIM2_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
 static void MX_TIM5_Init(void);
+static void MX_USART1_UART_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void UART1_TX_string(char* str);
 void UART2_TX_string(char* str);
 void uart_recv_val(uint8_t* arr);
-//void STM32f4_USART2_Init(void);
-//void System_information(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -186,11 +184,11 @@ int main(void)
   //====================Hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};                                  //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {1.32f, 0.3f, 0.0f}, {3.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {12.0f, 1.0f, 1.7f}, {5.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {2.0f, 0.0f, 40.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {2.0f, 2.0f, 0.0f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                                                    //For double loop PID.
+
   /* USER CODE END 1 */
-  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -218,12 +216,12 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2C1_Init();
-  MX_TIM3_Init();
-  MX_USART2_UART_Init();
-  MX_TIM2_Init();
-  MX_USART1_UART_Init();
   MX_SPI1_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
   MX_TIM5_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 //System_information();
 //STM32f4_USART2_Init();
@@ -272,8 +270,6 @@ int main(void)
 //  LL_USART_EnableIT_RXNE(USART1);
 //  LL_USART_EnableIT_RXNE(USART2);
   /* USER CODE END 2 */
- 
- 
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -330,9 +326,9 @@ int main(void)
     lastUpdate = Now;                                                           //Update lastupdate time to current time.
   //============================Get delta T END=================================
   //============================================================================
-    angular_velocity[0] = MPU9250.Gx / 500.0f * dt;                             //angular velocity (degree/2ms(*2))
-    angular_velocity[1] = MPU9250.Gy / 500.0f * dt;
-    angular_velocity[2] = MPU9250.Gz / 500.0f * dt;    
+    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;                             //angular velocity (degree/1ms(*2))
+    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
+    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
     
     if (deltat >= dt)                                                           //Update term (500Hz.dt=2).
     {
@@ -360,18 +356,18 @@ int main(void)
 //      Defuzzification(&inpid_val[2][0],&inpid_val[2][1],&inpid_val[2][2], 2);   //Fuzzy yaw end.     
 //      pid_gain_update(&pid, pid_val, inpid_val);                                //From Fuzzy the PID gain value is changed.
 //      
-      Fuzzification(setting_angle[0], Euler_angle_Union[0], &prev_err[0]);      //Fuzzy roll part.
-      Create_Fuzzy_Matrix(0);
-      Defuzzification(&inpid_val[0][0],&inpid_val[0][1],&inpid_val[0][2], 0);   //Fuzzy roll end.
-      
-      Fuzzification(setting_angle[1], Euler_angle_Union[1], &prev_err[1]);      //Fuyzzy pitch part.
-      Create_Fuzzy_Matrix(1);
-      Defuzzification(&inpid_val[1][0],&inpid_val[1][1],&inpid_val[1][2], 1);   //Fuzzy pitch end.
-      
-      Fuzzification(setting_angle[2], Euler_angle_Union[2], &prev_err[2]);      //Fuzzy yaw part.
-      Create_Fuzzy_Matrix(2);
-      Defuzzification(&inpid_val[2][0],&inpid_val[2][1],&inpid_val[2][2], 2);   //Fuzzy yaw end.     
-      pid_gain_update(&pid, pid_val, inpid_val);                                //From Fuzzy the PID gain value is changed.
+//      Fuzzification(setting_angle[0], Euler_angle_Union[0], &prev_err[0]);      //Fuzzy roll part.
+//      Create_Fuzzy_Matrix(0);
+//      Defuzzification(&inpid_val[0][0],&inpid_val[0][1],&inpid_val[0][2], 0);   //Fuzzy roll end.
+//      
+//      Fuzzification(setting_angle[1], Euler_angle_Union[1], &prev_err[1]);      //Fuyzzy pitch part.
+//      Create_Fuzzy_Matrix(1);
+//      Defuzzification(&inpid_val[1][0],&inpid_val[1][1],&inpid_val[1][2], 1);   //Fuzzy pitch end.
+//      
+//      Fuzzification(setting_angle[2], Euler_angle_Union[2], &prev_err[2]);      //Fuzzy yaw part.
+//      Create_Fuzzy_Matrix(2);
+//      Defuzzification(&inpid_val[2][0],&inpid_val[2][1],&inpid_val[2][2], 2);   //Fuzzy yaw end.     
+//      pid_gain_update(&pid, pid_val, inpid_val);                                //From Fuzzy the PID gain value is changed.
   //================================Fuzzy part END==============================
       if (HAL_GetTick() - before_while >= 5500)
       {
@@ -405,7 +401,7 @@ int main(void)
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d     %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2], (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
    // sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
-    sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
+    sprintf((char*)uart2_tx_data,"%4d,%4d,%4d  %7.2f %7.2f %7.2f\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2],pid.output[0],pid.output[1], pid.output[2]);   
 
     UART2_TX_string((char *)uart2_tx_data);
     
@@ -706,7 +702,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 9-1;
+  htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 16000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -1011,8 +1007,8 @@ static void MX_DMA_Init(void)
 
   /* Init with LL driver */
   /* DMA controller clock enable */
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
 
   /* DMA interrupt init */
   /* DMA1_Stream5_IRQn interrupt configuration */

@@ -5,6 +5,7 @@
 #define PID_IMIN              (-60.0f)
 #define sampleFreq          (500.0f)
 
+#define STgain                  (0.5)
 
 extern float deltat;
 
@@ -91,7 +92,7 @@ void __pid_update(__PID * pid, float * setting_angle, float * Euler_angle, float
   pid_update(pid, setting_angle[1], Euler_angle[1], angular_velocity[1], 1, deltat);
   pid_update(pid, setting_angle[2], Euler_angle[2], angular_velocity[2], 2, deltat);
 }
-#if 1 //double loop PID 
+#if 0 //double loop PID 
 void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis, float deltat)
 {  
   //set 목표각도
@@ -191,6 +192,82 @@ void pid_update(__PID * pid, float set, float actual, float angular_velocity, in
         pid->preRateError[2] = pid->rateError[2];                                      //현재rate오차를 이전rate오차로.
 
       break;
+    }
+  }
+	
+}
+#elif 1
+void pid_update(__PID * pid, float set, float actual, float angular_velocity, int axis, float deltat)
+{  
+  //set 목표각도
+  //actual 현재각도
+  //angular_velocity 현재 각속도
+  //float Kp_term, Ki_term, Kd_term;
+  //float D_err = 0.0f;
+  //float stabilPgain = 0.0f;
+  //static float stabilIgain[3] = {0, 0, 0};   
+  static float sum_angle_error[3] =  {0, 0, 0};
+  
+  switch (axis)
+  {
+  case 0: //roll
+    {      
+        pid->err[0] = actual - set;                                                            //오차 = 목표치 - 현재값	
+
+        pid->err[0] = constrain(pid->err[0], PID_IMIN, PID_IMAX);
+
+        angular_velocity *= 100;
+
+        pid->rateError[0] = angular_velocity - pid->err[0] * STgain;
+
+        sum_angle_error[0] += pid->err[0] * 0.01;
+
+        pid->output[0] = (pid->Kp[0] * pid->rateError[0] + pid->Kd[0]*(pid->rateError[0] \
+        - pid->preRateError[0]) - pid->err[0]*pid->iKp[0] - sum_angle_error[0]*pid->iKi[0]);
+
+        pid->preRateError[0] = pid->rateError[0];                                      //현재rate오차를 이전rate오차로.
+
+        break;
+    }
+  case 1: //pitch
+    {
+        pid->err[1] = actual - set;                                                            //오차 = 목표치 - 현재값	
+
+        pid->err[1] = constrain(pid->err[1], PID_IMIN, PID_IMAX);
+
+        angular_velocity *= 100;
+
+        pid->rateError[1] = angular_velocity - pid->err[1] * STgain;
+
+        sum_angle_error[1] += pid->err[1] * 0.01;
+
+        pid->output[1] = (pid->Kp[1] * pid->rateError[1] + pid->Kd[1]*(pid->rateError[1] \
+        - pid->preRateError[1]) - pid->err[1]*pid->iKp[1] - sum_angle_error[1]*pid->iKi[1]);
+
+        pid->preRateError[1] = pid->rateError[1];                                      //현재rate오차를 이전rate오차로.
+
+        break;
+
+    }
+  case 2:  //yaw
+    {
+        pid->err[2] = actual - set;                                                            //오차 = 목표치 - 현재값	
+
+        pid->err[2] = constrain(pid->err[2], PID_IMIN, PID_IMAX);
+
+        angular_velocity *= 100;
+
+        pid->rateError[2] = angular_velocity - pid->err[2] * STgain;
+
+        sum_angle_error[2] += pid->err[2] * 0.01;
+
+        pid->output[2] = (pid->Kp[2] * pid->rateError[2] + pid->Kd[2]*(pid->rateError[2] \
+        - pid->preRateError[2]) - pid->err[2]*pid->iKp[2] - sum_angle_error[2]*pid->iKi[2]);
+
+        pid->preRateError[2] = pid->rateError[2];                                      //현재rate오차를 이전rate오차로.
+
+        break;
+
     }
   }
 	
