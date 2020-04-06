@@ -184,8 +184,12 @@ int main(void)
   //====================Hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};                                  //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {2.0f, 0.0f, 40.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {2.0f, 2.0f, 0.0f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {2.0f, 0.0f, 40.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {2.0f, 2.0f, 0.0f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {40.0f, 0.01f, 0.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {0.801f, 0.001f, 0.068f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {2.2f, 0.01f, 0.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {20.801f, 0.001f, 4.068f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                                                    //For double loop PID.
 
   /* USER CODE END 1 */
@@ -326,9 +330,9 @@ int main(void)
     lastUpdate = Now;                                                           //Update lastupdate time to current time.
   //============================Get delta T END=================================
   //============================================================================
-    angular_velocity[0] = MPU9250.Gx / 1000.0f * dt;                             //angular velocity (degree/1ms(*2))
-    angular_velocity[1] = MPU9250.Gy / 1000.0f * dt;
-    angular_velocity[2] = MPU9250.Gz / 1000.0f * dt;    
+    angular_velocity[0] = MPU9250.Gx / 100.0f * dt;                             //angular velocity (degree/1ms(*2))
+    angular_velocity[1] = MPU9250.Gy / 100.0f * dt;
+    angular_velocity[2] = MPU9250.Gz / 100.0f * dt;    
     
     if (deltat >= dt)                                                           //Update term (500Hz.dt=2).
     {
@@ -403,7 +407,7 @@ int main(void)
    // sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
     sprintf((char*)uart2_tx_data,"%4d,%4d,%4d  %7.2f %7.2f %7.2f\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2],pid.output[0],pid.output[1], pid.output[2]);   
 
-    UART2_TX_string((char *)uart2_tx_data);
+    //UART2_TX_string((char *)uart2_tx_data);
     
  //=========================Data print transmit UART part END===================
     
@@ -432,10 +436,10 @@ int main(void)
           pid.output[2] = 0.0f;
         }
         
-        MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_pitch * pid.output[1]);
+        MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_pitch * pid.output[1]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);
        // MOTOR_V1 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V1 >= MAX_PULSE)// - MOTER_SAFTY)
@@ -443,10 +447,10 @@ int main(void)
         else if (MOTOR_V1 <= MIN_PULSE + 700)
           MOTOR_V1 = MIN_PULSE + 700;
         
-        MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)((MoterGain_pitch) * pid.output[1]);
+        MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V2 >= MAX_PULSE)// - MOTER_SAFTY)
@@ -454,10 +458,10 @@ int main(void)
         else if (MOTOR_V2 <= MIN_PULSE + 700)
           MOTOR_V2 = MIN_PULSE + 700;
         
-        MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_pitch * pid.output[1]);
+        MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_pitch * pid.output[1]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V3 >= MAX_PULSE)// - MOTER_SAFTY)
@@ -465,10 +469,10 @@ int main(void)
         else if (MOTOR_V3 <= MIN_PULSE + 700)
           MOTOR_V3 = MIN_PULSE + 700;
         
-        MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_yaw * pid.output[2]); 
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)((MoterGain_pitch) * pid.output[1]); 
+        MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]);
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V4 >= MAX_PULSE)// - MOTER_SAFTY)
