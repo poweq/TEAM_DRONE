@@ -39,6 +39,7 @@
 #include "tm_stm32_mpu9250.h"
 #include "tm_stm32_nrf24l01.h"
 #include "tm_stm32_delay.h"
+#include "utils.h"
 
 /* USER CODE END Includes */
 
@@ -86,7 +87,7 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void UART1_TX_string(char* str);
 void UART2_TX_string(char* str);
-void uart_recv_val(uint8_t* arr);
+void uart_recv_val(uint8_t* arr, __PID* pid,int *Controller_1, float* setting_angle);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -188,8 +189,8 @@ int main(void)
 //  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {2.0f, 2.0f, 0.0f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
 //  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {40.0f, 0.01f, 0.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
 //  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {0.801f, 0.001f, 0.068f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {2.2f, 0.01f, 0.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {20.801f, 0.001f, 4.068f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{0.9f, 0.01f, 0.0f}, {0.8f, 0.01f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{38.501f, 0.01f, 0.570f}, {45.501f, 0.01f, 0.970f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                                                    //For double loop PID.
 
   /* USER CODE END 1 */
@@ -271,7 +272,7 @@ int main(void)
   before_while = HAL_GetTick();                                                 //Get time of before while loop.
   lastUpdate = before_while;                                                    //First time of lastUpdate using for gain the deltat.  
   
-//  LL_USART_EnableIT_RXNE(USART1);
+  LL_USART_EnableIT_RXNE(USART1);
 //  LL_USART_EnableIT_RXNE(USART2);
   /* USER CODE END 2 */
 
@@ -330,9 +331,9 @@ int main(void)
     lastUpdate = Now;                                                           //Update lastupdate time to current time.
   //============================Get delta T END=================================
   //============================================================================
-    angular_velocity[0] = MPU9250.Gx / 100.0f * dt;                             //angular velocity (degree/1ms(*2))
-    angular_velocity[1] = MPU9250.Gy / 100.0f * dt;
-    angular_velocity[2] = MPU9250.Gz / 100.0f * dt;    
+    angular_velocity[0] = MPU9250.Gx / 10.0f * dt;                              //angular velocity (degree/1ms(*2))
+    angular_velocity[1] = MPU9250.Gy / 10.0f * dt;
+    angular_velocity[2] = MPU9250.Gz / 10.0f * dt;    
     
     if (deltat >= dt)                                                           //Update term (500Hz.dt=2).
     {
@@ -346,6 +347,7 @@ int main(void)
       Euler_angle_Union[0] = Euler_angle2[0];
       Euler_angle_Union[1] = Euler_angle2[1];
       Euler_angle_Union[2] = Euler_angle[2];
+      Euler_angle_Union[0] = constrain(Euler_angle_Union[0], -90.0, 90.0);
   //===================================Fuzzy part===============================
 //      Fuzzification(setting_angle[0], Euler_angle[0], &prev_err[0]);            //Fuzzy roll part.
 //      Create_Fuzzy_Matrix(0);
@@ -378,6 +380,10 @@ int main(void)
         __pid_update(&pid, setting_angle, Euler_angle_Union, angular_velocity, deltat);         //PID value update.       
         //__pid_update(&pid, setting_angle, Euler_angle, angular_velocity, deltat);         //PID value update.       
         //__pid_update(&pid, setting_angle, LPF_Euler_angle, angular_velocity, deltat);   //PID value update.
+        pid.output[0] = constrain(pid.output[0], -6000.0, 6000.0);
+        pid.output[1] = constrain(pid.output[1], -6000.0, 6000.0);
+        pid.output[2] = constrain(pid.output[2], -6000.0, 6000.0);
+
       }    
       //if(Euler_angle[2] < 0) Euler_angle[2] += 360.0f;                        // Ensure yaw stays between 0 and 360     
       deltat = 0.0f;                                                            //reset deltat.
@@ -404,10 +410,10 @@ int main(void)
     //sprintf((char*)uart2_tx_data,"%10.2f  %10.2f  %10.2f  %10.2f  %10.2f  %10.2f\r\n",  Euler_angle[0], Euler_angle[1], Euler_angle[2], setting_angle[0], setting_angle[1], setting_angle[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d     %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2], (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
-   // sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
+    //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
     sprintf((char*)uart2_tx_data,"%4d,%4d,%4d  %7.2f %7.2f %7.2f\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2],pid.output[0],pid.output[1], pid.output[2]);   
-
-    //UART2_TX_string((char *)uart2_tx_data);
+    //sprintf((char*)uart2_tx_data,"%7.2f %7.2f %7.2f\r\n", pid.iKp[0],pid.iKi[0],pid.iKd[0]);
+    UART2_TX_string((char *)uart2_tx_data);
     
  //=========================Data print transmit UART part END===================
     
@@ -437,10 +443,10 @@ int main(void)
         }
         
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_pitch * pid.output[1]);
-        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_yaw * pid.output[2]);
+        MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_pitch * pid.output[1]);
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_roll * pid.output[0]);
        // MOTOR_V1 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V1 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V1 = MAX_PULSE;// -  MOTER_SAFTY;
@@ -448,10 +454,10 @@ int main(void)
           MOTOR_V1 = MIN_PULSE + 700;
         
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]);
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_yaw * pid.output[2]);
+        MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_roll * pid.output[0]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V2 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V2 = MAX_PULSE;// - MOTER_SAFTY;
@@ -459,10 +465,10 @@ int main(void)
           MOTOR_V2 = MIN_PULSE + 700;
         
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_yaw * pid.output[2]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
-        MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_pitch * pid.output[1]);
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_roll * pid.output[0]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_yaw * pid.output[2]);
+        MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_pitch * pid.output[1]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_roll * pid.output[0]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V3 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V3 = MAX_PULSE;// - MOTER_SAFTY;
@@ -470,10 +476,10 @@ int main(void)
           MOTOR_V3 = MIN_PULSE + 700;
         
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(MoterGain_yaw * pid.output[2]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
-        MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(MoterGain_roll * pid.output[0]);
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_yaw * pid.output[2]); 
+        MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_roll * pid.output[0]);
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70);
         if (MOTOR_V4 >= MAX_PULSE)// - MOTER_SAFTY)
           MOTOR_V4 = MAX_PULSE;// - MOTER_SAFTY;
@@ -493,11 +499,11 @@ int main(void)
     //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);   
     //UART1_TX_string((char *)uart1_tx_to_MFC);
 //===========================outPID inPID change part===========================  
-//     if(count == 8)
-//    {
-//      count = 0;
-//      uart_recv_val(uart1_rx_irq_buffer); 
-//    }     
+     if(count == 8)
+    {
+      count = 0;
+      uart_recv_val(uart1_rx_irq_buffer, &pid, &Controller_1, setting_angle); 
+    }     
 //============================Data transmit part END============================    
 //================================TIme Check====================================
 //================================TIme Check END================================
@@ -1081,150 +1087,169 @@ void UART2_TX_string(char* str){
   }
 }
 
-void uart_recv_val(uint8_t* arr)
+void uart_recv_val(uint8_t* arr, __PID* pid,int *Controller_1, float* setting_angle)
 {
     char pid_buf[8]={0,};
-    char debuging_buf[3] = "\r\n";
+    //char debuging_buf[3] = "\r\n";
     memset(pid_buf,'\0',sizeof(pid_buf));
-    UART2_TX_string(debuging_buf);
+    //UART2_TX_string(debuging_buf);
                           
     switch(arr[6])
     {
       case '1' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKp[0] = atof(pid_buf);
         //inpid_val[0][0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case '2' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKi[0] = atof(pid_buf);
         //inpid_val[0][1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case '3' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKd[0] = atof(pid_buf);
         //inpid_val[0][2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
         case '4' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKp[1] = atof(pid_buf);
         //inpid_val[1][0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case '5' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKi[1] = atof(pid_buf);
         //inpid_val[1][1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case '6' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKd[1] = atof(pid_buf);
         //inpid_val[1][2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
+        
         case '7' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKp[2] = atof(pid_buf);
         //inpid_val[2][0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case '8' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKi[2] = atof(pid_buf);
         //inpid_val[2][1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case '9' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->iKd[2] = atof(pid_buf);
         //inpid_val[2][2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
         
       case 'a' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Kp[0] = atof(pid_buf);
         //pid_val[0][0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case 'b' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Ki[0] = atof(pid_buf);
         //pid_val[0][1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case 'c' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Kd[0] = atof(pid_buf);
         //pid_val[0][2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
         case 'd' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Kp[1] = atof(pid_buf);
         //pid_val[1][0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case 'e' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Ki[1] = atof(pid_buf);
         //pid_val[1][1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case 'f' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Kd[1] = atof(pid_buf);
         //pid_val[1][2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       case 'g' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Kp[2] = atof(pid_buf);
         //pid_val[2][0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
      case 'h' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Ki[2] = atof(pid_buf);
         //pid_val[2][1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
      case 'i' :
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
+        pid->Kd[2] = atof(pid_buf);
         //pid_val[2][2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
     case 'T':
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
-        //*Controller_1 = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        *Controller_1 = atoi(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
     case 'R':
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
-        //setting_angle[0] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        setting_angle[0] = atof(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
     case 'P':
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
-        //setting_angle[1] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        setting_angle[1] = atof(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
     case 'Y':
         memcpy(pid_buf,arr,6);
         pid_buf[6] = '\0';
-        //setting_angle[2] = atof(pid_buf);
-        UART2_TX_string(pid_buf);
+        setting_angle[2] = atof(pid_buf);
+        //UART2_TX_string(pid_buf);
         break;
       
-      default: break;
+    default: break;
   }
 }
 

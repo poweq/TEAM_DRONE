@@ -9,11 +9,11 @@
 typedef struct PID
 {
 	float err[3]; 
-        float rateError[3];
+    float rateError[3];
 	float err_last[3]; 
-        float preRateError[3];
+    float preRateError[3];
 	float Kp[3],Ki[3],Kd[3];
-        float iKp[3],iKi[3],iKd[3];
+    float iKp[3],iKi[3],iKd[3];
 	float output[3];
 	float integral[3];
 }__PID;

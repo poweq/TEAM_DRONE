@@ -343,8 +343,8 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
 //      //UART2_TX_string("no connection \r\n ");      
 //      setting_angle[0] = 0;
 //      setting_angle[1] = 0;
-//      *Throttle = 15;
-//      if(HAL_GetTick() - first >= 22000)
+//      *Throttle = 30;
+//      if(HAL_GetTick() - first >= 12000)
 //      {
 //        *Throttle = 10;
 //      }

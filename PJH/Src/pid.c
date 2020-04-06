@@ -394,74 +394,74 @@ void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
     pid_val[2][2] = atof(Y_D);   
 }
 */
-void Parsing_inPID_val(uint8_t* arr, float inpid_val[][3])
-{
-    char* input_pid_val[3][3];
-    input_pid_val[0][0] =  strtok((char*)arr, ",");
-    input_pid_val[0][1] =  strtok(NULL, ",");
-    input_pid_val[0][2] =  strtok(NULL, ",");
-      
-    for(int i=1; i<3; i++)
-    {
-        for(int j=0;j<3;j++)
-        {
-          input_pid_val[i][j] = strtok(NULL, ",");
-        }
-    }
-    
-    
-    for(int i = 0; i<3; i++)
-    {
-      for(int j=0; j<3; j++)
-      {
-        if(strcmp(input_pid_val[i][j],"0.000")!=0)
-          inpid_val[i][j] = atof(input_pid_val[i][j]);
-      }
-    }
-    
-}
-
-void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
-{
-    char* input_pid_val[3][3];
-    input_pid_val[0][0] =  strtok((char*)arr, ",");
-    input_pid_val[0][1] =  strtok(NULL, ",");
-    input_pid_val[0][2] =  strtok(NULL, ",");
-      
-    for(int i=1; i<3; i++)
-    {
-        for(int j=0;j<3;j++)
-        {
-          input_pid_val[i][j] = strtok(NULL, ",");
-        }
-    }
-    
-    
-    for(int i = 0; i<3; i++)
-    {
-      for(int j=0; j<3; j++)
-      {
-        if(strcmp(input_pid_val[i][j],"0.000")!=0)
-          pid_val[i][j] = atof(input_pid_val[i][j]);
-      }
-    }
-}
-
-void Parsing_Throttle_val(uint8_t* arr, int *Controller_1)
-{
-    char* T;
-    T = strtok((char*)arr, ",");         
-    *Controller_1 = atoi(T);   
-}
-
-void Parsing_SettingPoint_val(uint8_t* arr, float* setting_angle)
-{
-    char* Setting_R, *Setting_P, *Setting_Y;
-    Setting_R = strtok((char*)arr, ",");
-    Setting_P = strtok(NULL, ",");
-    Setting_Y = strtok(NULL,",");    
-     
-    setting_angle[0] = atof(Setting_R);
-    setting_angle[1] = atof(Setting_P);
-    setting_angle[2] = atof(Setting_Y);   
-}
+//void Parsing_inPID_val(uint8_t* arr, float inpid_val[][3])
+//{
+//    char* input_pid_val[3][3];
+//    input_pid_val[0][0] =  strtok((char*)arr, ",");
+//    input_pid_val[0][1] =  strtok(NULL, ",");
+//    input_pid_val[0][2] =  strtok(NULL, ",");
+//      
+//    for(int i=1; i<3; i++)
+//    {
+//        for(int j=0;j<3;j++)
+//        {
+//          input_pid_val[i][j] = strtok(NULL, ",");
+//        }
+//    }
+//    
+//    
+//    for(int i = 0; i<3; i++)
+//    {
+//      for(int j=0; j<3; j++)
+//      {
+//        if(strcmp(input_pid_val[i][j],"0.000")!=0)
+//          inpid_val[i][j] = atof(input_pid_val[i][j]);
+//      }
+//    }
+//    
+//}
+//
+//void Parsing_PID_val(uint8_t* arr, float pid_val[][3])
+//{
+//    char* input_pid_val[3][3];
+//    input_pid_val[0][0] =  strtok((char*)arr, ",");
+//    input_pid_val[0][1] =  strtok(NULL, ",");
+//    input_pid_val[0][2] =  strtok(NULL, ",");
+//      
+//    for(int i=1; i<3; i++)
+//    {
+//        for(int j=0;j<3;j++)
+//        {
+//          input_pid_val[i][j] = strtok(NULL, ",");
+//        }
+//    }
+//    
+//    
+//    for(int i = 0; i<3; i++)
+//    {
+//      for(int j=0; j<3; j++)
+//      {
+//        if(strcmp(input_pid_val[i][j],"0.000")!=0)
+//          pid_val[i][j] = atof(input_pid_val[i][j]);
+//      }
+//    }
+//}
+//
+//void Parsing_Throttle_val(uint8_t* arr, int *Controller_1)
+//{
+//    char* T;
+//    T = strtok((char*)arr, ",");         
+//    *Controller_1 = atoi(T);   
+//}
+//
+//void Parsing_SettingPoint_val(uint8_t* arr, float* setting_angle)
+//{
+//    char* Setting_R, *Setting_P, *Setting_Y;
+//    Setting_R = strtok((char*)arr, ",");
+//    Setting_P = strtok(NULL, ",");
+//    Setting_Y = strtok(NULL,",");    
+//     
+//    setting_angle[0] = atof(Setting_R);
+//    setting_angle[1] = atof(Setting_P);
+//    setting_angle[2] = atof(Setting_Y);   
+//}
