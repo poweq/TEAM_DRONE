@@ -190,7 +190,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   uint8_t Mode_Flag = Debug_Mode_Flag;   // START DEBUG MODE
-  //uint8_t test_buf;
+  uint8_t test_buf[8];
   uint8_t exit_flag=0;
   uint8_t Lcd_buffer[15];
 
@@ -223,7 +223,7 @@ int main(void)
   HAL_Delay(1);
   HAL_ADC_Start_IT(&hadc1); 
   lcd_init();
-  TM_NRF24L01_Init(120,8);
+  TM_NRF24L01_Init(35,8);
   TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_250k, TM_NRF24L01_OutputPower_0dBm);
 
   /* Set my address, 5 bytes */
@@ -233,10 +233,12 @@ int main(void)
   TM_NRF24L01_SetTxAddress(TxAddress);
 
   /* Reset counter */
-  //TM_DELAY_SetTime(2001);
+  TM_DELAY_SetTime(2001);
   
   
  
+  
+  
   /* USER CODE END 2 */
  
  
@@ -260,18 +262,37 @@ int main(void)
      //Print_ADC_DEBUG();
      
      
-     // ======== Roll Set Point Transmit ======== //
-       printf("Roll : %d",ADC_DATA[1]);
+//     // ======== Roll Set Point Transmit ======== //
+//       printf("Roll : %d",ADC_DATA[1]);
+//       sprintf((char*)Lcd_buffer,"R:%3d",ADC_DATA[1]);
+//       lcd_put_cur(0,0);
+//       lcd_send_string((char*)Lcd_buffer);
+//       
+//       memset(Lcd_buffer, '\0', 15);
+//       nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
+//       
+//     //======================================//
+       
+      // ======== Roll Set Point Transmit ======== //
+       //printf("Roll : %d",ADC_DATA[1]);
        sprintf((char*)Lcd_buffer,"R:%3d",ADC_DATA[1]);
        lcd_put_cur(0,0);
        lcd_send_string((char*)Lcd_buffer);
        
        memset(Lcd_buffer, '\0', 15);
-       nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);                   
+       nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
+       TM_NRF24L01_PowerUpRx();
+             
+      // HAL_Delay(1000);
+       TM_NRF24L01_GetData(test_buf);
+       printf("R : %s",test_buf);
+       memset(test_buf,'\0',8);
+       
      //======================================//
+      
      
      // ======== Throttle Transmit ======== //
-       printf("   Th : %d",ADC_DATA[2]);
+       //printf("   Th : %d",ADC_DATA[2]);
        sprintf((char*)Lcd_buffer,"T:%3d",ADC_DATA[2]);
        lcd_put_cur(1,6);
        lcd_send_string((char*)Lcd_buffer);
@@ -281,7 +302,7 @@ int main(void)
      //======================================//
      
      // ======== Pitch Set Point Transmit ======== //
-       printf("   Pitch : %d",ADC_DATA[0]);
+      // printf("   Pitch : %d",ADC_DATA[0]);
        sprintf((char*)Lcd_buffer,"P:%3d",ADC_DATA[0]);
        lcd_put_cur(0,6);
        lcd_send_string((char*)Lcd_buffer);
@@ -291,7 +312,7 @@ int main(void)
      //======================================//
      
      // ======== Yaw Set Point Transmit ========== //
-       printf("   Yaw :  %d",ADC_DATA[3]);
+       //printf("   Yaw :  %d",ADC_DATA[3]);
        sprintf((char*)Lcd_buffer,"Y:%3d",ADC_DATA[3]);
        lcd_put_cur(1,0);
        lcd_send_string((char*)Lcd_buffer);
@@ -339,10 +360,16 @@ int main(void)
             exit_flag=0;
             while(exit_flag ==0)
             {
-             
+             memset(test_buf,'\0',8);
              nRF24_Transmit_Mode_Change(key_input);
-              
+             TM_NRF24L01_PowerUpRx();
+             
+             HAL_Delay(1000);
+             TM_NRF24L01_GetData(test_buf);
+             printf("Receive data : %s",test_buf);
              Display_UI();
+             
+
              
             while(!(HAL_UART_Receive(&huart2,&key_input,sizeof(key_input),10)==HAL_OK));
             
@@ -422,7 +449,8 @@ int main(void)
                case 'c':
                   PID_THROTTLE_Transmit(key_input, key_tr, &Out_Yaw_P);             //  OUT_Yaw_P Input and Transmit
                   break;
-                 
+                  
+                  
                case 'D':
                   PID_THROTTLE_Transmit(key_input, key_tr, &Out_Roll_I);              //  OUT_Roll_I Input and Transmit
                   break;
@@ -922,7 +950,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
  void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  {
     static uint32_t temp;// debounce time
-   if(GPIO_Pin==EXTI_PIN_PC10)
+   if(GPIO_Pin==button_Pin)
    {     
      if((HAL_GetTick()-temp)>500)
      {

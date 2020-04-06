@@ -141,25 +141,29 @@ void nRF24_Transmit_ASCII(uint8_t adr_value)
 // =============MODE CHANGE KEY DATA TRANSMIT============= //
 void nRF24_Transmit_Mode_Change(uint8_t adr_value)
 {
+ 
+  int No_Connection=0;
   memset(buffer,'\0',8); // C_buff 메모리 초기화
+  sprintf((char*)buffer,"%d",1);
+  printf("Transmit data : %s\r\n",buffer);
   TM_DELAY_SetTime(0);
   buffer[7]=adr_value;
-  TM_NRF24L01_Transmit((uint8_t*)buffer);
+  TM_NRF24L01_Transmit(buffer);
   
   do {
   /* Get transmission status */
       transmissionStatus = TM_NRF24L01_GetTransmissionStatus();
-//      if(!(transmissionStatus == TM_NRF24L01_Transmit_Status_Ok))
-//      {
-//        No_Connection++;
-//        TM_NRF24L01_Transmit((uint8_t*)buffer);
-//        //nRF24_Transmit_Status();
-//        if(No_Connection >= 1000)
-//        {
-//          //printf("No Connection!\r\n");
-//          break;
-//        }
-//      }
+      if(!(transmissionStatus == TM_NRF24L01_Transmit_Status_Ok))
+      {
+        No_Connection++;
+        TM_NRF24L01_Transmit((uint8_t*)buffer);
+        //nRF24_Transmit_Status();
+        if(No_Connection >= 5)
+        {
+          //printf("No Connection!\r\n");
+          break;
+        }
+      }
   } while (transmissionStatus == TM_NRF24L01_Transmit_Status_Sending);
   
   
