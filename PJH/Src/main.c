@@ -132,7 +132,7 @@ uint8_t MyAddress[] = {                                                         
 //int fputc(int ch ,FILE *f)
 //{
 //  //UART2_TX_string((char *)ch);
-//  //HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
+//  HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,0xFFFF);
 //  return ch;
 //}
 //==============================================================================
@@ -180,19 +180,15 @@ int main(void)
   //========================Drone Calibration Mode Variables====================
   uint8_t CaliFlag = 1;
   //============================nRF24L01 VARIABLES==============================
-  int temp_int;                                                                 //uint8_t
-  float temp;                                                                   //uint8_t
+  int temp_int = 0;                                                                 //uint8_t
+  float temp = 0;                                                                   //uint8_t
   //====================Hanging Variables from external controll================
   float setting_angle[3] = {0.0f, 0.0f, 0.0f};                                  //roll pitch yaw.
   float init_setting_angle[3] = {0.0f, 0.0f, 0.0f};
-//  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {2.0f, 0.0f, 40.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-//  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {2.0f, 2.0f, 0.0f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-//  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {40.0f, 0.01f, 0.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-//  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {0.801f, 0.001f, 0.068f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-//  float pid_val[3][3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-//  float inpid_val[3][3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float pid_val[3][3] = {{0.9f, 0.01f, 0.0f}, {0.8f, 0.01f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
-  float inpid_val[3][3] = {{38.501f, 0.01f, 0.570f}, {45.501f, 0.01f, 0.970f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float pid_val[3][3] = {{0.95f, 0.01f, 0.0f}, {0.8f, 0.01f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float inpid_val[3][3] = {{40.501f, 0.01f, 0.570f}, {45.501f, 0.01f, 0.970f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float pid_val[3][3] = {{0.95f, 0.01f, 0.0f}, {0.8f, 0.01f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+  float inpid_val[3][3] = {{40.501f, 0.01f, 0.570f}, {45.501f, 0.01f, 0.970f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                                                    //For double loop PID.
 
   /* USER CODE END 1 */
@@ -281,7 +277,8 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {        
+  {       
+ 
     //int aa = HAL_GetTick();     //Get time.    
   //============================Get MPU9250 data================================
     TM_MPU9250_ReadAcce(&MPU9250);                                              //get Accel data.
@@ -305,6 +302,7 @@ int main(void)
      MPU9250.Mx *= MPU9250.Magscalex;                                           //callibrate Magnetic values.
      MPU9250.My *= MPU9250.Magscaley;                           
      MPU9250.Mz *= MPU9250.Magscalez;
+   
 
   //====Subtract Automatic Accelometer Gyroscope and Magnetic filed bias END====
   //===========================Init settiing angle==============================
@@ -390,20 +388,23 @@ int main(void)
       //=======Check dead board=================================================
       if (MPU9250.Ax_Raw == 0 && MPU9250.Ay_Raw == 0 && MPU9250.Az_Raw == 30209 \
         && MPU9250.Gx_Raw == 0 && MPU9250.Gy_Raw == 0 && MPU9250.Gz_Raw == 30209 \
-        && MPU9250.Mx_Raw == 6 && MPU9250.My_Raw == 0 && MPU9250.Mz_Raw == 0 && errflag >= 2)
+        && MPU9250.Mx_Raw == 6 && MPU9250.My_Raw == 0 && MPU9250.Mz_Raw == 0)
       {
         errflag ++;
 //        Euler_angle_Union[0] -= 90;
 //        Euler_angle_Union[1] -= 38;
 //        Euler_angle_Union[2] += 83;
-        Controller_1 = 0;
-        setting_angle[0] = 0;
-        setting_angle[1] = 0;
-        setting_angle[2] = 0;
-        pid.output[0] = 0;
-        pid.output[1] = 0;
-        pid.output[2] = 0;
-        if(errflag > 2) errflag = 2;
+        if(errflag >=2)
+        {
+            Controller_1 = 0;
+            setting_angle[0] = 0;
+            setting_angle[1] = 0;
+            setting_angle[2] = 0;
+            pid.output[0] = 0;
+            pid.output[1] = 0;
+            pid.output[2] = 0;
+            errflag = 2;
+        }
       }     
       //if(Euler_angle[2] < 0) Euler_angle[2] += 360.0f;                        // Ensure yaw stays between 0 and 360     
       deltat = 0.0f;                                                            //reset deltat.
@@ -431,9 +432,9 @@ int main(void)
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d   %4d,%4d,%4d     %4d,%4d,%4d\r\n",  (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2], (int)Euler_angle2[0], (int)Euler_angle2[1], (int)Euler_angle2[2], (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
     //sprintf((char*)uart2_tx_data,"%4d,%4d,%4d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
-    sprintf((char*)uart2_tx_data,"%4d,%4d,%4d  %7.2f %7.2f %7.2f\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2],pid.output[0],pid.output[1], pid.output[2]);   
+    sprintf((char*)uart2_tx_data,"%4d,%4d,%4d  %7.2f %7.2f %7.2f  %7.2f %7.2f %7.2f %d\r\n", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2],pid.output[0],pid.output[1], pid.output[2], setting_angle[0], setting_angle[1], setting_angle[2], Controller_1);   
     //sprintf((char*)uart2_tx_data,"%7.2f %7.2f %7.2f\r\n", pid.iKp[0],pid.iKi[0],pid.iKd[0]);
-    UART2_TX_string((char *)uart2_tx_data);
+    //UART2_TX_string((char *)uart2_tx_data);
     
  //=========================Data print transmit UART part END===================
     
@@ -461,10 +462,10 @@ int main(void)
         {           
           pid.output[2] = 0.0f;
         }
-        
-        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
+
+        MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_yaw * pid.output[2]);
-        MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_pitch * pid.output[1]);
         //MOTOR_V1 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_roll * pid.output[0]);
        // MOTOR_V1 = MIN_PULSE + (Controller_1 * 70);
@@ -473,9 +474,9 @@ int main(void)
         else if (MOTOR_V1 <= MIN_PULSE + 700)
           MOTOR_V1 = MIN_PULSE + 700;
         
-        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
+        MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_yaw * pid.output[2]);
-        MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_roll * pid.output[0]);
         //MOTOR_V2 = MIN_PULSE + (Controller_1 * 70);
@@ -483,10 +484,10 @@ int main(void)
           MOTOR_V2 = MAX_PULSE;// - MOTER_SAFTY;
         else if (MOTOR_V2 <= MIN_PULSE + 700)
           MOTOR_V2 = MIN_PULSE + 700;
-        
-        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
+
+        MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) - (int)(MoterGain_yaw * pid.output[2]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_yaw * pid.output[2]);
-        MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
+        //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_pitch * pid.output[1]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_roll * pid.output[0]);
         //MOTOR_V3 = MIN_PULSE + (Controller_1 * 70);
@@ -495,9 +496,9 @@ int main(void)
         else if (MOTOR_V3 <= MIN_PULSE + 700)
           MOTOR_V3 = MIN_PULSE + 700;
         
-        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
+        MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]) + (int)(MoterGain_yaw * pid.output[2]); 
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * MoterGain_yaw * pid.output[2]); 
-        MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
+        //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * (MoterGain_roll) * pid.output[0]) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) + (int)(0.7 * (MoterGain_pitch) * pid.output[1]); 
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70) - (int)(0.7 * MoterGain_roll * pid.output[0]);
         //MOTOR_V4 = MIN_PULSE + (Controller_1 * 70);
@@ -507,15 +508,16 @@ int main(void)
           MOTOR_V4 = MIN_PULSE + 700;
        }
     }    
+
 //========================BLDC Motor Part END===================================
-    
+
 //========================NRF24L01 Receive Part=================================    
-  NRF24_Receive(&Controller_1,temp,temp_int,&pid,setting_angle,Euler_angle[2]);          
+ NRF24_Receive(&Controller_1,temp,temp_int,&pid,setting_angle,Euler_angle[2]);          
 //=======================NRF24L01 Receive Part END==============================  
-    
+
 //==========================Data transmit part==================================
 //==========================Euler_angle_chart_part==============================  
-    sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
+ sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,", (int)Euler_angle_Union[0], (int)Euler_angle_Union[1], (int)Euler_angle_Union[2]);   
     //sprintf((char*)uart1_tx_to_MFC,"%d,%d,%d,", (int)Euler_angle[0], (int)Euler_angle[1], (int)Euler_angle[2]);   
     //UART1_TX_string((char *)uart1_tx_to_MFC);
 //===========================outPID inPID change part===========================  
@@ -1272,91 +1274,6 @@ void uart_recv_val(uint8_t* arr, __PID* pid,int *Controller_1, float* setting_an
     default: break;
   }
 }
-
-//void STM32f4_USART2_Init(void)
-//{
-//	UartHandle.Instance        = USART2;
-//
-//	UartHandle.Init.BaudRate     = 115200;
-//	UartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
-//	UartHandle.Init.StopBits     = UART_STOPBITS_1;
-//	UartHandle.Init.Parity       = UART_PARITY_NONE;
-//	UartHandle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
-//	UartHandle.Init.Mode         = UART_MODE_TX_RX;
-//	UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
-//
-//	HAL_UART_MspInit(&UartHandle);
-//
-//	if(HAL_UART_DeInit(&UartHandle) != HAL_OK)
-//	{
-//		Error_Handler();
-//	}  
-//	if(HAL_UART_Init(&UartHandle) != HAL_OK)
-//	{
-//		Error_Handler();
-//	}
-//
-//	//if(HAL_UART_Transmit(&UartHandle, (uint8_t*)aTxBufferUart, sizeof(aTxBufferUart), 5000)!= HAL_OK)
-//	//{
-//	//	Error_Handler();   
-//	//}
-//
-//	Dprintf("STM32f4_USART2_Init \n\r");
-//
-//}
-
-//void System_information(void)
-//{
-//	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-//#if 0
-//	char buff[200];
-//
-//	Dprintf("DEVICE ID:%ld[0x%x], DEVICE REVISION ID:%ld[0x%x], flash size:0x%x\n\r", HAL_GetDEVID(), HAL_GetDEVID(), HAL_GetREVID(), HAL_GetREVID(), ID_GetFlashSize());
-//
-//	/* Format unique ID in 32-bit read mode */
-//	sprintf(buff, "Unique ID in 32-bit read mode: 0x%08X 0x%08X 0x%08X\n\r",
-//		ID_GetUnique32(0),	/* LSB */
-//		ID_GetUnique32(1),
-//		ID_GetUnique32(2)	/* MSB */
-//		);
-//	Dprintf("%s",buff);
-//	/* Format unique ID in 16-bit read mode */
-//	sprintf(buff, "Unique ID in 16-bit read mode: 0x%04X 0x%04X 0x%04X 0x%04X 0x%04X 0x%04X\n\r",
-//		ID_GetUnique16(0),	/* LSB */
-//		ID_GetUnique16(1),
-//		ID_GetUnique16(2),
-//		ID_GetUnique16(3),
-//		ID_GetUnique16(4),
-//		ID_GetUnique16(5)	/* MSB */
-//		);
-//	Dprintf("%s",buff);
-//	/* Format unique ID in 8-bit read mode */
-//	sprintf(buff, "Unique ID in 8-bit read mode: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n\r",
-//		ID_GetUnique8(0),	/* LSB */
-//		ID_GetUnique8(1),
-//		ID_GetUnique8(2),
-//		ID_GetUnique8(3),
-//		ID_GetUnique8(4),
-//		ID_GetUnique8(5),
-//		ID_GetUnique8(6),
-//		ID_GetUnique8(7),
-//		ID_GetUnique8(8),
-//		ID_GetUnique8(9),
-//		ID_GetUnique8(10),
-//		ID_GetUnique8(11)	/* MSB */
-//		);
-//	Dprintf("%s",buff);
-//#endif
-//
-//	/* Get the Oscillators configuration according to the internal RCC registers */
-//	HAL_RCC_GetOscConfig(&RCC_OscInitStruct);
-//
-//	//Dprintf("StartUpCounter:%d", StartUpCounter);
-//	/* Get frequency value */
-//	Dprintf("SYSCLK:%d, HCLK:%d, PCLK1:%d, PCLK2:%d\n\r",
-//			HAL_RCC_GetSysClockFreq(), HAL_RCC_GetHCLKFreq(), HAL_RCC_GetPCLK1Freq(), HAL_RCC_GetPCLK2Freq());
-//
-//}
 /* USER CODE END 4 */
 
 /**

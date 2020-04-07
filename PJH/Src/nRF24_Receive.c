@@ -19,7 +19,9 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
   {
     case 't':
       *Throttle = temp_int;
-      //printf("Throttle : %d\r\n",temp_int);                                      // 쓰로틀 값 저장
+      //printf("Throttle : %d\r\n",*Throttle);                                      // 쓰로틀 값 저장
+      //UART2_TX_string((char *)*Throttle);
+
       value = '\0';
       temp_int = '\0';
       break;
@@ -172,14 +174,16 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
    // ========================================================================= //  
       
      case 'r':
-      setting_angle[0] = (float)((int8_t)temp);
+      //setting_angle[0] = (float)((int32_t)temp);
+      setting_angle[0] = (temp);
       //printf("Roll_Set_Point : %.0f\r\n",setting_angle[0]);            // Roll_SetPoint 값 저장
       value = '\0';
       temp = '\0';
       break;
        
      case 'p':
-      setting_angle[1] = (float)((int8_t)temp);
+      //setting_angle[1] = (float)((int32_t)temp);
+      setting_angle[1] = (temp);
       //printf("Pitch_Set_Point : %.0f\r\n",setting_angle[1]);           // Pitch_SetPoint 값 저장
       value = '\0';
       temp = '\0';
@@ -197,7 +201,7 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
        }
       else
       {
-        setting_angle[2] = temp_yaw_angle + (float)((int8_t)temp);
+        setting_angle[2] = temp_yaw_angle + (temp);
         temp_set_angle = temp_yaw_angle;
         
          if (setting_angle[2] < -180)                                                       //correct angle jump ( ex: 180 -> -180)
@@ -218,31 +222,30 @@ void NRF24_Data_save(int* Throttle,float temp, int temp_int, int value, __PID*  
   }
 }
 
-void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* setting_angle, float Euler_angle_yaw)    // Controller에서 PID값 수신
+void NRF24_Receive(int* Throttle,float temp, int temp_int, __PID*  pid,float* setting_angle, float Euler_angle_yaw)    // Controller에서 PID값 수신
 {
-  static uint32_t first ;
-   static uint8_t con_flag;
-   
+   //static uint32_t first ;
+   //static uint8_t con_flag;
+   //static uint8_t keyboard_flag=0;
   int value='\0';     // 컨트롤러에서 받은 key_input 값 저장 변수
-  uint8_t dataIn[8]={0};                                     // Controller Data Receive Buffer
+  uint8_t dataIn[8]={'\0',};                                     // Controller Data Receive Buffer
 
   //printf("Receive_Data_Ready : %d\r\n",TM_NRF24L01_DataReady());
-  
   if(TM_NRF24L01_DataReady())
   {
    // printf("Receive_Data_Ok : %d\r\n",TM_NRF24L01_DataReady());
-       con_flag=0;
+       //con_flag=0;
       TM_NRF24L01_GetData(dataIn);
-      
+       
         if(dataIn[7]=='q'||dataIn[7]=='Q')      // q 눌렀을 때 퀵 테스트
         {
           value = dataIn[7];
           dataIn[7]='\0';
-          //printf("\r\n[6] : %c\r\n",value);
         }
         
         else if(dataIn[7] == 'd'||dataIn[7]=='D')       // d 수신 되었을 때 디버그 모드
         {
+          //keyboard_flag = 1;
           value = dataIn[7];
           dataIn[7] = '\0'; 
           temp_int=atoi((char*)dataIn);
@@ -269,7 +272,8 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
         {
           value = dataIn[7];
           dataIn[7] = '\0';
-          temp = atof((char*)dataIn);                                       // uint8_t 형으로 수신된 Roll SetPoint 값을 float형으로 변환하여 temp 에 저장
+          temp = atof((char*)dataIn);   
+          // uint8_t 형으로 수신된 Roll SetPoint 값을 float형으로 변환하여 temp 에 저장
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
         
@@ -277,7 +281,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
         {
           value = dataIn[7];
           dataIn[7] = '\0';
-          temp = atof((char*)dataIn);                                        // uint8_t 형으로 수신된 Pitch SetPoint 값을 float형으로 변환하여 temp 에 저장
+          temp = atof((char*)dataIn);                                           // uint8_t 형으로 수신된 Pitch SetPoint 값을 float형으로 변환하여 temp 에 저장
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
         
@@ -285,7 +289,7 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
         {
           value = dataIn[7];
           dataIn[7] = '\0';
-          temp = atoi((char*)dataIn);                                       // uint8_t 형으로 수신된 Yaw SetPoint 값을 float형으로 변환하여 temp 에 저장
+          temp = atoi((char*)dataIn);                                           // uint8_t 형으로 수신된 Yaw SetPoint 값을 float형으로 변환하여 temp 에 저장
           //printf("\r\n dataIn_test : %.0f\r\n",temp);
         }
  
@@ -310,7 +314,9 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
         {
           value = dataIn[7];  
           dataIn[7]='\0';
-          temp_int=atoi((char*)dataIn);                                     //  uint8_t 형으로 수신된 Throttle 값을 int형으로 변환하여 temp_init에 저장
+          temp_int=atoi((char*)dataIn);
+          
+          //  uint8_t 형으로 수신된 Throttle 값을 int형으로 변환하여 temp_init에 저장
           //printf("\r\n dataIn_test : %d\r\n",temp_int);
 //          if(temp_int>5)
 //          {
@@ -325,30 +331,32 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
 //          
 //          
 //        }
-        
       NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle,Euler_angle_yaw);        //  수신된 데이터 저장 함수
+      
       TM_NRF24L01_PowerUpRx();
   }
   else 
-  {   
-    
-    if (con_flag == 0)
-    {
-      first = HAL_GetTick();
-      con_flag = 1;
-    }
-    
-    if(HAL_GetTick() - first >= 2000)
-    {    
-      //UART2_TX_string("no connection \r\n ");      
-      setting_angle[0] = 0;
-      setting_angle[1] = 0;
-      *Throttle = 10;
-      if(HAL_GetTick() - first >= 12000)
-      {
-        *Throttle = 0;
-      }
-    }
+  {    
+//    if (!keyboard_flag)
+//    {
+//        if (con_flag == 0)
+//        {
+//          first = HAL_GetTick();
+//          con_flag = 1;
+//        }
+//        
+//        if(HAL_GetTick() - first >= 2000)
+//        {    
+//          //UART2_TX_string("no connection \r\n ");      
+//          setting_angle[0] = 0;
+//          setting_angle[1] = 0;
+//          *Throttle = 10;
+//          if(HAL_GetTick() - first >= 12000)
+//          {
+//            *Throttle = 0;
+//          }
+//        }
+//      }
   }
 }
 //===================================================
