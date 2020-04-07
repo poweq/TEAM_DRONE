@@ -155,7 +155,7 @@ int main(void)
   uint32_t before_while = 0;                                                    //Time of Before entering while loop.
   uint16_t wait = 0;                                                            //getting initiate setting_angle waiting time.
   uint8_t wait_flag = 0;                                                        //Time waiting flag.
-   
+  uint8_t errflag = 0;
 //  uint8_t UART1_flag=0;
   //=============================UART Variables=================================
   //========================Quaternion VARIABLES================================
@@ -189,6 +189,8 @@ int main(void)
 //  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {2.0f, 2.0f, 0.0f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
 //  float pid_val[3][3] = {{1.32f, 0.3f, 0.0f}, {40.0f, 0.01f, 0.0f}, {2.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
 //  float inpid_val[3][3] = {{12.0f, 1.0f, 1.7f}, {0.801f, 0.001f, 0.068f}, {9.0f, 0.0f, 0.0f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float pid_val[3][3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
+//  float inpid_val[3][3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float pid_val[3][3] = {{0.9f, 0.01f, 0.0f}, {0.8f, 0.01f, 0.0f}, {1.0f, 0.0f, 0.0f}};            //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float inpid_val[3][3] = {{38.501f, 0.01f, 0.570f}, {45.501f, 0.01f, 0.970f}, {20.0f, 0.0f, 0.5f}};          //P I D gain controll (Roll PID, Pitch PID, Yaw PID sequences).
   float angular_velocity[3];                                                    //For double loop PID.
@@ -385,6 +387,24 @@ int main(void)
         pid.output[2] = constrain(pid.output[2], -6000.0, 6000.0);
 
       }    
+      //=======Check dead board=================================================
+      if (MPU9250.Ax_Raw == 0 && MPU9250.Ay_Raw == 0 && MPU9250.Az_Raw == 30209 \
+        && MPU9250.Gx_Raw == 0 && MPU9250.Gy_Raw == 0 && MPU9250.Gz_Raw == 30209 \
+        && MPU9250.Mx_Raw == 6 && MPU9250.My_Raw == 0 && MPU9250.Mz_Raw == 0 && errflag >= 2)
+      {
+        errflag ++;
+//        Euler_angle_Union[0] -= 90;
+//        Euler_angle_Union[1] -= 38;
+//        Euler_angle_Union[2] += 83;
+        Controller_1 = 0;
+        setting_angle[0] = 0;
+        setting_angle[1] = 0;
+        setting_angle[2] = 0;
+        pid.output[0] = 0;
+        pid.output[1] = 0;
+        pid.output[2] = 0;
+        if(errflag > 2) errflag = 2;
+      }     
       //if(Euler_angle[2] < 0) Euler_angle[2] += 360.0f;                        // Ensure yaw stays between 0 and 360     
       deltat = 0.0f;                                                            //reset deltat.
     }

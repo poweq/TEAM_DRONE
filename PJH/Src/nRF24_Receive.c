@@ -329,26 +329,26 @@ void NRF24_Receive(int* Throttle,float temp, int temp_int,__PID*  pid,float* set
       NRF24_Data_save(Throttle,temp,temp_int,value,pid,setting_angle,Euler_angle_yaw);        //  수신된 데이터 저장 함수
       TM_NRF24L01_PowerUpRx();
   }
-//  else 
-//  {   
-//    
-//    if (con_flag == 0)
-//    {
-//      first = HAL_GetTick();
-//      con_flag = 1;
-//    }
-//    
-//    if(HAL_GetTick() - first >= 2000)
-//    {    
-//      //UART2_TX_string("no connection \r\n ");      
-//      setting_angle[0] = 0;
-//      setting_angle[1] = 0;
-//      *Throttle = 30;
-//      if(HAL_GetTick() - first >= 12000)
-//      {
-//        *Throttle = 10;
-//      }
-//    }
-//  }
+  else 
+  {   
+    
+    if (con_flag == 0)
+    {
+      first = HAL_GetTick();
+      con_flag = 1;
+    }
+    
+    if(HAL_GetTick() - first >= 2000)
+    {    
+      //UART2_TX_string("no connection \r\n ");      
+      setting_angle[0] = 0;
+      setting_angle[1] = 0;
+      *Throttle = 10;
+      if(HAL_GetTick() - first >= 12000)
+      {
+        *Throttle = 0;
+      }
+    }
+  }
 }
 //===================================================
