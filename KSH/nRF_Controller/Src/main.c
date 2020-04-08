@@ -236,9 +236,6 @@ int main(void)
   TM_DELAY_SetTime(2001);
   
   
- 
-  
-  
   /* USER CODE END 2 */
  
  
@@ -909,7 +906,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
    else if(adc_count == _Roll)
    {
      
-     temp = (( HAL_ADC_GetValue(hadc)/58)-35);
+     //temp = (( HAL_ADC_GetValue(hadc)/58)-35);                // 30degree
+     //temp = (( HAL_ADC_GetValue(hadc)/102)-20);              // 20degree
+     temp = (( HAL_ADC_GetValue(hadc)/455)-4);                     // 5degree
      if(temp <= 1 && temp >= -1)
      {
        temp=0;
@@ -932,7 +931,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
    
    else                                                                                 // Pitch
    {
-     temp = (( HAL_ADC_GetValue(hadc)/58)-35)*(-1);
+     //temp = (( HAL_ADC_GetValue(hadc)/58)-35)*(-1);
+     //temp = (( HAL_ADC_GetValue(hadc)/102)-20)*(-1);
+     temp = (( HAL_ADC_GetValue(hadc)/455)-4)*(-1);
      if(temp <= 1 && temp >= -1)
      {
        temp=0;
