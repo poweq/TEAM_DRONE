@@ -223,7 +223,7 @@ int main(void)
   HAL_Delay(1);
   HAL_ADC_Start_IT(&hadc1); 
   lcd_init();
-  TM_NRF24L01_Init(35,8);
+  TM_NRF24L01_Init(120,8);
   TM_NRF24L01_SetRF(TM_NRF24L01_DataRate_250k, TM_NRF24L01_OutputPower_0dBm);
 
   /* Set my address, 5 bytes */
@@ -262,67 +262,71 @@ int main(void)
      //Print_ADC_DEBUG();
      
      
-//     // ======== Roll Set Point Transmit ======== //
-//       printf("Roll : %d",ADC_DATA[1]);
+     // ======== Roll Set Point Transmit ======== //
+       printf("Roll : %d",ADC_DATA[1]);
+       sprintf((char*)Lcd_buffer,"R:%3d",ADC_DATA[1]);
+       lcd_put_cur(0,0);
+       lcd_send_string((char*)Lcd_buffer);
+       
+       memset(Lcd_buffer, '\0', 15);
+       HAL_Delay(1);
+       nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
+       
+     //======================================//
+       
+//      // ======== Roll Set Point Transmit ======== //
+//       //printf("Roll : %d",ADC_DATA[1]);
 //       sprintf((char*)Lcd_buffer,"R:%3d",ADC_DATA[1]);
 //       lcd_put_cur(0,0);
 //       lcd_send_string((char*)Lcd_buffer);
 //       
 //       memset(Lcd_buffer, '\0', 15);
 //       nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
+//       TM_NRF24L01_PowerUpRx();
+//             
+//      // HAL_Delay(1000);
+//       TM_NRF24L01_GetData(test_buf);
+//       printf("R : %s",test_buf);
+//       memset(test_buf,'\0',8);
 //       
 //     //======================================//
-       
-      // ======== Roll Set Point Transmit ======== //
-       //printf("Roll : %d",ADC_DATA[1]);
-       sprintf((char*)Lcd_buffer,"R:%3d",ADC_DATA[1]);
-       lcd_put_cur(0,0);
-       lcd_send_string((char*)Lcd_buffer);
-       
-       memset(Lcd_buffer, '\0', 15);
-       nRF24_Transmit_ADC(&ADC_DATA[1],Roll_Set_Point);
-       TM_NRF24L01_PowerUpRx();
-             
-      // HAL_Delay(1000);
-       TM_NRF24L01_GetData(test_buf);
-       printf("R : %s",test_buf);
-       memset(test_buf,'\0',8);
-       
-     //======================================//
       
      
      // ======== Throttle Transmit ======== //
-       //printf("   Th : %d",ADC_DATA[2]);
+       printf("   Th : %d",ADC_DATA[2]);
        sprintf((char*)Lcd_buffer,"T:%3d",ADC_DATA[2]);
        lcd_put_cur(1,6);
        lcd_send_string((char*)Lcd_buffer);
        
        memset(Lcd_buffer, '\0', 15);
+       HAL_Delay(1);
        nRF24_Transmit_ADC(&ADC_DATA[2],THROTTLE);                       
      //======================================//
      
      // ======== Pitch Set Point Transmit ======== //
-      // printf("   Pitch : %d",ADC_DATA[0]);
+       printf("   Pitch : %d",ADC_DATA[0]);
        sprintf((char*)Lcd_buffer,"P:%3d",ADC_DATA[0]);
        lcd_put_cur(0,6);
        lcd_send_string((char*)Lcd_buffer);
        
        memset(Lcd_buffer, '\0', 15);
+       HAL_Delay(1);
        nRF24_Transmit_ADC(&ADC_DATA[0],Pitch_Set_Point);                 
      //======================================//
      
      // ======== Yaw Set Point Transmit ========== //
-       //printf("   Yaw :  %d",ADC_DATA[3]);
+       printf("   Yaw :  %d",ADC_DATA[3]);
        sprintf((char*)Lcd_buffer,"Y:%3d",ADC_DATA[3]);
        lcd_put_cur(1,0);
        lcd_send_string((char*)Lcd_buffer);
        
        memset(Lcd_buffer, '\0', 15);
+       HAL_Delay(1);
        nRF24_Transmit_ADC(&ADC_DATA[3],Yaw_Set_Point);                    
      //======================================//
      
      printf("\r\n");
-     HAL_Delay(1);
+     
 
     }
    
@@ -362,11 +366,11 @@ int main(void)
             {
              memset(test_buf,'\0',8);
              nRF24_Transmit_Mode_Change(key_input);
-             TM_NRF24L01_PowerUpRx();
-             
-             HAL_Delay(1000);
-             TM_NRF24L01_GetData(test_buf);
-             printf("Receive data : %s",test_buf);
+//             TM_NRF24L01_PowerUpRx();
+//             
+//             HAL_Delay(1000);
+//             TM_NRF24L01_GetData(test_buf);
+//             printf("Receive data : %s",test_buf);
              Display_UI();
              
 
