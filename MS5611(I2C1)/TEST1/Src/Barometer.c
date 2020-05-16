@@ -18,6 +18,7 @@ void GY63_MS5611_Init(GY63_MS5611_strc *GY63_MS5611)
   //ADD YSH
     //GY63_MS5611->Avr_Altitude[5] = {0.0,};
     GY63_MS5611-> Altitude_sum=0;
+    GY63_MS5611-> OLD_Altitude=0;
 
     for(int i=0;i<5;i++){
       GY63_MS5611->buffer[i] = 0;
@@ -30,7 +31,8 @@ void GY63_MS5611_Init(GY63_MS5611_strc *GY63_MS5611)
     GY63_MS5611->realPressure = 0;
     GY63_MS5611->Altitude = 0;
     GY63_MS5611->SeaLevel = 0;
-    
+    GY63_MS5611->First_Old_Flag = 1;
+      
     TM_I2C_Init(MS561101BA_I2C, MS561101BA_I2C_PP, MS561101BA_I2C_CLOCK);
     
     GY63_MS5611_Reset(GY63_MS5611);
@@ -172,6 +174,11 @@ void getAltitude(GY63_MS5611_strc *GY63_MS5611)
   else{
     GY63_MS5611->Altitude = (145366.45f * (1.0f - pow(((double)GY63_MS5611->P/100) / (double)SeaLevelPressure, 0.190284f)))*30.48;
   }
+  if(GY63_MS5611->First_Old_Flag)
+  {
+    GY63_MS5611->First_Old_Flag=0;
+    GY63_MS5611->OLD_Altitude = GY63_MS5611->Altitude;
+  }
 }
 
 // Calculate sea level from Pressure given on specific altitude
@@ -180,25 +187,49 @@ void getSeaLevel(GY63_MS5611_strc *GY63_MS5611)
     GY63_MS5611->SeaLevel = ((double)GY63_MS5611->P/100 / pow(1.0f - ((double)GY63_MS5611->Altitude / 145366.45f), 5.257f));
 }
 
-    
-uint8_t AverageAltitude(GY63_MS5611_strc *GY63_MS5611)
+void init_AverageAltitude(GY63_MS5611_strc *GY63_MS5611)
 {
     //uint8_t i=0;
-    static uint8_t AVR_COUNT=0 ; 
+    static uint8_t AVR_COUNT=0 ;
+    //static double OLD_Altitude=0;
    // double Altitude_sum=0;
     GY63_MS5611->Avr_Altitude[AVR_COUNT] = GY63_MS5611->Altitude;
     
     AVR_COUNT= (AVR_COUNT+1)% Average_Count ;
-    
     
     for(uint8_t i=0;i< Average_Count;i++)
     {
       GY63_MS5611->Altitude_sum +=GY63_MS5611->Avr_Altitude[i];
     }
      GY63_MS5611->Altitude_sum=  GY63_MS5611->Altitude_sum/Average_Count;
+    
+}
+ 
 
+
+uint8_t AverageAltitude(GY63_MS5611_strc *GY63_MS5611)
+{
+    //uint8_t i=0;
+    static uint8_t AVR_COUNT=0 ;
+    //static double OLD_Altitude=0;
+   // double Altitude_sum=0;
+    GY63_MS5611->Avr_Altitude[AVR_COUNT] = GY63_MS5611->Altitude;
+    
+   if( GY63_MS5611->Avr_Altitude[AVR_COUNT]*Error_MIN <= GY63_MS5611->OLD_Altitude || GY63_MS5611->Avr_Altitude[AVR_COUNT]*Error_MAX >= GY63_MS5611->OLD_Altitude )
+   {
+    AVR_COUNT= (AVR_COUNT+1)% Average_Count ;
+    
+    for(uint8_t i=0;i< Average_Count;i++)
+    {
+      GY63_MS5611->Altitude_sum +=GY63_MS5611->Avr_Altitude[i];
+    }
+     GY63_MS5611->Altitude_sum=  GY63_MS5611->Altitude_sum/Average_Count;
+    
+    GY63_MS5611->OLD_Altitude = GY63_MS5611->Altitude;
+      return 1;
+   }
+   else
+     return 0;
 }
 
    
-    
- 

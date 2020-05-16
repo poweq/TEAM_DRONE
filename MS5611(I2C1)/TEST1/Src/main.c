@@ -96,7 +96,11 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   GY63_MS5611_Init(&GY63_MS5611);
-  GY63_MS5611_getRefPressure(&GY63_MS5611);
+  for(char i =0; i<=Average_Count;i++)
+  {
+     GY63_MS5611_getRefPressure(&GY63_MS5611);
+      init_AverageAltitude(&GY63_MS5611);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -111,13 +115,13 @@ int main(void)
     //sprintf((char*)Uart_buff,"%d  %d  %d  %11f  %10.3lf  %10.3lf\r\n", GY63_MS5611.P, GY63_MS5611.refPressure, GY63_MS5611.TEMP, GY63_MS5611.Altitude, GY63_MS5611.realTEMP, GY63_MS5611.realPressure);
   if( GY63_MS5611.Altitude !=0.0)
     {
-      if(AverageAltitude(&GY63_MS5611))
-      {
-        sprintf((char*)Uart_buff,"%11f  %10.3lf\r\n",  GY63_MS5611.Altitude_sum, GY63_MS5611.realTEMP);
-        HAL_UART_Transmit(&huart2, Uart_buff,sizeof(Uart_buff), 10);
-      }  
+      if( AverageAltitude(&GY63_MS5611))
+      { 
+          sprintf((char*)Uart_buff,"%11f  %10.3lf\r\n",  GY63_MS5611.Altitude_sum, GY63_MS5611.realTEMP);
+          HAL_UART_Transmit(&huart2, Uart_buff,sizeof(Uart_buff), 10);
+      }
     }
-  }
+  } 
   /* USER CODE END 3 */
 }
 

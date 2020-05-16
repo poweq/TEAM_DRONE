@@ -45,6 +45,9 @@
 #define SeaLevelPressure    (1013.25)
 
 #define Average_Count   15//
+#define Error_MAX        1.05// +5%
+#define Error_MIN        0.95// -5%
+
 
 typedef struct _GY63_MS5611{
   uint8_t I2C_MS5611Addr;
@@ -60,6 +63,8 @@ typedef struct _GY63_MS5611{
     //ADD YSH
   double Avr_Altitude[Average_Count];
   double Altitude_sum;
+  double OLD_Altitude;
+  char First_Old_Flag;
 }GY63_MS5611_strc;
 
 void GY63_MS5611_Init(GY63_MS5611_strc * GY63_MS5611);
@@ -72,6 +77,7 @@ void getSeaLevel(GY63_MS5611_strc *GY63_MS5611);
 
   //ADD YSH
 uint8_t AverageAltitude(GY63_MS5611_strc *GY63_MS5611);
+void init_AverageAltitude(GY63_MS5611_strc *GY63_MS5611);
 
 #endif // MS561101BA
 
